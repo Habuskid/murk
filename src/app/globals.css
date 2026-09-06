@@ -1,0 +1,4 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root{color-scheme:light;--paper:#edebe3;--ink:#0f0f12;--brass:#c9a15a;--red:#c1432e;--grey:#b7b3a6}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",sans-serif}button{font:inherit}button:focus-visible{outline:3px solid var(--brass);outline-offset:3px}.mono{font-family:"IBM Plex Mono",monospace}.paper-noise{background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(15,15,18,.055) 32px)}.hard-shadow{box-shadow:5px 5px 0 var(--ink)}.redacted{background:var(--ink);color:transparent;user-select:none}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
