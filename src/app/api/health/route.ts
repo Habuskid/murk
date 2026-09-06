@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server";export async function GET(){return NextResponse.json({status:"ok",binanceConfigured:Boolean(process.env.BINANCE_MCP_AUTH),marketToolConfigured:Boolean(process.env.BINANCE_MARKET_TOOL),llmConfigured:Boolean(process.env.LLM_API_KEY&&process.env.LLM_MODEL),tradingEnabled:process.env.BLACKBOX_TRADING_ENABLED==="true"})}
