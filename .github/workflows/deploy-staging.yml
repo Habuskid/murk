@@ -103,6 +103,22 @@ jobs:
           for attempt in {1..20}; do
             if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health" > /tmp/murk-health.json; then
               cat /tmp/murk-health.json
+              node -e '
+                const fs = require("fs");
+                const health = JSON.parse(fs.readFileSync("/tmp/murk-health.json", "utf8"));
+                if (health?.chainId !== 11142220) {
+                  console.error("Expected Celo Sepolia chainId 11142220, got", health?.chainId);
+                  process.exit(1);
+                }
+                if (health?.celoRpc?.status !== "healthy") {
+                  console.error("Celo Sepolia RPC health is not healthy");
+                  process.exit(1);
+                }
+                if (health?.rateProvider?.status !== "healthy") {
+                  console.error("Rate provider health is not healthy");
+                  process.exit(1);
+                }
+              '
               exit 0
             fi
             sleep 3
@@ -110,3 +126,17 @@ jobs:
 
           echo "Staging health endpoint did not become ready."
           exit 1
+
+      - name: Record Sepolia release candidate
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          {
+            echo "## Murk Sepolia release candidate"
+            echo ""
+            echo "- Commit: `$GITHUB_SHA`"
+            echo "- Deployment: $DEPLOYMENT_URL"
+            echo "- Chain: Celo Sepolia (11142220)"
+            echo "- Next gate: complete TESTNET_TO_MAINNET.md and run npm run e2e:verify"
+          } >> "$GITHUB_STEP_SUMMARY"
