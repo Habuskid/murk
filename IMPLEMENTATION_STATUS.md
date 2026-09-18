@@ -56,9 +56,10 @@ The UI sandbox is test-only and is not demo evidence.
 
 Status: CODED, BUILD-VERIFIED, LIVE APP VERIFICATION STILL REQUIRED
 
-- Celo chain ID 42220 configured.
+- Celo mainnet chain ID 42220 and Celo Sepolia chain ID 11142220 are configured through one network layer.
 - Celo RPC client exists.
-- Celo USDC and USDT token metadata/balance reads exist.
+- Mainnet USDC/USDT metadata is configured.
+- Sepolia USDC is configured; unverified Sepolia USDT is intentionally not exposed.
 - Live funded-wallet verification remains part of final E2E.
 
 ### External x402 challenge
@@ -189,7 +190,7 @@ Required real path:
 
 `Portal email magic link -> Portal user wallet -> create agent -> fund isolated execution wallet -> independent external 402 -> Murk selector/rate/policy -> atomic spend reservation -> live x402 settlement -> paid resource -> persisted receipt/audit trail -> oversized second request blocked with no second transaction`
 
-This complete path has not yet been demonstrated with real credentials and funded mainnet wallets.
+This complete path has not yet been demonstrated with real credentials. The deployment sequence is Sepolia first for wallet/funding/identity/withdrawal verification, followed by the smallest required mainnet canary for the independent external x402 merchant.
 
 ## PERSIST
 
@@ -274,11 +275,11 @@ Current flow:
 
 ## ERC-8004
 
-Status: IMPLEMENTED IN CODE, LIVE MAINNET VERIFICATION PENDING
+Status: IMPLEMENTED IN CODE, LIVE SEPOLIA THEN MAINNET VERIFICATION PENDING
 
 Implemented:
 
-- current Celo Identity Registry address;
+- network-specific Celo mainnet and Celo Sepolia Identity Registry addresses;
 - public agent metadata endpoint;
 - human Portal wallet registration transaction preparation;
 - onchain Registered-event verification;
@@ -297,9 +298,10 @@ Ownership model remains:
 Still required:
 
 - deployed public metadata origin;
-- live Portal-signed Celo registration;
-- live binding transaction;
-- explorer evidence.
+- live Portal-signed Celo Sepolia registration;
+- live Sepolia binding transaction;
+- Sepolia explorer evidence;
+- smallest qualifying mainnet repeat after staging passes.
 
 ## ERC-8021
 
@@ -398,11 +400,11 @@ Status: CODED, LIVE PROOF PENDING
 
 The blocked demo no longer depends on finding a second high-value merchant. Murk can reuse the same verified external x402 resource after the user lowers the per-purchase authority below that resource's live accounting value. This produces a genuine external 402 while proving the deterministic policy blocks before signing.
 
-## DEMO LOCK
+## STAGING / DEMO LOCK
 
 Status: NOT READY
 
-Do not lock or record the final demo until all of these are real:
+Do not lock or record the final demo until the Sepolia staging path is proven and all final mainnet evidence below is real:
 
 - Portal email sign-in;
 - Portal user wallet;
