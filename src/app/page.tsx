@@ -246,7 +246,7 @@ function MurkWalletApp() {
               agentId={agent.id}
               walletAddress={agent.walletAddress}
               balances={balances}
-              onFundingConfirmed={refreshAgentState}
+              onBalancesChanged={refreshAgentState}
             />
           </div>
 
