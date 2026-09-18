@@ -118,7 +118,7 @@ function MurkWalletApp() {
   }, [refreshAgentState])
 
   const handleTogglePause = async () => {
-    if (!agent) return
+    if (!agent || !["ACTIVE", "PAUSED"].includes(agent.status)) return
     const action = agent.status === "PAUSED" ? "resume" : "pause"
     const res = await authedFetch(`/api/agents/${agent.id}/${action}`, {
       method: "POST",
@@ -172,7 +172,7 @@ function MurkWalletApp() {
   const dailyLimitMinor = BigInt(agent.mandate.dailyLimitMinor)
   const perPurchaseLimitMinor = BigInt(agent.mandate.perPurchaseLimitMinor)
   const spentTodayMinor = BigInt(agent.mandate.spentTodayMinor)
-  const agentStatus = agent.status === "PAUSED" ? "PAUSED" : "ACTIVE"
+  const agentStatus = agent.status
 
   return (
     <div className="flex w-full flex-1 flex-col pb-28">
@@ -238,6 +238,7 @@ function MurkWalletApp() {
 
               <PurchaseRunner
                 agentId={agent.id}
+                agentStatus={agentStatus}
                 accountingCurrency={agent.accountingCurrency}
                 perPurchaseLimitFormatted={formatMoneyMinor(perPurchaseLimitMinor, 2)}
                 onPurchaseComplete={handlePurchaseComplete}
@@ -282,12 +283,22 @@ function MurkWalletApp() {
               <span
                 className={[
                   "rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                  agentStatus === "PAUSED"
-                    ? "bg-danger-soft text-danger"
-                    : "bg-success-soft text-success",
+                  agentStatus === "ACTIVE"
+                    ? "bg-success-soft text-success"
+                    : agentStatus === "PAUSED"
+                      ? "bg-danger-soft text-danger"
+                      : agentStatus === "DRAFT"
+                        ? "bg-accent-soft text-accent"
+                        : "bg-surface-inset text-text-secondary",
                 ].join(" ")}
               >
-                {agentStatus === "PAUSED" ? "Paused" : "Active"}
+                {agentStatus === "ACTIVE"
+                  ? "Active"
+                  : agentStatus === "PAUSED"
+                    ? "Paused"
+                    : agentStatus === "DRAFT"
+                      ? "Needs funding"
+                      : "Disabled"}
               </span>
             </div>
 
