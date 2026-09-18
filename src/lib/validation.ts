@@ -58,6 +58,9 @@ export const UpdateAgentSchema = z.object({
 export const FundAgentSchema = z.object({
   assetSymbol: z.enum(MVP_SETTLEMENT_ASSETS),
   amountRaw: BigIntStringSchema,
+  txHash: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{64}$/, "Invalid Celo transaction hash"),
   idempotencyKey: z.string().min(8, "Idempotency key required for financial mutation"),
 })
 
