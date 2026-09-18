@@ -157,15 +157,11 @@ export function AgentFunds({
     const idempotencyKey = `fund_${crypto.randomUUID()}`
 
     try {
-      const result = await portal.sendAsset(
-        {
-          to: walletAddress,
-          token: assetSymbol,
-          amount: amount.trim(),
-          signatureApprovalMemo: `Fund Murk agent with ${amount.trim()} ${assetSymbol}`,
-        },
-        "eip155:42220"
-      )
+      const result = await portal.sendAsset("eip155:42220", {
+        to: walletAddress,
+        token: assetSymbol,
+        amount: amount.trim(),
+      })
 
       const txHash = normalizeTxHash(result)
       setLastTxHash(txHash)
