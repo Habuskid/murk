@@ -106,15 +106,18 @@ jobs:
               node -e '
                 const fs = require("fs");
                 const health = JSON.parse(fs.readFileSync("/tmp/murk-health.json", "utf8"));
-                if (health?.chainId !== 11142220) {
-                  console.error("Expected Celo Sepolia chainId 11142220, got", health?.chainId);
+                if (health?.components?.celoRpc?.chainId !== 11142220) {
+                  console.error(
+                    "Expected Celo Sepolia chainId 11142220, got",
+                    health?.components?.celoRpc?.chainId
+                  );
                   process.exit(1);
                 }
-                if (health?.celoRpc?.status !== "healthy") {
+                if (health?.components?.celoRpc?.status !== "healthy") {
                   console.error("Celo Sepolia RPC health is not healthy");
                   process.exit(1);
                 }
-                if (health?.rateProvider?.status !== "healthy") {
+                if (health?.components?.rateProvider?.status !== "healthy") {
                   console.error("Rate provider health is not healthy");
                   process.exit(1);
                 }
