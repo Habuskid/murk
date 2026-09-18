@@ -1,7 +1,14 @@
 "use client"
 
 import React, { useState } from "react"
-import { WalletIcon, CopyIcon, CheckIcon } from "@/components/Icons"
+import {
+  WalletIcon,
+  CopyIcon,
+  CheckIcon,
+  ExternalLinkIcon,
+  UsdcIcon,
+  UsdtIcon,
+} from "@/components/Icons"
 
 interface TokenBalance {
   symbol: string
@@ -13,10 +20,17 @@ interface TokenBalance {
 interface AgentFundsProps {
   walletAddress: string
   balances: TokenBalance[]
-  onRefresh?: () => void
+  currency?: string
+  exchangeRatePerUsd?: number
+  onTopUp?: () => void
 }
 
-export function AgentFunds({ walletAddress, balances }: AgentFundsProps) {
+export function AgentFunds({
+  walletAddress,
+  balances,
+  currency = "NGN",
+  exchangeRatePerUsd = 1330,
+}: AgentFundsProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -28,48 +42,89 @@ export function AgentFunds({ walletAddress, balances }: AgentFundsProps) {
   const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-6 shadow-sm border border-border mt-4">
-      <div className="flex items-center justify-between mb-3.5">
+    <div className="w-full bg-surface rounded-3xl p-6 border border-[#E2E2DF] card-elevation mt-4 transition-all">
+      {/* Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#ECECE8]">
         <div className="flex items-center gap-2">
-          <WalletIcon className="w-4 h-4 text-text-secondary" />
-          <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-            Agent Execution Wallet
-          </span>
+          <div className="w-7 h-7 rounded-xl bg-[#F0F0EE] flex items-center justify-center text-text-primary">
+            <WalletIcon className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
+              Execution Vault
+            </h3>
+            <span className="text-[10px] text-text-secondary">Isolated agent private key on Celo</span>
+          </div>
         </div>
-        <button
-          onClick={handleCopy}
-          className="text-xs font-mono text-text-secondary hover:text-text-primary bg-background px-3 py-1.5 rounded-full border border-border hover:border-text-secondary/40 transition-all flex items-center gap-1.5 active:scale-95"
-          title="Click to copy address"
-        >
-          <span>{shortAddress}</span>
-          {copied ? (
-            <CheckIcon className="w-3.5 h-3.5 text-success" />
-          ) : (
-            <CopyIcon className="w-3.5 h-3.5 text-text-secondary" />
-          )}
-        </button>
+
+        {/* Address Pill & Explorer */}
+        <div className="flex items-center gap-1.5 self-start sm:self-auto">
+          <button
+            onClick={handleCopy}
+            className="text-[11px] font-mono text-text-secondary hover:text-text-primary bg-[#F8F8F6] px-3 py-1.5 rounded-full border border-border hover:border-text-secondary/50 transition-all flex items-center gap-1.5 active:scale-95"
+            title="Click to copy EOA address"
+          >
+            <span>{shortAddress}</span>
+            {copied ? (
+              <CheckIcon className="w-3 h-3 text-success" />
+            ) : (
+              <CopyIcon className="w-3 h-3 text-text-secondary" />
+            )}
+          </button>
+
+          <a
+            href={`https://celoscan.io/address/${walletAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 rounded-full bg-[#F8F8F6] border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-text-secondary/50 transition-all"
+            title="View on CeloScan Explorer"
+          >
+            <ExternalLinkIcon className="w-3 h-3" />
+          </a>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mt-2">
-        {balances.map((token) => (
-          <div
-            key={token.symbol}
-            className="p-3.5 bg-background rounded-2xl border border-border/60 flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-accent" />
-                <span className="text-xs font-bold text-text-primary">{token.symbol}</span>
+      {/* Asset Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        {balances.map((token) => {
+          const isUsdc = token.symbol === "USDC"
+          const parsedAmount = parseFloat(token.formattedBalance) || 0
+          const fiatValue = (parsedAmount * exchangeRatePerUsd).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+
+          return (
+            <div
+              key={token.symbol}
+              className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] hover:border-border transition-all flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {isUsdc ? <UsdcIcon className="w-5 h-5" /> : <UsdtIcon className="w-5 h-5" />}
+                  <div>
+                    <span className="text-xs font-bold text-text-primary block leading-none">
+                      {token.symbol}
+                    </span>
+                    <span className="text-[10px] text-text-secondary font-mono">Celo Mainnet</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-surface rounded-md border border-[#ECECE8] text-text-secondary">
+                  ERC-20
+                </span>
               </div>
-              <span className="text-[10px] font-medium px-2 py-0.5 bg-surface rounded-full border border-border/60 text-text-secondary">
-                Celo
-              </span>
+
+              <div className="mt-3">
+                <div className="text-xl font-bold text-text-primary tabular-nums tracking-tight">
+                  {token.formattedBalance} <span className="text-xs font-normal text-text-secondary">{token.symbol}</span>
+                </div>
+                <div className="text-[11px] font-mono text-text-secondary mt-0.5">
+                  ≈ {currency} {fiatValue}
+                </div>
+              </div>
             </div>
-            <div className="text-xl font-bold text-text-primary tabular-nums mt-2">
-              {token.formattedBalance}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

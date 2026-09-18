@@ -7,6 +7,7 @@ import {
   ArrowDownLeftIcon,
   ShieldCheckIcon,
   CheckIcon,
+  LockClosedIcon,
 } from "@/components/Icons"
 
 interface AgentSettingsProps {
@@ -98,21 +99,26 @@ export function AgentSettings({
   }
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-6 shadow-sm border border-border mt-4 space-y-5">
-      <div className="flex items-center justify-between pb-3.5 border-b border-border">
+    <div className="w-full bg-surface rounded-3xl p-6 sm:p-7 border border-[#E2E2DF] card-elevation mt-4 space-y-6">
+      {/* Top Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-[#ECECE8]">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">Agent Spending Authority Controls</h3>
-          <p className="text-xs text-text-secondary mt-0.5">Policy limits and autonomous key management</p>
+          <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
+            Agent Spending Authority Controls
+          </h3>
+          <p className="text-[10px] text-text-secondary mt-0.5">
+            Owner policy boundaries, limits, and kill-switch
+          </p>
         </div>
-        <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-background rounded-full text-text-secondary border border-border/70">
-          Owner Policy
+        <span className="text-[10px] font-mono font-semibold px-2.5 py-1 bg-[#F5F5F3] rounded-full text-text-secondary border border-border">
+          Mandate v1.0
         </span>
       </div>
 
       {/* Financial Limits Section */}
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+          <span className="text-[11px] font-mono font-bold text-text-secondary uppercase tracking-wider">
             Mandate Thresholds ({currency})
           </span>
           {!editMode ? (
@@ -120,43 +126,62 @@ export function AgentSettings({
               onClick={() => setEditMode(true)}
               className="text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
             >
-              Edit Limits
+              Edit Thresholds
             </button>
           ) : (
-            <button
-              onClick={handleSaveLimits}
-              disabled={isSaving}
-              className="text-xs font-semibold text-success hover:text-success/80 transition-colors flex items-center gap-1"
-            >
-              {isSaving ? "Saving..." : (
-                <>
-                  <CheckIcon className="w-3.5 h-3.5" />
-                  <span>Save New Version</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditMode(false)}
+                className="text-xs text-text-secondary hover:text-text-primary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveLimits}
+                disabled={isSaving}
+                className="text-xs font-bold text-success hover:text-success/80 transition-colors flex items-center gap-1"
+              >
+                {isSaving ? "Saving..." : (
+                  <>
+                    <CheckIcon className="w-3.5 h-3.5" />
+                    <span>Save Mandate</span>
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
 
         {!editMode ? (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3.5 bg-background rounded-2xl border border-border/60">
-              <span className="text-[11px] text-text-secondary block font-medium">Daily Authority</span>
-              <span className="text-base font-bold text-text-primary tabular-nums mt-0.5 block">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8]">
+              <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-mono font-medium">
+                Daily Mandate Ceiling
+              </span>
+              <span className="text-xl font-extrabold text-text-primary tabular-nums mt-1 block tracking-tight">
                 {currency} {dailyLimitFormatted}
               </span>
+              <span className="text-[10px] text-text-secondary font-mono mt-1 block">
+                Ceiling across all transactions in 24h window
+              </span>
             </div>
-            <div className="p-3.5 bg-background rounded-2xl border border-border/60">
-              <span className="text-[11px] text-text-secondary block font-medium">Per-Purchase Limit</span>
-              <span className="text-base font-bold text-text-primary tabular-nums mt-0.5 block">
+
+            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8]">
+              <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-mono font-medium">
+                Per-Purchase Cap
+              </span>
+              <span className="text-xl font-extrabold text-text-primary tabular-nums mt-1 block tracking-tight">
                 {currency} {perPurchaseLimitFormatted}
+              </span>
+              <span className="text-[10px] text-text-secondary font-mono mt-1 block">
+                Single checkout ceiling before block
               </span>
             </div>
           </div>
         ) : (
-          <div className="space-y-3 p-4 bg-background rounded-2xl border border-border animate-in fade-in duration-150">
+          <div className="space-y-3.5 p-4 bg-[#F8F8F6] rounded-2xl border border-border animate-in fade-in duration-150">
             <div>
-              <label className="text-[11px] text-text-secondary font-medium block mb-1">
+              <label className="text-[11px] text-text-secondary font-medium block mb-1 font-mono">
                 New Daily Limit ({currency})
               </label>
               <input
@@ -167,8 +192,8 @@ export function AgentSettings({
               />
             </div>
             <div>
-              <label className="text-[11px] text-text-secondary font-medium block mb-1">
-                New Per-Purchase Limit ({currency})
+              <label className="text-[11px] text-text-secondary font-medium block mb-1 font-mono">
+                New Per-Purchase Cap ({currency})
               </label>
               <input
                 type="number"
@@ -181,16 +206,16 @@ export function AgentSettings({
         )}
       </div>
 
-      {/* Emergency Controls */}
-      <div className="pt-3 border-t border-border space-y-3">
-        <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider block">
+      {/* Emergency Authority Controls */}
+      <div className="pt-4 border-t border-[#ECECE8] space-y-3">
+        <span className="text-[11px] font-mono font-bold text-text-secondary uppercase tracking-wider block">
           Emergency Authority Controls
         </span>
 
         <div className="flex flex-col sm:flex-row gap-2.5">
           <button
             onClick={togglePause}
-            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-semibold border flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] ${
+            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] ${
               isPaused
                 ? "bg-success-soft text-success border-success/30 hover:bg-success/15"
                 : "bg-danger-soft text-danger border-danger/30 hover:bg-danger/15"
@@ -211,12 +236,12 @@ export function AgentSettings({
 
           <button
             onClick={handleWithdraw}
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-semibold bg-background border border-border hover:bg-neutral-100 text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
+            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-[#F8F8F6] border border-border hover:bg-[#EFEFEA] text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
           >
             {withdrawSuccess ? (
               <>
                 <CheckIcon className="w-3.5 h-3.5 text-success" />
-                <span className="text-success">Withdrawn to EOA!</span>
+                <span className="text-success">Swept to EOA!</span>
               </>
             ) : (
               <>
@@ -228,14 +253,17 @@ export function AgentSettings({
         </div>
       </div>
 
-      {/* Security Notice */}
-      <div className="p-3.5 bg-background rounded-2xl border border-border/60 text-[11px] text-text-secondary space-y-1">
-        <div className="flex items-center gap-1.5 font-semibold text-text-primary">
+      {/* Security Architecture Callout */}
+      <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] text-xs space-y-1.5">
+        <div className="flex items-center gap-2 font-bold text-text-primary">
           <ShieldCheckIcon className="w-4 h-4 text-accent" />
-          <span>Isolated Key Security</span>
+          <span>Isolated Key Architecture</span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-border text-text-secondary">
+            ERC-8004
+          </span>
         </div>
-        <p className="leading-relaxed">
-          Agent execution keys never reach browser JavaScript. Human wallet export is isolated via provider frames.
+        <p className="text-[11px] text-text-secondary leading-relaxed">
+          Agent execution private keys never touch browser memory or client-side JavaScript. Human wallet export is physically restricted behind secure provider iframe frames.
         </p>
       </div>
     </div>

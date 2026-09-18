@@ -10,14 +10,31 @@ import { AgentSettings } from "@/components/AgentSettings"
 import { ActivityItem } from "@/db/repository"
 import { OrchestratorReceipt } from "@/services/orchestrator"
 import { formatMoneyMinor } from "@/core/money"
-import { BotIcon, CheckIcon, ShieldCheckIcon } from "@/components/Icons"
+import {
+  BotIcon,
+  CheckIcon,
+  ShieldCheckIcon,
+  MurkLogoIcon,
+  LockClosedIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon,
+} from "@/components/Icons"
+
+const SUPPORTED_CURRENCIES: Record<string, { rate: number; daily: bigint; perPurchase: bigint; symbol: string }> = {
+  NGN: { rate: 1330, daily: 500000n, perPurchase: 200000n, symbol: "NGN" },
+  KES: { rate: 130, daily: 650000n, perPurchase: 250000n, symbol: "KES" },
+  BRL: { rate: 5.4, daily: 15000n, perPurchase: 6000n, symbol: "BRL" },
+  MXN: { rate: 18.5, daily: 50000n, perPurchase: 20000n, symbol: "MXN" },
+  USD: { rate: 1.0, daily: 2500n, perPurchase: 1000n, symbol: "USD" },
+}
 
 export default function MurkApp() {
   const [activeTab, setActiveTab] = useState<TabKey>("home")
-  const [currency] = useState("NGN")
+  const [currency, setCurrency] = useState("NGN")
+  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false)
   const [agentStatus, setAgentStatus] = useState<"ACTIVE" | "PAUSED">("ACTIVE")
-  const [dailyLimitMinor, setDailyLimitMinor] = useState<bigint>(500000n) // NGN 5,000.00
-  const [perPurchaseLimitMinor, setPerPurchaseLimitMinor] = useState<bigint>(200000n) // NGN 2,000.00
+  const [dailyLimitMinor, setDailyLimitMinor] = useState<bigint>(500000n) // 5,000.00
+  const [perPurchaseLimitMinor, setPerPurchaseLimitMinor] = useState<bigint>(200000n) // 2,000.00
   const [spentTodayMinor, setSpentTodayMinor] = useState<bigint>(0n)
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [walletAddress] = useState<`0x${string}`>("0xfb538BBe2e2b4BC4A53f5916f3998c7bEF6eBCE5")
@@ -39,6 +56,17 @@ export default function MurkApp() {
       .catch(() => {})
   }, [])
 
+  const handleSelectCurrency = (cur: string) => {
+    const config = SUPPORTED_CURRENCIES[cur]
+    if (config) {
+      setCurrency(cur)
+      setDailyLimitMinor(config.daily)
+      setPerPurchaseLimitMinor(config.perPurchase)
+      setSpentTodayMinor(0n)
+      setCurrencyMenuOpen(false)
+    }
+  }
+
   const handlePurchaseComplete = (receipt: OrchestratorReceipt) => {
     // If approved, update spent amount and balances
     if (receipt.policyDecision === "APPROVED") {
@@ -49,7 +77,7 @@ export default function MurkApp() {
       setBalances((prev) =>
         prev.map((b) =>
           b.symbol === "USDC"
-            ? { ...b, formattedBalance: (parseFloat(b.formattedBalance) - 1).toFixed(2) }
+            ? { ...b, formattedBalance: Math.max(0, parseFloat(b.formattedBalance) - 1).toFixed(2) }
             : b
         )
       )
@@ -80,36 +108,67 @@ export default function MurkApp() {
     setPerPurchaseLimitMinor(BigInt(Math.round(parseFloat(perPurchase) * 100)))
   }
 
+  const currentRate = SUPPORTED_CURRENCIES[currency]?.rate || 1330
+
   return (
     <div className="flex flex-col flex-1 w-full pb-28">
       {/* Top Header */}
-      <header className="flex items-center justify-between py-3.5 mb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-[#111111] text-white flex items-center justify-center font-bold text-sm tracking-wider shadow-sm border border-neutral-800">
-            M
-          </div>
+      <header className="flex items-center justify-between py-4 mb-2">
+        <div className="flex items-center gap-3">
+          <MurkLogoIcon className="w-9 h-9 rounded-2xl shadow-xs flex-shrink-0" />
           <div>
-            <div className="text-xs font-bold text-text-primary flex items-center gap-1.5">
-              <span>Research Agent</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            <div className="flex items-center gap-1.5 leading-none">
+              <span className="text-sm font-extrabold tracking-tight text-text-primary">MURK</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#EBEBE7] text-text-secondary font-bold">
+                x402
+              </span>
             </div>
-            <div className="text-[10px] text-text-secondary font-mono">0xfb53...BCE5</div>
+            <div className="text-[10px] text-text-secondary font-mono mt-1">Autonomous Spending Authority</div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Celo Mainnet Indicator */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-full border border-border text-[11px] font-medium text-text-secondary shadow-xs">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-full border border-border text-[11px] font-mono font-medium text-text-secondary shadow-xs">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-70" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
             </span>
-            <span>Celo Mainnet</span>
+            <span>Celo</span>
           </div>
 
-          {/* Currency Pill */}
-          <div className="px-3 py-1.5 bg-surface rounded-full border border-border text-[11px] font-bold text-accent shadow-xs">
-            {currency}
+          {/* Interactive Currency Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setCurrencyMenuOpen(!currencyMenuOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-[#F8F8F6] rounded-full border border-border text-[11px] font-mono font-bold text-accent shadow-xs transition-colors active:scale-95"
+              title="Change accounting currency"
+            >
+              <span>{currency}</span>
+              <ChevronDownIcon className="w-3 h-3 text-text-secondary" />
+            </button>
+
+            {currencyMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-36 bg-surface rounded-2xl shadow-lg border border-border p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="text-[9px] font-mono uppercase tracking-wider text-text-secondary px-2 py-1">
+                  Accounting Currency
+                </div>
+                {Object.keys(SUPPORTED_CURRENCIES).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => handleSelectCurrency(c)}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-mono flex items-center justify-between transition-colors ${
+                      currency === c
+                        ? "bg-accent-soft text-accent font-bold"
+                        : "text-text-primary hover:bg-[#F8F8F6]"
+                    }`}
+                  >
+                    <span>{c}</span>
+                    {currency === c && <CheckIcon className="w-3 h-3 text-accent" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -128,6 +187,8 @@ export default function MurkApp() {
           <AgentFunds
             walletAddress={walletAddress}
             balances={balances}
+            currency={currency}
+            exchangeRatePerUsd={currentRate}
           />
 
           <PurchaseRunner
@@ -143,29 +204,40 @@ export default function MurkApp() {
 
       {activeTab === "agents" && (
         <main className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-surface rounded-3xl p-6 sm:p-7 border border-[#E2E2DF] card-elevation">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#ECECE8]">
               <div>
-                <h2 className="text-sm font-bold text-text-primary">Autonomous Agents</h2>
-                <p className="text-xs text-text-secondary mt-0.5">Configured agents with spending authority</p>
+                <h2 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
+                  Registered Autonomous Agents
+                </h2>
+                <p className="text-[10px] text-text-secondary mt-0.5">
+                  Governed agents with cryptographic EIP-712 spending mandates
+                </p>
               </div>
-              <span className="text-[11px] px-2.5 py-0.5 bg-background rounded-full text-text-secondary font-medium border border-border/60">
-                1 Registered
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-1 bg-[#F5F5F3] rounded-full text-text-secondary border border-border">
+                1 Active
               </span>
             </div>
 
-            <div className="p-4 bg-background rounded-2xl border border-border/80 space-y-3.5">
+            {/* Agent Identity Card */}
+            <div className="p-5 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] space-y-4">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-surface border border-border flex items-center justify-center text-text-primary">
-                    <BotIcon className="w-5 h-5 text-accent" />
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-surface border border-[#E0E0DC] flex items-center justify-center text-text-primary shadow-xs">
+                    <BotIcon className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-text-primary">Research Agent</div>
-                    <div className="text-[10px] text-text-secondary font-mono">ERC-8004: 8004_murk_research_01</div>
+                    <div className="text-sm font-bold text-text-primary flex items-center gap-2">
+                      <span>Research Agent</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    </div>
+                    <div className="text-[10px] text-text-secondary font-mono mt-0.5">
+                      ERC-8004 ID: 8004_murk_research_01
+                    </div>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+
+                <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full border ${
                   agentStatus === "ACTIVE"
                     ? "bg-success-soft text-success border-success/30"
                     : "bg-danger-soft text-danger border-danger/30"
@@ -174,14 +246,30 @@ export default function MurkApp() {
                 </span>
               </div>
 
-              <div className="pt-3 border-t border-border/60 text-xs grid grid-cols-2 gap-2 text-text-secondary">
-                <div>
-                  <span className="text-[10px] block text-text-secondary">Daily Authority</span>
-                  <strong className="text-text-primary font-mono text-xs">{currency} {formatMoneyMinor(dailyLimitMinor, 2)}</strong>
+              {/* Policy Parameters Matrix */}
+              <div className="pt-3 border-t border-[#ECECE8] text-xs grid grid-cols-2 gap-3 text-text-secondary font-mono">
+                <div className="p-3 bg-surface rounded-xl border border-[#ECECE8]">
+                  <span className="text-[10px] block text-text-secondary uppercase">24h Spending Ceiling</span>
+                  <strong className="text-text-primary text-sm font-bold mt-0.5 block">
+                    {currency} {formatMoneyMinor(dailyLimitMinor, 2)}
+                  </strong>
                 </div>
-                <div>
-                  <span className="text-[10px] block text-text-secondary">Per-Purchase Limit</span>
-                  <strong className="text-text-primary font-mono text-xs">{currency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}</strong>
+                <div className="p-3 bg-surface rounded-xl border border-[#ECECE8]">
+                  <span className="text-[10px] block text-text-secondary uppercase">Per-Transaction Cap</span>
+                  <strong className="text-text-primary text-sm font-bold mt-0.5 block">
+                    {currency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Security Boundary Specification */}
+              <div className="pt-2 text-[11px] text-text-secondary space-y-1 font-mono">
+                <div className="flex items-center gap-1.5 text-text-primary font-medium">
+                  <ShieldCheckIcon className="w-3.5 h-3.5 text-accent" />
+                  <span>Execution Isolation: Validated</span>
+                </div>
+                <div className="text-[10px] text-text-secondary">
+                  Execution Key: <span className="text-text-primary">{walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}</span>
                 </div>
               </div>
             </div>
@@ -191,13 +279,7 @@ export default function MurkApp() {
 
       {activeTab === "activity" && (
         <main className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm">
-            <h2 className="text-sm font-bold text-text-primary mb-0.5">Audit Ledger & Activity</h2>
-            <p className="text-xs text-text-secondary mb-4">
-              Deterministic records of all approved, blocked, and settled agent operations.
-            </p>
-            <ActivityList items={activity} />
-          </div>
+          <ActivityList items={activity} />
         </main>
       )}
 

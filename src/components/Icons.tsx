@@ -318,3 +318,115 @@ export function ArrowPathIcon({ className = "w-4 h-4", ...props }: IconProps) {
     </svg>
   )
 }
+
+export function ExternalLinkIcon({ className = "w-3.5 h-3.5", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
+}
+
+export function ChevronRightIcon({ className = "w-4 h-4", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
+export function TerminalIcon({ className = "w-4 h-4", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <polyline points="4 17 10 11 4 5" />
+      <line x1="12" y1="19" x2="20" y2="19" />
+    </svg>
+  )
+}
+
+export function MurkLogoIcon({ className = "w-6 h-6", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <rect width="32" height="32" rx="8" fill="#111111" />
+      <path
+        d="M8 23V9L16 16.5L24 9V23M16 16.5V23"
+        stroke="#FFFFFF"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="16" cy="16.5" r="1.5" fill="#2F9CF4" />
+    </svg>
+  )
+}
+
+export function UsdcIcon({ className = "w-4 h-4", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" fill="#2775CA" />
+      <path
+        d="M12.75 6.5V8.05C14.4 8.35 15.4 9.4 15.4 10.85H13.65C13.65 10.05 13.05 9.45 12 9.45C10.95 9.45 10.35 9.95 10.35 10.7C10.35 11.4 10.9 11.75 12.3 12.15C14.15 12.65 15.5 13.35 15.5 15.05C15.5 16.5 14.35 17.55 12.75 17.85V19.5H11.25V17.85C9.5 17.55 8.5 16.4 8.5 14.9H10.25C10.25 15.85 10.95 16.45 12 16.45C13.1 16.45 13.75 15.9 13.75 15.1C13.75 14.3 13.15 13.9 11.7 13.5C9.9 12.95 8.6 12.3 8.6 10.65C8.6 9.25 9.7 8.3 11.25 8.05V6.5H12.75Z"
+        fill="white"
+      />
+    </svg>
+  )
+}
+
+export function UsdtIcon({ className = "w-4 h-4", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" fill="#26A17B" />
+      <path
+        d="M14.5 9H9.5V7.5H14.5V9ZM13.5 13.25C13.35 13.3 12.8 13.45 12 13.45C11.2 13.45 10.65 13.3 10.5 13.25V17H8.5V12.75C9.4 13.05 10.6 13.2 12 13.2C13.4 13.2 14.6 13.05 15.5 12.75V17H13.5V13.25ZM16.5 11.5C16.5 12.5 14.5 13.35 12 13.35C9.5 13.35 7.5 12.5 7.5 11.5C7.5 10.5 9.5 9.65 12 9.65C14.5 9.65 16.5 10.5 16.5 11.5Z"
+        fill="white"
+      />
+    </svg>
+  )
+}
