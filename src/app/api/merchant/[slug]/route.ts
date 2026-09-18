@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         resourceId: `res_${slug}_2026`,
         accessGranted: true,
         deliveredAt: new Date().toISOString(),
-        content: "Verified paid machine intelligence data delivered over Celo x402 protocol.",
+        content: "Development fixture content. No settlement is verified by this route.",
       },
     })
   }
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     status: 402,
     headers: {
       "Content-Type": "application/json",
-      "WWW-Authenticate": `x402 token="USDC", network=CELO_CAIP2, amount="${amountRaw}"`,
+      "WWW-Authenticate": `x402 token="USDC", network="${CELO_CAIP2}", amount="${amountRaw}"`,
     },
   })
 }
