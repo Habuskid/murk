@@ -147,6 +147,7 @@ export function UiSandbox({
 
             <PurchaseRunner
               agentId="sandbox_agent"
+              agentStatus={paused ? "PAUSED" : "ACTIVE"}
               accountingCurrency="NGN"
               perPurchaseLimitFormatted="2,000.00"
               onPurchaseComplete={() => undefined}
