@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { parseUnits } from "viem"
-import { usePortalWallet } from "@/components/MurkPortalProvider"
+import { useMurkWallet } from "@/components/MurkWalletProvider"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
   CELO_EXPLORER_URL,
@@ -33,25 +33,6 @@ interface AgentFundsProps {
   onBalancesChanged?: () => Promise<void> | void
 }
 
-function normalizeTxHash(result: unknown): `0x${string}` {
-  if (typeof result === "string" && /^0x[a-fA-F0-9]{64}$/.test(result)) {
-    return result as `0x${string}`
-  }
-
-  if (result && typeof result === "object") {
-    const maybe = result as {
-      txHash?: unknown
-      data?: { txHash?: unknown }
-    }
-    const value = maybe.txHash ?? maybe.data?.txHash
-    if (typeof value === "string" && /^0x[a-fA-F0-9]{64}$/.test(value)) {
-      return value as `0x${string}`
-    }
-  }
-
-  throw new Error("PORTAL_TRANSACTION_HASH_MISSING")
-}
-
 function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
@@ -62,8 +43,12 @@ export function AgentFunds({
   balances,
   onBalancesChanged,
 }: AgentFundsProps) {
-  const { portal, walletAddress: userWalletAddress, isReady, error: portalError } =
-    usePortalWallet()
+  const {
+    sendTransaction,
+    walletAddress: userWalletAddress,
+    isReady,
+    error: walletError,
+  } = useMurkWallet()
 
   const [copied, setCopied] = useState(false)
   const [activeAction, setActiveAction] = useState<"fund" | "withdraw" | null>(null)
@@ -138,8 +123,8 @@ export function AgentFunds({
   }
 
   const handleFund = async () => {
-    if (!portal || !isReady || !userWalletAddress) {
-      setFundingError("Portal wallet is not ready.")
+    if (!isReady || !userWalletAddress) {
+      setFundingError("Privy wallet is not ready.")
       return
     }
 
@@ -183,14 +168,10 @@ export function AgentFunds({
         )
       }
 
-      const result = await portal.request({
-        chainId: prepared.chainId,
-        method: "eth_sendTransaction",
-        params: [prepared.transaction],
-        signatureApprovalMemo: `Fund Murk agent with ${amount.trim()} ${assetSymbol}`,
-      })
-
-      const txHash = normalizeTxHash(result)
+      const txHash = await sendTransaction(
+        prepared.transaction,
+        `Fund Murk agent with ${amount.trim()} ${assetSymbol}`
+      )
       setLastTxHash(txHash)
       setFundingState("CONFIRMING")
 
@@ -208,7 +189,7 @@ export function AgentFunds({
 
   const handleWithdraw = async () => {
     if (!userWalletAddress) {
-      setWithdrawalError("Portal wallet is not ready.")
+      setWithdrawalError("Privy wallet is not ready.")
       return
     }
 
@@ -375,7 +356,7 @@ export function AgentFunds({
       {activeAction === "fund" && (
         <div className="mt-4 border-t border-border pt-4">
           <div className="text-xs font-semibold text-text-primary">
-            Add from Portal wallet
+            Add from your wallet
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
             Murk activates funds only after the Celo transfer is confirmed.
@@ -412,7 +393,7 @@ export function AgentFunds({
             className="mt-2.5 flex h-11 w-full items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {fundingState === "SIGNING"
-              ? "Approve in Portal…"
+              ? "Approve in wallet…"
               : fundingState === "CONFIRMING"
                 ? "Confirming on Celo…"
                 : fundingState === "CONFIRMED"
@@ -420,9 +401,9 @@ export function AgentFunds({
                   : "Confirm add funds"}
           </button>
 
-          {(portalError || fundingError) && (
+          {(walletError || fundingError) && (
             <div className="mt-2 text-[11px] text-danger">
-              {fundingError || portalError}
+              {fundingError || walletError}
             </div>
           )}
 
@@ -442,7 +423,7 @@ export function AgentFunds({
       {activeAction === "withdraw" && (
         <div className="mt-4 border-t border-border pt-4">
           <div className="text-xs font-semibold text-text-primary">
-            Return to your Portal wallet
+            Return to your wallet
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
             The destination is fixed to your authenticated wallet.
