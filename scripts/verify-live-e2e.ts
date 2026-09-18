@@ -31,8 +31,8 @@ async function main() {
   requireEnv("CELO_RPC_URL")
   requireEnv("PUBLIC_APP_ORIGIN")
   const internalAgentId = requireEnv("LIVE_AGENT_ID")
-  const expectedPortalWallet = requireEnv(
-    "PORTAL_USER_WALLET_VERIFIED_ADDRESS"
+  const expectedUserWallet = requireEnv(
+    "USER_WALLET_VERIFIED_ADDRESS"
   )
   const attributionCode = getConfiguredAttributionCode()
   expect(attributionCode, "CELO_ATTRIBUTION_CODE is required")
@@ -43,11 +43,11 @@ async function main() {
   const agent = await repository.findAgentById(internalAgentId)
   expect(agent, "LIVE_AGENT_NOT_FOUND")
 
-  const portalWallet = await repository.findUserWallet(agent.ownerUserId)
-  expect(portalWallet, "PORTAL_WALLET_NOT_PERSISTED")
+  const userWallet = await repository.findUserWallet(agent.ownerUserId)
+  expect(userWallet, "USER_WALLET_NOT_PERSISTED")
   expect(
-    normalize(portalWallet.address) === normalize(expectedPortalWallet),
-    "PORTAL_WALLET_ADDRESS_MISMATCH"
+    normalize(userWallet.address) === normalize(expectedUserWallet),
+    "USER_WALLET_ADDRESS_MISMATCH"
   )
   expect(agent.walletAddress, "AGENT_EXECUTION_WALLET_MISSING")
 
@@ -77,7 +77,7 @@ async function main() {
     hasExactErc20Transfer({
       logs: fundingReceipt.logs,
       tokenAddress: fundingTx.assetAddress as `0x${string}`,
-      expectedFrom: portalWallet.address,
+      expectedFrom: userWallet.address,
       expectedTo: agent.walletAddress,
       expectedAmount: fundingTx.amountRaw,
     }),
@@ -271,7 +271,7 @@ async function main() {
   expect(agent.erc8004AgentId, "ERC8004_AGENT_ID_NOT_PERSISTED")
   const erc8004Status = await getErc8004Status({
     agentId: BigInt(agent.erc8004AgentId),
-    expectedOwner: portalWallet.address,
+    expectedOwner: userWallet.address,
     expectedAgentWallet: agent.walletAddress,
   })
 
@@ -282,7 +282,7 @@ async function main() {
   const identityTransactions = await db
     .select()
     .from(schema.transactions)
-    .where(eq(schema.transactions.walletId, portalWallet.id))
+    .where(eq(schema.transactions.walletId, userWallet.id))
     .orderBy(desc(schema.transactions.confirmedAt))
 
   const registerTx = identityTransactions.find(
@@ -343,7 +343,7 @@ async function main() {
     agent: {
       internalId: agent.id,
       executionWallet: agent.walletAddress,
-      portalOwnerWallet: portalWallet.address,
+      humanOwnerWallet: userWallet.address,
       erc8004AgentId: agent.erc8004AgentId,
     },
     funding: {
