@@ -1,8 +1,8 @@
 /**
  * API security-boundary tests.
  *
- * Live authenticated-route behavior depends on CDP access-token validation and
- * is covered by the browser/live integration gate. Unit tests here assert that
+ * Live authenticated-route behavior depends on the signed Portal-backed Murk
+ * session and is covered by the browser/live integration gate. Unit tests here assert that
  * protected data and money-moving endpoints fail closed without authentication.
  */
 
@@ -23,7 +23,11 @@ import { GET as activityGet } from "../src/app/api/activity/route"
 
 function request(
   path: string,
-  init: RequestInit = {}
+  init: {
+    method?: string
+    headers?: HeadersInit
+    body?: BodyInit | null
+  } = {}
 ): NextRequest {
   return new NextRequest(`http://localhost:3000${path}`, init)
 }
@@ -90,7 +94,7 @@ describe("API security boundary", () => {
   })
 
   it("protects pause and resume controls", async () => {
-    const context = { params: { id: "agent_demo_01" } }
+    const context = { params: Promise.resolve({ id: "agent_demo_01" }) }
 
     await expectUnauthorized(
       await agentPausePost(
@@ -107,7 +111,7 @@ describe("API security boundary", () => {
   })
 
   it("protects all money-moving routes before parsing financial payloads", async () => {
-    const context = { params: { id: "agent_demo_01" } }
+    const context = { params: Promise.resolve({ id: "agent_demo_01" }) }
 
     await expectUnauthorized(
       await agentFundPost(
@@ -161,13 +165,13 @@ describe("API security boundary", () => {
 
     await expectUnauthorized(
       await purchasesDetailGet(request("/api/purchases/pur_01"), {
-        params: { id: "pur_01" },
+        params: Promise.resolve({ id: "pur_01" }),
       })
     )
 
     await expectUnauthorized(
       await purchaseReceiptGet(request("/api/purchases/pur_01/receipt"), {
-        params: { id: "pur_01" },
+        params: Promise.resolve({ id: "pur_01" }),
       })
     )
   })
