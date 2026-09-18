@@ -131,19 +131,39 @@ describe("onchain integrity", () => {
 
   it("uses only verified fee configuration for the active Celo network", () => {
     const usdc = CELO_TOKENS.USDC
-    expect(usdc).not.toBeNull()
-    if (!usdc) throw new Error("USDC_CONFIG_MISSING")
+    const usdt = CELO_TOKENS.USDT
+
+    expect(usdc.decimals).toBe(6)
+    expect(usdt.decimals).toBe(6)
+    expect(usdc.feeCurrencyAddress).not.toBe(usdc.address)
+    expect(usdt.feeCurrencyAddress).not.toBe(usdt.address)
 
     if (IS_CELO_SEPOLIA) {
-      expect(usdc.feeCurrencyAddress).toBeNull()
-      expect(CELO_TOKENS.USDT).toBeNull()
+      expect(usdc.address).toBe(
+        "0x01C5C0122039549AD1493B8220cABEdD739BC44E"
+      )
+      expect(usdc.feeCurrencyAddress).toBe(
+        "0xbf1441Ea57f43f35f713431001f35742c88071c7"
+      )
+      expect(usdt.address).toBe(
+        "0xd077A400968890Eacc75cdc901F0356c943e4fDb"
+      )
+      expect(usdt.feeCurrencyAddress).toBe(
+        "0xe19447B12cb0d0220B2a501D8382be2f61CcF92a"
+      )
     } else {
-      const usdt = CELO_TOKENS.USDT
-      expect(usdt).not.toBeNull()
-      if (!usdt) throw new Error("MAINNET_USDT_CONFIG_MISSING")
-
-      expect(usdc.feeCurrencyAddress).not.toBe(usdc.address)
-      expect(usdt.feeCurrencyAddress).not.toBe(usdt.address)
+      expect(usdc.address).toBe(
+        "0xcebA9300f2b948710d2653dD7B07f33A8B32118C"
+      )
+      expect(usdc.feeCurrencyAddress).toBe(
+        "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B"
+      )
+      expect(usdt.address).toBe(
+        "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
+      )
+      expect(usdt.feeCurrencyAddress).toBe(
+        "0x0E2A3e05bc9A16F5292A6170456A710cb89C6f72"
+      )
     }
 
     expect(tokenRawToFeeUnits(1_000_000n, 6)).toBe(
