@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react"
 import { Navigation, TabKey } from "@/components/Navigation"
+import { AuthGate } from "@/components/AuthGate"
 import { HeroMandate } from "@/components/HeroMandate"
 import { AgentFunds } from "@/components/AgentFunds"
 import { PurchaseRunner } from "@/components/PurchaseRunner"
@@ -43,7 +44,7 @@ type BalanceApiItem = {
 
 const DEMO_AGENT_ID = "agent_demo_01"
 
-export default function MurkApp() {
+function MurkWalletApp() {
   const [activeTab, setActiveTab] = useState<TabKey>("home")
   const [agent, setAgent] = useState<AgentApiState | null>(null)
   const [balances, setBalances] = useState<BalanceApiItem[]>([])
@@ -287,5 +288,14 @@ export default function MurkApp() {
 
       <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
     </div>
+  )
+}
+
+
+export default function MurkApp() {
+  return (
+    <AuthGate>
+      <MurkWalletApp />
+    </AuthGate>
   )
 }
