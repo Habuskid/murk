@@ -8,8 +8,6 @@ import {
   http,
   parseAbi,
   formatUnits,
-  encodePacked,
-  keccak256,
 } from "viem"
 import { celo } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
@@ -46,16 +44,6 @@ export function getCeloClient() {
     chain: celo,
     transport: http(CELO_RPC_URL),
   })
-}
-
-/**
- * ERC-8021 Builder Attribution Helper
- * Centralizes attribution tagging at transaction construction boundary.
- */
-export function getBuilderAttributionSuffix(): `0x${string}` {
-  // Protocol builder identifier hash
-  const tag = "murk-agent-authority-v1"
-  return keccak256(encodePacked(["string"], [tag]))
 }
 
 /**
