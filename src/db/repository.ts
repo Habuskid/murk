@@ -688,6 +688,61 @@ class PersistentRepository {
       .onConflictDoNothing()
   }
 
+  async claimIdempotencyKey(input: {
+    key: string
+    operation: string
+    resourceId: string
+    requestHash: string
+    resultReference: string
+    expiresAt?: Date
+  }): Promise<
+    | { status: "CLAIMED" }
+    | { status: "REPLAY"; result: unknown }
+    | { status: "IN_PROGRESS" }
+    | { status: "CONFLICT" }
+  > {
+    const db = getDb()
+
+    const inserted = await db
+      .insert(schema.idempotencyKeys)
+      .values({
+        key: input.key,
+        operation: input.operation,
+        resourceId: input.resourceId,
+        requestHash: input.requestHash,
+        resultReference: input.resultReference,
+        resultJson: null,
+        createdAt: new Date(),
+        expiresAt: input.expiresAt || null,
+      })
+      .onConflictDoNothing()
+      .returning({ key: schema.idempotencyKeys.key })
+
+    if (inserted.length > 0) {
+      return { status: "CLAIMED" }
+    }
+
+    const [existing] = await db
+      .select()
+      .from(schema.idempotencyKeys)
+      .where(eq(schema.idempotencyKeys.key, input.key))
+      .limit(1)
+
+    if (!existing) {
+      throw new Error("IDEMPOTENCY_CLAIM_LOST")
+    }
+
+    if (existing.requestHash !== input.requestHash) {
+      return { status: "CONFLICT" }
+    }
+
+    if (existing.resultJson !== null && existing.resultJson !== undefined) {
+      return { status: "REPLAY", result: existing.resultJson }
+    }
+
+    return { status: "IN_PROGRESS" }
+  }
+
   async getIdempotencyResult(
     key: string,
     requestHash?: string
@@ -736,7 +791,14 @@ class PersistentRepository {
         createdAt: new Date(),
         expiresAt: input.expiresAt || null,
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: schema.idempotencyKeys.key,
+        set: {
+          resultJson: input.result,
+          resultReference: input.resultReference,
+          expiresAt: input.expiresAt || null,
+        },
+      })
   }
 
   async reserveSpend(input: {
