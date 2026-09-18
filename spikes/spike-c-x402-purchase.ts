@@ -11,6 +11,98 @@
 
 import { requestResource } from "../src/services/x402"
 
+
+export type X402PaymentRequirement = {
+  version: number
+  scheme: string
+  network: string
+  chainId: number
+  assetAddress: `0x${string}`
+  amountRaw: bigint
+  payTo: `0x${string}`
+  extra?: Record<string, unknown>
+}
+
+export type X402ChallengeResponse = {
+  status: 402
+  requirements: X402PaymentRequirement[]
+  rawHeaders: Record<string, string>
+  rawBody: unknown
+}
+
+/**
+ * Pure legacy/body parser retained only for malformed-input hardening tests.
+ * It is not used as live spike evidence.
+ */
+export function parseX402Response(
+  status: number,
+  headers: Headers,
+  body: any
+): X402ChallengeResponse {
+  if (status !== 402) {
+    throw new Error(`Expected HTTP status 402, got ${status}`)
+  }
+
+  const rawHeaders: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    rawHeaders[key.toLowerCase()] = value
+  })
+
+  const candidates = Array.isArray(body?.accepts) ? body.accepts : [body]
+  const requirements: X402PaymentRequirement[] = []
+
+  for (const item of candidates) {
+    if (!item) continue
+
+    const network = String(item.network || body?.network || "")
+    const assetAddress = item.asset || item.token || body?.asset || body?.token
+    const payTo = item.payTo || item.recipient || body?.payTo || body?.recipient
+    const amount = item.amount ?? item.value ?? body?.amount ?? body?.value
+
+    if (!assetAddress || !payTo || amount === undefined || amount === null) {
+      continue
+    }
+
+    let chainId = 0
+    if (network.startsWith("eip155:")) {
+      chainId = Number(network.slice("eip155:".length))
+    }
+
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      continue
+    }
+
+    let amountRaw: bigint
+    try {
+      amountRaw = BigInt(amount)
+    } catch {
+      continue
+    }
+
+    if (amountRaw <= 0n) {
+      continue
+    }
+
+    requirements.push({
+      version: Number(body?.x402Version || item?.x402Version || 1),
+      scheme: String(item.scheme || body?.scheme || "exact"),
+      network,
+      chainId,
+      assetAddress: assetAddress as `0x${string}`,
+      amountRaw,
+      payTo: payTo as `0x${string}`,
+      extra: item.extra || body?.extra,
+    })
+  }
+
+  return {
+    status: 402,
+    requirements,
+    rawHeaders,
+    rawBody: body,
+  }
+}
+
 export const X402_FACILITATOR_URL =
   process.env.X402_FACILITATOR_URL || "https://api.x402.celo.org"
 
