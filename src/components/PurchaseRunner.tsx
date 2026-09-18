@@ -83,33 +83,33 @@ export function PurchaseRunner({
   }
 
   return (
-    <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-[#EAEAE7] card-elevation mt-4 transition-all">
+    <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-border card-elevation mt-4 transition-all">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#EAEAE7]">
+      <div className="flex items-center justify-between pb-4 border-b border-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#111111] text-white flex items-center justify-center">
-            <TerminalIcon className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-xl bg-surface-hover border border-border text-text-primary flex items-center justify-center">
+            <TerminalIcon className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#111111]">
+            <h3 className="text-sm font-bold text-text-primary">
               Autonomous Execution Studio
             </h3>
-            <p className="text-xs text-[#767676] mt-0.5">
+            <p className="text-xs text-text-secondary mt-0.5">
               Deterministic x402 protocol testing and mandate verification
             </p>
           </div>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F7F7F5] text-[#767676] border border-[#EAEAE7]">
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-inset text-text-secondary border border-border">
           Celo (42220)
         </span>
       </div>
 
       {/* Scenario Segmented Selector */}
       <div className="mt-4">
-        <label className="text-xs font-semibold text-[#767676] block mb-2">
+        <label className="text-xs font-semibold text-text-secondary block mb-2">
           Select Test Scenario
         </label>
-        <div className="grid grid-cols-2 gap-2 p-1.5 bg-[#F5F5F3] rounded-2xl border border-[#EAEAE7]">
+        <div className="grid grid-cols-2 gap-2 p-1.5 bg-surface-inset rounded-2xl border border-border">
           <button
             type="button"
             onClick={() => {
@@ -120,15 +120,15 @@ export function PurchaseRunner({
             }}
             className={`p-3.5 rounded-xl text-left transition-all duration-150 ${
               selectedScenario === "valid"
-                ? "bg-surface shadow-xs text-[#111111] border border-[#EAEAE7]"
-                : "text-[#767676] hover:text-[#111111]"
+                ? "bg-surface shadow-xs text-text-primary border border-border"
+                : "text-text-secondary hover:text-text-primary"
             }`}
           >
             <div className="flex items-center gap-1.5 text-xs font-bold">
               <BoltIcon className="w-3.5 h-3.5 text-accent" />
               <span>Approved (1 USDC)</span>
             </div>
-            <span className="text-xs text-[#767676] block mt-1">
+            <span className="text-xs text-text-secondary block mt-1">
               Within {accountingCurrency} {perPurchaseLimitFormatted}
             </span>
           </button>
@@ -143,15 +143,15 @@ export function PurchaseRunner({
             }}
             className={`p-3.5 rounded-xl text-left transition-all duration-150 ${
               selectedScenario === "blocked"
-                ? "bg-surface shadow-xs text-[#111111] border border-[#EAEAE7]"
-                : "text-[#767676] hover:text-[#111111]"
+                ? "bg-surface shadow-xs text-text-primary border border-border"
+                : "text-text-secondary hover:text-text-primary"
             }`}
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-danger">
               <ShieldAlertIcon className="w-3.5 h-3.5 text-danger" />
               <span>Blocked (2 USDC)</span>
             </div>
-            <span className="text-xs text-[#767676] block mt-1">
+            <span className="text-xs text-text-secondary block mt-1">
               Exceeds {accountingCurrency} {perPurchaseLimitFormatted}
             </span>
           </button>
@@ -159,21 +159,21 @@ export function PurchaseRunner({
       </div>
 
       {/* Target Resource Inspector Card */}
-      <div className="mt-3.5 p-4 bg-[#F7F7F5] rounded-2xl border border-[#EAEAE7] text-xs space-y-2">
+      <div className="mt-3.5 p-4 bg-surface-inset rounded-2xl border border-border text-xs space-y-2">
         <div className="flex justify-between">
-          <span className="text-[#767676]">Target Resource:</span>
-          <span className="text-[#111111] font-mono text-[11px] font-medium">
+          <span className="text-text-secondary">Target Resource:</span>
+          <span className="text-text-primary font-mono text-[11px] font-medium">
             {isBlocked ? "/api/merchant/expensive-report" : "/api/merchant/dataset"}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#767676]">Merchant Cost:</span>
-          <span className="text-[#111111] font-bold tabular-nums">
+          <span className="text-text-secondary">Merchant Cost:</span>
+          <span className="text-text-primary font-bold tabular-nums">
             {isBlocked ? "2.00 USDC (~NGN 2,660.00)" : "1.00 USDC (~NGN 1,330.00)"}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-[#767676]">Expected Outcome:</span>
+          <span className="text-text-secondary">Expected Outcome:</span>
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
             isBlocked ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
           }`}>
@@ -209,7 +209,7 @@ export function PurchaseRunner({
 
       {/* Step Progress Timeline */}
       {isRunning && (
-        <div className="mt-4 p-4 bg-[#F7F7F5] rounded-2xl border border-[#EAEAE7] animate-in fade-in duration-200">
+        <div className="mt-4 p-4 bg-surface-inset rounded-2xl border border-border animate-in fade-in duration-200">
           <div className="space-y-3">
             {WORKFLOW_STEPS.map((step, idx) => {
               const isCurrent = currentStepIndex === idx
@@ -223,7 +223,7 @@ export function PurchaseRunner({
                         ? "bg-success text-white shadow-xs"
                         : isCurrent
                         ? "bg-accent text-white shadow-xs ring-2 ring-accent/30 animate-pulse"
-                        : "bg-[#EAEAE6] text-text-secondary"
+                        : "bg-surface-hover text-text-secondary border border-border"
                     }`}
                   >
                     {isPassed ? <CheckIcon className="w-3 h-3 text-white" /> : idx + 1}
@@ -251,11 +251,11 @@ export function PurchaseRunner({
         <div
           className={`mt-5 p-5 rounded-2xl border transition-all ${
             activeReceipt.policyDecision === "APPROVED"
-              ? "bg-[#EDF8F2]/60 border-[#228B5A]/30"
-              : "bg-[#FCEEEE]/60 border-[#D64545]/30"
+              ? "bg-success-soft/70 border-success/30"
+              : "bg-danger-soft/70 border-danger/30"
           }`}
         >
-          <div className="flex items-center justify-between pb-3.5 border-b border-[#EAEAE7]">
+          <div className="flex items-center justify-between pb-3.5 border-b border-border">
             <div>
               <div className="flex items-center gap-1.5">
                 {activeReceipt.policyDecision === "APPROVED" ? (
@@ -273,18 +273,18 @@ export function PurchaseRunner({
                     : "Spend Blocked By Policy"}
                 </span>
               </div>
-              <div className="text-2xl font-extrabold text-[#111111] tabular-nums mt-1">
+              <div className="text-2xl font-extrabold text-text-primary tabular-nums mt-1">
                 {activeReceipt.accountingCurrency} {activeReceipt.accountingValueFormatted}
               </div>
             </div>
 
             <div className="text-right">
-              <span className="text-xs font-bold text-[#111111] block tabular-nums">
+              <span className="text-xs font-bold text-text-primary block tabular-nums">
                 {activeReceipt.policyDecision === "APPROVED"
                   ? `${activeReceipt.settlementAmountFormatted} ${activeReceipt.settlementAsset}`
                   : "0 Gas / 0 USDC"}
               </span>
-              <span className="text-xs text-[#767676]">
+              <span className="text-xs text-text-secondary">
                 {activeReceipt.policyDecision === "APPROVED" ? "Gas Sponsored" : "Protected"}
               </span>
             </div>
@@ -302,25 +302,25 @@ export function PurchaseRunner({
           <div className="mt-3.5">
             <button
               onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-              className="text-xs font-semibold text-[#767676] hover:text-[#111111] flex items-center gap-1.5 transition-colors"
+              className="text-xs font-semibold text-text-secondary hover:text-text-primary flex items-center gap-1.5 transition-colors"
             >
               <span>{showTechnicalDetails ? "Hide cryptographic voucher" : "Inspect cryptographic voucher"}</span>
               {showTechnicalDetails ? (
-                <ChevronUpIcon className="w-3.5 h-3.5 text-[#767676]" />
+                <ChevronUpIcon className="w-3.5 h-3.5 text-text-secondary" />
               ) : (
-                <ChevronDownIcon className="w-3.5 h-3.5 text-[#767676]" />
+                <ChevronDownIcon className="w-3.5 h-3.5 text-text-secondary" />
               )}
             </button>
 
             {showTechnicalDetails && (
-              <div className="mt-3 p-4 bg-surface rounded-xl border border-[#EAEAE7] text-xs space-y-2 text-[#767676] animate-in fade-in duration-150">
+              <div className="mt-3 p-4 bg-surface rounded-xl border border-border text-xs space-y-2 text-text-secondary animate-in fade-in duration-150">
                 <div className="flex justify-between">
                   <span>Purchase ID:</span>
-                  <span className="text-[#111111] font-mono text-[11px] font-medium">{activeReceipt.purchaseId}</span>
+                  <span className="text-text-primary font-mono text-[11px] font-medium">{activeReceipt.purchaseId}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Network:</span>
-                  <span className="text-[#111111] font-medium">{activeReceipt.network}</span>
+                  <span className="text-text-primary font-medium">{activeReceipt.network}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>TX Hash:</span>
@@ -335,20 +335,20 @@ export function PurchaseRunner({
                       <ExternalLinkIcon className="w-3 h-3" />
                     </a>
                   ) : (
-                    <span className="text-[#767676]">Blocked Before Signing (0 on-chain TX)</span>
+                    <span className="text-text-secondary">Blocked Before Signing (0 on-chain TX)</span>
                   )}
                 </div>
                 <div className="flex justify-between">
                   <span>Rate Oracle:</span>
-                  <span className="text-[#111111] font-medium">{activeReceipt.rateSource}</span>
+                  <span className="text-text-primary font-medium">{activeReceipt.rateSource}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Quote Ratio:</span>
-                  <span className="text-[#111111] font-medium">{activeReceipt.rateNumerator}/{activeReceipt.rateDenominator}</span>
+                  <span className="text-text-primary font-medium">{activeReceipt.rateNumerator}/{activeReceipt.rateDenominator}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Remaining Daily Mandate:</span>
-                  <span className="text-[#111111] font-bold tabular-nums">{activeReceipt.accountingCurrency} {activeReceipt.remainingMandateFormatted}</span>
+                  <span className="text-text-primary font-bold tabular-nums">{activeReceipt.accountingCurrency} {activeReceipt.remainingMandateFormatted}</span>
                 </div>
               </div>
             )}
