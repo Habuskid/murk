@@ -44,3 +44,15 @@ body {
   box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.28), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
 }
 
+/* Reference image hatched progress bar */
+.hatched-bar {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #DCDCD8,
+    #DCDCD8 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+

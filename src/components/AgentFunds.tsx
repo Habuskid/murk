@@ -42,12 +42,12 @@ export function AgentFunds({
   const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-6 border border-[#E2E2DF] card-elevation mt-4 transition-all">
+    <div className="w-full bg-surface rounded-[28px] p-6 border border-[#E8E8E5] card-elevation mt-4 transition-all">
       {/* Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#ECECE8]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-[#F0F0EE] flex items-center justify-center text-text-primary">
-            <WalletIcon className="w-3.5 h-3.5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#F0F0EE]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#F8F8F6] border border-[#E8E8E5] flex items-center justify-center text-text-primary">
+            <WalletIcon className="w-4 h-4 text-accent" />
           </div>
           <div>
             <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
@@ -97,7 +97,7 @@ export function AgentFunds({
           return (
             <div
               key={token.symbol}
-              className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] hover:border-border transition-all flex flex-col justify-between"
+              className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5] hover:border-border transition-all flex flex-col justify-between"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export function AgentFunds({
                     <span className="text-[10px] text-text-secondary font-mono">Celo Mainnet</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-surface rounded-md border border-[#ECECE8] text-text-secondary">
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-surface rounded-md border border-[#E8E8E5] text-text-secondary">
                   ERC-20
                 </span>
               </div>

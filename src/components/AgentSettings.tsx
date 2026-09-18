@@ -99,9 +99,9 @@ export function AgentSettings({
   }
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-6 sm:p-7 border border-[#E2E2DF] card-elevation mt-4 space-y-6">
+    <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-[#E8E8E5] card-elevation mt-4 space-y-6">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#ECECE8]">
+      <div className="flex items-center justify-between pb-4 border-b border-[#F0F0EE]">
         <div>
           <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
             Agent Spending Authority Controls
@@ -154,7 +154,7 @@ export function AgentSettings({
 
         {!editMode ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8]">
+            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5]">
               <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-mono font-medium">
                 Daily Mandate Ceiling
               </span>
@@ -166,7 +166,7 @@ export function AgentSettings({
               </span>
             </div>
 
-            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8]">
+            <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5]">
               <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-mono font-medium">
                 Per-Purchase Cap
               </span>
@@ -207,7 +207,7 @@ export function AgentSettings({
       </div>
 
       {/* Emergency Authority Controls */}
-      <div className="pt-4 border-t border-[#ECECE8] space-y-3">
+      <div className="pt-4 border-t border-[#F0F0EE] space-y-3">
         <span className="text-[11px] font-mono font-bold text-text-secondary uppercase tracking-wider block">
           Emergency Authority Controls
         </span>
@@ -236,7 +236,7 @@ export function AgentSettings({
 
           <button
             onClick={handleWithdraw}
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-[#F8F8F6] border border-border hover:bg-[#EFEFEA] text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
+            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-[#F8F8F6] border border-[#E8E8E5] hover:bg-[#EFEFEA] text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
           >
             {withdrawSuccess ? (
               <>
@@ -254,7 +254,7 @@ export function AgentSettings({
       </div>
 
       {/* Security Architecture Callout */}
-      <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] text-xs space-y-1.5">
+      <div className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5] text-xs space-y-1.5">
         <div className="flex items-center gap-2 font-bold text-text-primary">
           <ShieldCheckIcon className="w-4 h-4 text-accent" />
           <span>Isolated Key Architecture</span>

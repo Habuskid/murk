@@ -83,12 +83,12 @@ export function PurchaseRunner({
   }
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-6 sm:p-7 border border-[#E2E2DF] card-elevation mt-4 transition-all">
+    <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-[#E8E8E5] card-elevation mt-4 transition-all">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#ECECE8]">
+      <div className="flex items-center justify-between pb-4 border-b border-[#F0F0EE]">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl bg-[#111111] text-white flex items-center justify-center">
-            <TerminalIcon className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-xl bg-[#111111] text-white flex items-center justify-center">
+            <TerminalIcon className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
@@ -99,7 +99,7 @@ export function PurchaseRunner({
             </p>
           </div>
         </div>
-        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#F0F0EE] text-text-secondary border border-border">
+        <span className="text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full bg-[#F0F0EE] text-text-secondary border border-border">
           Celo (42220)
         </span>
       </div>
@@ -109,7 +109,7 @@ export function PurchaseRunner({
         <label className="text-[10px] font-mono text-text-secondary uppercase tracking-wider block mb-2 font-semibold">
           Select Test Scenario
         </label>
-        <div className="grid grid-cols-2 gap-2 p-1 bg-[#F5F5F3] rounded-2xl border border-border/80">
+        <div className="grid grid-cols-2 gap-2 p-1.5 bg-[#F5F5F3] rounded-2xl border border-[#E8E8E5]">
           <button
             type="button"
             onClick={() => {
@@ -118,9 +118,9 @@ export function PurchaseRunner({
                 setActiveReceipt(null)
               }
             }}
-            className={`p-3 rounded-xl text-left transition-all duration-150 ${
+            className={`p-3.5 rounded-xl text-left transition-all duration-150 ${
               selectedScenario === "valid"
-                ? "bg-surface shadow-xs text-text-primary border border-[#E0E0DC]"
+                ? "bg-surface shadow-xs text-text-primary border border-[#E8E8E5]"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
@@ -141,9 +141,9 @@ export function PurchaseRunner({
                 setActiveReceipt(null)
               }
             }}
-            className={`p-3 rounded-xl text-left transition-all duration-150 ${
+            className={`p-3.5 rounded-xl text-left transition-all duration-150 ${
               selectedScenario === "blocked"
-                ? "bg-surface shadow-xs text-text-primary border border-[#E0E0DC]"
+                ? "bg-surface shadow-xs text-text-primary border border-[#E8E8E5]"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
@@ -159,7 +159,7 @@ export function PurchaseRunner({
       </div>
 
       {/* Target Resource Inspector Card */}
-      <div className="mt-3.5 p-3.5 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] text-xs font-mono space-y-1.5">
+      <div className="mt-3.5 p-3.5 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5] text-xs font-mono space-y-1.5">
         <div className="flex justify-between text-text-secondary">
           <span>Target Resource:</span>
           <span className="text-text-primary font-medium">
@@ -207,7 +207,7 @@ export function PurchaseRunner({
 
       {/* Step Progress Timeline */}
       {isRunning && (
-        <div className="mt-4 p-4 bg-[#F8F8F6] rounded-2xl border border-[#ECECE8] animate-in fade-in duration-200">
+        <div className="mt-4 p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5] animate-in fade-in duration-200">
           <div className="space-y-3">
             {WORKFLOW_STEPS.map((step, idx) => {
               const isCurrent = currentStepIndex === idx
