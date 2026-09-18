@@ -26,7 +26,7 @@ Do not maintain separate testnet and mainnet implementations. Network difference
 | USDC | `0x01C5C0122039549AD1493B8220cABEdD739BC44E` | `0xcebA9300f2b948710d2653dD7B07f33A8B32118C` |
 | ERC-8004 IdentityRegistry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` | `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` |
 | x402 facilitator | `https://api.x402.sepolia.celo.org` | `https://api.x402.celo.org` |
-| Gas for Murk-owned direct transactions | native test CELO unless a Sepolia fee adapter is independently verified | configured stablecoin fee adapter when available |
+| Gas for Murk-owned direct transactions | Sepolia USDC/USDT fee adapters are configured and checked by the read-only smoke; live fee payment still must be verified | configured stablecoin fee adapters |
 
 Alfajores is not the Murk staging target. Use Celo Sepolia.
 
@@ -44,10 +44,11 @@ npm run build
 CI must also verify:
 
 - Sepolia chain configuration resolves to `11142220`;
-- Sepolia USDC resolves to the configured test contract;
-- unverified Sepolia USDT is not exposed;
+- Sepolia USDC and USDT resolve to deployed 6-decimal token contracts;
+- the configured Sepolia USDC/USDT fee-currency adapters have bytecode;
+- the Sepolia ERC-8004 IdentityRegistry has bytecode;
 - the Sepolia x402 facilitator advertises `eip155:11142220`;
-- the normal external x402 parser, merchant inspection and FX checks still pass.
+- the live accounting FX smoke still passes.
 
 Do not deploy a red commit.
 
@@ -66,6 +67,8 @@ STAGING_AGENT_WALLET_MASTER_SECRET
 STAGING_PUBLIC_APP_ORIGIN
 STAGING_X402_RESOURCE_URL
 STAGING_X402_PROBE_RESOURCE_URL
+STAGING_X402_API_KEY
+STAGING_X402_SELLER_ADDRESS
 
 PORTAL_AUTH_ENVIRONMENT_ID
 PORTAL_AUTH_FROM_EMAIL
@@ -97,10 +100,10 @@ The workflow must pass tests, migration checks, staging preflight, build, migrat
 After deployment, `GET /api/health` must report:
 
 ```text
-network = Celo Sepolia
-chainId = 11142220
-celoRpc.status = healthy
-rateProvider.status = healthy
+components.celoRpc.network = Celo Sepolia
+components.celoRpc.chainId = 11142220
+components.celoRpc.status = healthy
+components.rateProvider.status = healthy
 ```
 
 ## Test Wallet Funding
@@ -165,11 +168,40 @@ Verify:
 - the registry reports the derived EOA as the bound agent wallet;
 - registration and binding transaction evidence persist.
 
-### 5. Approved x402 purchase
+### 5. Real Sepolia x402 settlement harness
 
-Use a real Celo Sepolia x402-protected resource.
+The deployed staging app exposes `/api/testnet/x402-resource` only when:
 
-The resource must be external to the Murk application and must advertise:
+```text
+ENABLE_TESTNET_X402_MERCHANT=true
+X402_API_KEY=<Celo facilitator API key>
+TESTNET_X402_SELLER_ADDRESS=<Sepolia address you control>
+```
+
+This endpoint uses the official x402 server packages and the Celo Sepolia facilitator. It is allowed as an engineering settlement harness because it verifies an actual signed payment and actual onchain settlement. It is **not** independent merchant evidence because Murk hosts both sides.
+
+Run one minimum-price paid request through Murk against this endpoint and verify:
+
+- genuine HTTP 402 is received;
+- the requirement advertises `eip155:11142220`;
+- the asset is configured Sepolia USDC;
+- FX resolves;
+- deterministic policy approves;
+- Neon reserves spend before signing;
+- exactly one authorization is produced;
+- facilitator settlement confirms;
+- the exact USDC transfer is verified onchain;
+- spend is committed;
+- the protected resource is delivered;
+- audit evidence and receipt persist.
+
+### 6. Independent merchant evidence
+
+If a public independent Celo Sepolia x402 merchant is available, repeat the approved purchase against it.
+
+If none exists, do not relabel Murk's own harness as external evidence. Preserve the real Sepolia harness transaction as engineering proof, then reserve the independent-merchant payment proof for the smallest possible Celo mainnet canary.
+
+An independent resource must advertise:
 
 ```text
 network = eip155:11142220
@@ -177,23 +209,7 @@ asset = Sepolia USDC
 scheme = exact
 ```
 
-Use the smallest practical price.
-
-Verify:
-
-- genuine HTTP 402 is received;
-- Murk selects the exact allowed Sepolia USDC requirement;
-- FX resolves;
-- policy approves;
-- Neon reserves spend before signing;
-- exactly one authorization is produced;
-- settlement confirms;
-- the exact USDC transfer is verified onchain;
-- spend is committed;
-- the paid resource is delivered;
-- audit evidence and receipt persist.
-
-### 6. Blocked purchase
+### 7. Blocked purchase
 
 Tighten the per-purchase policy below the same resource value and request it again.
 
@@ -207,17 +223,17 @@ funds moved = 0
 reservation count = 0
 ```
 
-### 7. Withdrawal
+### 8. Withdrawal
 
 Return a small amount of test USDC from the agent to the Portal wallet.
 
 Verify the exact transfer and persisted transaction.
 
-### 8. Restart persistence
+### 9. Restart persistence
 
 Redeploy or restart and confirm the same user, wallet, agent, mandate, purchase, receipt and spend state remain available.
 
-### 9. Evidence verifier
+### 10. Evidence verifier
 
 Populate the staging evidence values and run:
 
@@ -233,7 +249,7 @@ The Celo Sepolia facilitator currently advertises x402 v2 support for `eip155:11
 
 There has also been a public report that the facilitator's `/verify` endpoint rejected the advertised v2 form. Therefore `/supported` alone is not sufficient evidence.
 
-The actual paid Sepolia request is the gate.
+The actual paid Sepolia harness request is the settlement gate. Independent merchant evidence is a separate requirement and must not be fabricated.
 
 If the real Sepolia payment returns `unsupported_scheme` while the same requirements are advertised by `/supported`:
 
@@ -249,9 +265,19 @@ Only promote after Sepolia evidence is green, or after a documented external Sep
 
 Promotion means changing environment configuration, not transaction logic.
 
+The production workflow requires:
+
+```text
+confirmation = DEPLOY_MURK_MAINNET
+tested_commit = <full 40-character SHA that passed the Sepolia live E2E gate>
+```
+
+The tested SHA must already be part of `main` history. The workflow checks out that exact commit and refuses a different commit.
+
 Production must use:
 
 ```text
+NEXT_PUBLIC_MURK_NETWORK=mainnet
 CELO_CHAIN_ID=42220
 NEXT_PUBLIC_CELO_CHAIN_ID=42220
 CELO_RPC_URL=https://forno.celo.org
