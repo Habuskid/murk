@@ -2,7 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverComponentsExternalPackages: ["@coinbase/coinbase-sdk"],
+    serverComponentsExternalPackages: [
+      "@coinbase/cdp-sdk",
+      "@x402/core",
+      "@x402/evm",
+      "@x402/fetch",
+    ],
   },
 }
 
