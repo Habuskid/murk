@@ -5,11 +5,12 @@ import {
   http,
   parseAbi,
 } from "viem"
-import { celo } from "viem/chains"
 import { NextRequest, NextResponse } from "next/server"
 import { WithdrawAgentSchema } from "@/lib/validation"
 import { repository } from "@/db/repository"
 import {
+  CELO_CHAIN,
+  CELO_CHAIN_ID,
   CELO_RPC_URL,
   CELO_TOKENS,
   getCeloClient,
@@ -97,12 +98,11 @@ export async function POST(
       args: [agent.walletAddress],
     })
 
-    if (amountRaw >= balance) {
+    if (amountRaw > balance) {
       return NextResponse.json(
         {
-          error: "WITHDRAWAL_MUST_LEAVE_FEE_BALANCE",
-          message:
-            "Leave a small token balance so Celo can charge the withdrawal gas in the same fee currency.",
+          error: "WITHDRAWAL_EXCEEDS_BALANCE",
+          message: "Withdrawal amount exceeds the agent wallet token balance.",
         },
         { status: 400 }
       )
@@ -144,7 +144,7 @@ export async function POST(
 
     const walletClient = createWalletClient({
       account,
-      chain: celo,
+      chain: CELO_CHAIN,
       transport: http(CELO_RPC_URL),
     })
 
@@ -155,38 +155,74 @@ export async function POST(
     })
     const attributedData = appendMurkAttribution(transferData)
 
-    const [estimatedGas, gasPrice] = await Promise.all([
-      publicClient.estimateGas({
-        account,
-        to: token.address,
-        data: attributedData,
-        feeCurrency: token.feeCurrencyAddress,
-      }),
-      getFeeCurrencyGasPrice(token.feeCurrencyAddress),
-    ])
+    if (token.feeCurrencyAddress) {
+      if (amountRaw >= balance) {
+        return NextResponse.json(
+          {
+            error: "WITHDRAWAL_MUST_LEAVE_FEE_BALANCE",
+            message:
+              "Reduce the withdrawal amount so the agent retains enough of the selected stablecoin to pay Celo gas.",
+          },
+          { status: 400 }
+        )
+      }
 
-    const estimatedFeeIn18Decimals = estimatedGas * gasPrice
-    const remainingRaw = balance - amountRaw
-    const remainingFeeUnits = tokenRawToFeeUnits(
-      remainingRaw,
-      token.decimals
-    )
+      const [estimatedGas, gasPrice] = await Promise.all([
+        publicClient.estimateGas({
+          account,
+          to: token.address,
+          data: attributedData,
+          feeCurrency: token.feeCurrencyAddress,
+        }),
+        getFeeCurrencyGasPrice(token.feeCurrencyAddress),
+      ])
 
-    if (remainingFeeUnits <= estimatedFeeIn18Decimals) {
-      return NextResponse.json(
-        {
-          error: "WITHDRAWAL_INSUFFICIENT_FEE_BALANCE",
-          message:
-            "Reduce the withdrawal amount so the agent wallet retains enough of the selected stablecoin to pay Celo gas.",
-        },
-        { status: 400 }
+      const estimatedFeeIn18Decimals = estimatedGas * gasPrice
+      const remainingRaw = balance - amountRaw
+      const remainingFeeUnits = tokenRawToFeeUnits(
+        remainingRaw,
+        token.decimals
       )
+
+      if (remainingFeeUnits <= estimatedFeeIn18Decimals) {
+        return NextResponse.json(
+          {
+            error: "WITHDRAWAL_INSUFFICIENT_FEE_BALANCE",
+            message:
+              "Reduce the withdrawal amount so the agent wallet retains enough of the selected stablecoin to pay Celo gas.",
+          },
+          { status: 400 }
+        )
+      }
+    } else {
+      const [estimatedGas, gasPrice, nativeBalance] = await Promise.all([
+        publicClient.estimateGas({
+          account,
+          to: token.address,
+          data: attributedData,
+        }),
+        publicClient.getGasPrice(),
+        publicClient.getBalance({ address: account.address }),
+      ])
+
+      if (nativeBalance <= estimatedGas * gasPrice) {
+        return NextResponse.json(
+          {
+            error: "WITHDRAWAL_INSUFFICIENT_NATIVE_GAS",
+            message:
+              "The Sepolia agent wallet needs faucet CELO for gas before returning test USDC.",
+          },
+          { status: 400 }
+        )
+      }
     }
 
     const txHash = await walletClient.sendTransaction({
       to: token.address,
       data: attributedData,
-      feeCurrency: token.feeCurrencyAddress,
+      ...(token.feeCurrencyAddress
+        ? { feeCurrency: token.feeCurrencyAddress }
+        : {}),
     })
 
     const transactionId = `tx_withdraw_${txHash.slice(2, 18)}`
@@ -195,7 +231,7 @@ export async function POST(
       id: transactionId,
       walletId: agent.walletId,
       purpose: "WITHDRAW_AGENT",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       txHash,
       assetAddress: token.address,
       amountRaw,
@@ -216,7 +252,7 @@ export async function POST(
         id: transactionId,
         walletId: agent.walletId,
         purpose: "WITHDRAW_AGENT",
-        chainId: 42220,
+        chainId: CELO_CHAIN_ID,
         txHash,
         assetAddress: token.address,
         amountRaw,
@@ -252,7 +288,7 @@ export async function POST(
         id: transactionId,
         walletId: agent.walletId,
         purpose: "WITHDRAW_AGENT",
-        chainId: 42220,
+        chainId: CELO_CHAIN_ID,
         txHash,
         assetAddress: token.address,
         amountRaw,
@@ -289,7 +325,7 @@ export async function POST(
       id: transactionId,
       walletId: agent.walletId,
       purpose: "WITHDRAW_AGENT",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       txHash,
       assetAddress: token.address,
       amountRaw,
