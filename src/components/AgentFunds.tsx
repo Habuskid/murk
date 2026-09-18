@@ -5,6 +5,10 @@ import { parseUnits } from "viem"
 import { usePortalWallet } from "@/components/MurkPortalProvider"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
+  CELO_EXPLORER_URL,
+  CELO_NETWORK_LABEL,
+} from "@/config/celo-network"
+import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
   CheckIcon,
@@ -274,11 +278,11 @@ export function AgentFunds({
         </div>
 
         <a
-          href={`https://celoscan.io/address/${walletAddress}`}
+          href={`${CELO_EXPLORER_URL}/address/${walletAddress}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-secondary transition hover:text-text-primary"
-          aria-label="View agent wallet on CeloScan"
+          aria-label={`View agent wallet on ${CELO_NETWORK_LABEL} explorer`}
         >
           <ExternalLinkIcon className="h-4 w-4" strokeWidth={1.8} />
         </a>
@@ -315,7 +319,7 @@ export function AgentFunds({
                   <div className="text-sm font-semibold text-text-primary">
                     {token.symbol}
                   </div>
-                  <div className="text-[11px] text-text-secondary">Celo</div>
+                  <div className="text-[11px] text-text-secondary">{CELO_NETWORK_LABEL}</div>
                 </div>
               </div>
 
@@ -424,7 +428,7 @@ export function AgentFunds({
 
           {lastTxHash && (
             <a
-              href={`https://celoscan.io/tx/${lastTxHash}`}
+              href={`${CELO_EXPLORER_URL}/tx/${lastTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 block truncate font-mono text-[10px] text-accent"
@@ -491,7 +495,7 @@ export function AgentFunds({
 
           {withdrawalTxHash && (
             <a
-              href={`https://celoscan.io/tx/${withdrawalTxHash}`}
+              href={`${CELO_EXPLORER_URL}/tx/${withdrawalTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 block truncate font-mono text-[10px] text-accent"
