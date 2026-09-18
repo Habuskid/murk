@@ -97,10 +97,10 @@ The workflow must pass tests, migration checks, staging preflight, build, migrat
 After deployment, `GET /api/health` must report:
 
 ```text
-network = Celo Sepolia
-chainId = 11142220
-celoRpc.status = healthy
-rateProvider.status = healthy
+components.celoRpc.network = Celo Sepolia
+components.celoRpc.chainId = 11142220
+components.celoRpc.status = healthy
+components.rateProvider.status = healthy
 ```
 
 ## Test Wallet Funding
