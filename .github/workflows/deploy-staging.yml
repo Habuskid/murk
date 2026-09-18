@@ -32,6 +32,7 @@ jobs:
 
       PUBLIC_APP_ORIGIN: ${{ secrets.STAGING_PUBLIC_APP_ORIGIN }}
 
+      NEXT_PUBLIC_MURK_NETWORK: "testnet"
       CELO_CHAIN_ID: "11142220"
       NEXT_PUBLIC_CELO_CHAIN_ID: "11142220"
       CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
@@ -43,6 +44,10 @@ jobs:
       X402_FACILITATOR_URL: https://api.x402.sepolia.celo.org
       NEXT_PUBLIC_X402_RESOURCE_URL: ${{ secrets.STAGING_X402_RESOURCE_URL }}
       X402_PROBE_RESOURCE_URL: ${{ secrets.STAGING_X402_PROBE_RESOURCE_URL }}
+
+      ENABLE_TESTNET_X402_MERCHANT: "true"
+      X402_API_KEY: ${{ secrets.STAGING_X402_API_KEY }}
+      TESTNET_X402_SELLER_ADDRESS: ${{ secrets.STAGING_X402_SELLER_ADDRESS }}
 
       ENABLE_LOCAL_X402_FIXTURE: "false"
       UI_SANDBOX_MODE: "false"
@@ -103,6 +108,22 @@ jobs:
           for attempt in {1..20}; do
             if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health" > /tmp/murk-health.json; then
               cat /tmp/murk-health.json
+              node -e '
+                const fs = require("fs");
+                const health = JSON.parse(fs.readFileSync("/tmp/murk-health.json", "utf8"));
+                if (health?.components?.celoRpc?.chainId !== 11142220) {
+                  console.error("Expected Celo Sepolia chainId 11142220, got", health?.components?.celoRpc?.chainId);
+                  process.exit(1);
+                }
+                if (health?.components?.celoRpc?.status !== "healthy") {
+                  console.error("Celo Sepolia RPC health is not healthy");
+                  process.exit(1);
+                }
+                if (health?.components?.rateProvider?.status !== "healthy") {
+                  console.error("Rate provider health is not healthy");
+                  process.exit(1);
+                }
+              '
               exit 0
             fi
             sleep 3
@@ -110,3 +131,17 @@ jobs:
 
           echo "Staging health endpoint did not become ready."
           exit 1
+
+      - name: Record Sepolia release candidate
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          {
+            echo "## Murk Sepolia release candidate"
+            echo ""
+            echo "- Commit: `$GITHUB_SHA`"
+            echo "- Deployment: $DEPLOYMENT_URL"
+            echo "- Chain: Celo Sepolia (11142220)"
+            echo "- Next gate: complete the live flow and run npm run e2e:verify"
+          } >> "$GITHUB_STEP_SUMMARY"
