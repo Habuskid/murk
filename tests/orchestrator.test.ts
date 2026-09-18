@@ -549,6 +549,72 @@ describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
     expect(result.receipt.remainingMandateMinor).toBe("500000")
   })
 
+  it("commits spend when x402 settlement succeeds but the paid HTTP resource fails", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn().mockResolvedValue(undefined)
+    const releaseSpend = vi.fn()
+    const txHash =
+      "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" as `0x${string}`
+
+    const paymentExecutor = vi.fn().mockResolvedValue({
+      txHash,
+      resourceFailure: {
+        status: 503,
+        contentType: "application/json",
+      },
+    })
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_paid_resource_503",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("RESOURCE_FAILED")
+    expect(result.receipt.txHash).toBe(txHash)
+    expect(result.receipt.resourceDeliveryStatus).toBe("FAILED_AFTER_PAYMENT")
+    expect(result.receipt.remainingMandateMinor).toBe("366973")
+    expect(result.evidence?.resource).toEqual({
+      status: 503,
+      contentType: "application/json",
+      delivered: false,
+    })
+    expect(commitSpend).toHaveBeenCalledWith("pur_paid_resource_503")
+    expect(releaseSpend).not.toHaveBeenCalled()
+    expect(paymentExecutor).toHaveBeenCalledTimes(1)
+  })
+
   it("commits spend after settlement and never repays when resource delivery fails", async () => {
     vi.spyOn(x402Module, "requestResource")
       .mockResolvedValueOnce({
