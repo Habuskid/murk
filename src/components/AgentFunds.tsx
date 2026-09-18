@@ -357,12 +357,12 @@ export function AgentFunds({
             Murk activates funds only after the Celo transfer is confirmed.
           </p>
 
-          <div className="mt-3 grid grid-cols-[96px_1fr] gap-2">
+          <div className="mt-3 grid grid-cols-[88px_minmax(0,1fr)] gap-2">
             <select
               value={assetSymbol}
               onChange={(event) => setAssetSymbol(event.target.value)}
               disabled={fundingBusy}
-              className="h-11 rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+              className="h-11 min-w-0 rounded-xl border border-border bg-surface-inset px-2.5 text-sm font-semibold text-text-primary outline-none focus:border-accent"
             >
               {balances.map((token) => (
                 <option key={token.symbol} value={token.symbol}>
@@ -377,7 +377,7 @@ export function AgentFunds({
               inputMode="decimal"
               disabled={fundingBusy}
               placeholder="Amount"
-              className="h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
+              className="h-11 min-w-0 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
             />
           </div>
 
@@ -424,12 +424,12 @@ export function AgentFunds({
             The destination is fixed to your authenticated wallet.
           </p>
 
-          <div className="mt-3 grid grid-cols-[96px_1fr] gap-2">
+          <div className="mt-3 grid grid-cols-[88px_minmax(0,1fr)] gap-2">
             <select
               value={withdrawAssetSymbol}
               onChange={(event) => setWithdrawAssetSymbol(event.target.value)}
               disabled={withdrawalState === "SUBMITTING"}
-              className="h-11 rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+              className="h-11 min-w-0 rounded-xl border border-border bg-surface-inset px-2.5 text-sm font-semibold text-text-primary outline-none focus:border-accent"
             >
               {balances.map((token) => (
                 <option key={token.symbol} value={token.symbol}>
@@ -444,7 +444,7 @@ export function AgentFunds({
               inputMode="decimal"
               disabled={withdrawalState === "SUBMITTING"}
               placeholder="Amount"
-              className="h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
+              className="h-11 min-w-0 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
             />
           </div>
 
