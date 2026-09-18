@@ -17,7 +17,7 @@ export function ActivityList({ items }: ActivityListProps) {
         </div>
         <p className="text-sm font-bold text-text-primary">No Transactions Yet</p>
         <p className="text-xs text-text-secondary mt-1 max-w-[280px] mx-auto leading-relaxed">
-          Run an autonomous payment simulation above to record verified on-chain settlements here.
+          Live x402 purchases and blocked attempts will appear here.
         </p>
       </div>
     )
@@ -43,12 +43,12 @@ export function ActivityList({ items }: ActivityListProps) {
       <div className="space-y-3">
         {items.map((act) => {
           const isCompleted = act.type === "COMPLETED"
-          const merchantName = act.merchantUrl?.includes("expensive")
-            ? "Intelligence Syndicate"
-            : "Financial Data Node"
-          const resourceName = act.merchantUrl?.includes("expensive")
-            ? "Macro Intelligence Q3 Report"
-            : "Market Intelligence Dataset v2"
+          let merchantName = act.merchantUrl || "External merchant"
+          try {
+            merchantName = new URL(act.merchantUrl).hostname
+          } catch {}
+
+          const resourceName = isCompleted ? "Paid resource" : "Purchase request"
 
           return (
             <div
@@ -81,7 +81,7 @@ export function ActivityList({ items }: ActivityListProps) {
                   <div className={`text-sm sm:text-base font-extrabold tabular-nums tracking-tight ${
                     isCompleted ? "text-text-primary" : "text-danger"
                   }`}>
-                    -{act.accountingCurrency} {act.accountingAmountFormatted}
+                    {isCompleted ? "-" : ""}{act.accountingCurrency} {act.accountingAmountFormatted}
                   </div>
                   <div className="text-[11px] text-text-secondary font-medium mt-0.5 tabular-nums">
                     {act.settlementAmountFormatted} {act.settlementAsset}
@@ -92,7 +92,7 @@ export function ActivityList({ items }: ActivityListProps) {
               {/* Bottom Row: Metadata Tag + Status Pill (Reference UI) */}
               <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-border text-xs">
                 <div className="flex items-center gap-1.5 text-text-secondary text-xs">
-                  <span>{isCompleted ? "Celo Mainnet" : "Zero Gas"}</span>
+                  <span>{isCompleted ? "Celo Mainnet" : "No transaction"}</span>
                   {act.txHash && (
                     <a
                       href={`https://celoscan.io/tx/${act.txHash}`}
@@ -114,7 +114,7 @@ export function ActivityList({ items }: ActivityListProps) {
                       : "bg-danger-soft text-danger"
                   }`}
                 >
-                  {isCompleted ? "Paid Successfully" : "Payment Blocked"}
+                  {isCompleted ? "Paid" : "Blocked"}
                 </span>
               </div>
             </div>
