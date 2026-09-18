@@ -39,13 +39,15 @@ function transferLog(input?: {
   const to = input?.to ?? TO
   const amount = input?.amount ?? 1_000_000n
 
+  const topics = encodeEventTopics({
+    abi: ERC20_TRANSFER_ABI,
+    eventName: "Transfer",
+    args: { from, to },
+  }) as [Hex, ...Hex[]]
+
   return {
     address: token,
-    topics: encodeEventTopics({
-      abi: ERC20_TRANSFER_ABI,
-      eventName: "Transfer",
-      args: { from, to },
-    }),
+    topics,
     data: encodeAbiParameters([{ type: "uint256" }], [amount]),
   } as const
 }
