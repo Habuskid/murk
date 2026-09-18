@@ -3,10 +3,16 @@ import { UiSandbox } from "@/components/UiSandbox"
 
 export const dynamic = "force-dynamic"
 
-export default function UiSandboxPage() {
+export default async function UiSandboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ activity?: string }>
+}) {
   if (process.env.UI_SANDBOX_MODE !== "true") {
     notFound()
   }
 
-  return <UiSandbox />
+  const params = await searchParams
+
+  return <UiSandbox emptyActivity={params.activity === "empty"} />
 }
