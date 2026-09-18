@@ -1,13 +1,25 @@
 import { createHash } from "node:crypto"
-import { type Hex } from "viem"
+import {
+  encodeFunctionData,
+  parseAbi,
+  type Hex,
+} from "viem"
 import { NextRequest, NextResponse } from "next/server"
 import { FundAgentSchema } from "@/lib/validation"
 import { repository } from "@/db/repository"
-import { CELO_TOKENS, getCeloClient } from "@/services/celo"
+import {
+  CELO_TOKENS,
+  getCeloClient,
+  selectStableFeeCurrency,
+} from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 import { hasExactErc20Transfer } from "@/services/funding"
 
 export const dynamic = "force-dynamic"
+
+const ERC20_TRANSFER_FUNCTION_ABI = parseAbi([
+  "function transfer(address to, uint256 amount) returns (bool)",
+])
 
 function requestHash(input: {
   userId: string
@@ -19,6 +31,99 @@ function requestHash(input: {
   return createHash("sha256")
     .update(JSON.stringify(input))
     .digest("hex")
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  try {
+    const { owner, agent } = await requireOwnedAgent(req, id)
+
+    if (!owner.walletAddress) {
+      return NextResponse.json(
+        { error: "PORTAL_WALLET_NOT_READY" },
+        { status: 409 }
+      )
+    }
+
+    const body = await req.json()
+    const assetSymbol =
+      typeof body?.assetSymbol === "string" ? body.assetSymbol : ""
+    const amountRawString =
+      typeof body?.amountRaw === "string" ? body.amountRaw : ""
+
+    if (!/^[1-9]\d*$/.test(amountRawString)) {
+      return NextResponse.json(
+        { error: "INVALID_FUNDING_AMOUNT" },
+        { status: 400 }
+      )
+    }
+
+    const token =
+      CELO_TOKENS[assetSymbol as keyof typeof CELO_TOKENS]
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "UNSUPPORTED_SETTLEMENT_ASSET" },
+        { status: 400 }
+      )
+    }
+
+    const amountRaw = BigInt(amountRawString)
+    const transferData = encodeFunctionData({
+      abi: ERC20_TRANSFER_FUNCTION_ABI,
+      functionName: "transfer",
+      args: [agent.walletAddress, amountRaw],
+    })
+
+    const otherSymbol = assetSymbol === "USDC" ? "USDT" : "USDC"
+    const feeCurrency = await selectStableFeeCurrency({
+      account: owner.walletAddress,
+      to: token.address,
+      data: transferData,
+      preferredSymbols: [
+        assetSymbol as keyof typeof CELO_TOKENS,
+        otherSymbol,
+      ],
+      spendRawBySymbol: {
+        [assetSymbol]: amountRaw,
+      } as Partial<Record<keyof typeof CELO_TOKENS, bigint>>,
+    })
+
+    return NextResponse.json({
+      chainId: "eip155:42220",
+      transaction: {
+        from: owner.walletAddress,
+        to: token.address,
+        data: transferData,
+        value: "0x0",
+        ...(feeCurrency ? { feeCurrency } : {}),
+      },
+      expectedTransfer: {
+        tokenAddress: token.address,
+        to: agent.walletAddress,
+        amountRaw: amountRaw.toString(),
+      },
+    })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    if (mapped.status !== 500) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "FUNDING_PREPARATION_FAILED",
+      },
+      { status: 400 }
+    )
+  }
 }
 
 export async function POST(
