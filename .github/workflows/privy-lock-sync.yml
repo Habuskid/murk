@@ -59,5 +59,4 @@ jobs:
       - name: Build
         env:
           NEXT_PUBLIC_MURK_NETWORK: testnet
-          NEXT_PUBLIC_PRIVY_APP_ID: ci_privy_app_id
         run: npm run build
