@@ -639,8 +639,8 @@ export async function executePurchaseWorkflow(
         chainId: 42220,
         txHash,
         resourceDeliveryStatus: failedAfterSettlement ? "FAILED_AFTER_PAYMENT" : "FAILED",
-        remainingMandateMinor: params.mandate.dailyLimitMinor.toString(),
-        remainingMandateFormatted: formatMoneyMinor(params.mandate.dailyLimitMinor),
+        remainingMandateMinor: remainingAfterFailure.toString(),
+        remainingMandateFormatted: formatMoneyMinor(remainingAfterFailure, 2),
         createdAt: new Date().toISOString(),
       },
       evidence: {
