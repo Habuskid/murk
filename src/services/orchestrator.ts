@@ -65,12 +65,54 @@ export type OrchestrationStepLog = {
   detail: string
 }
 
+export type OrchestrationEvidence = {
+  paymentRequired?: {
+    rawHeaders: Record<string, string>
+    rawPayload: unknown
+    requirements: Array<{
+      scheme: string
+      network: string
+      chainId: number
+      assetAddress: string
+      amountRaw: string
+      payTo: string
+      extra?: Record<string, unknown>
+    }>
+  }
+  rateQuote?: {
+    baseAsset: string
+    quoteCurrency: string
+    rateNumerator: string
+    rateDenominator: string
+    kind: string
+    source: string
+    timestamp: string
+    expiresAt: string
+  }
+  policyDecision?: {
+    decision: "APPROVED" | "BLOCKED"
+    reasonCodes: string[]
+    purchaseValueMinor: string
+    spentBeforeMinor: string
+    reservedBeforeMinor: string
+    remainingBeforeMinor: string
+    remainingAfterMinor?: string
+  }
+  settlementTxHash?: string | null
+  resource?: {
+    status: number
+    contentType: string
+    delivered: boolean
+  }
+}
+
 export type OrchestrationResult = {
   purchaseId: string
   finalState: OrchestrationState
   steps: OrchestrationStepLog[]
   receipt: OrchestratorReceipt
   deliveredResource?: any
+  evidence?: OrchestrationEvidence
   error?: string
 }
 
@@ -163,6 +205,7 @@ export async function executePurchaseWorkflow(
   let spendReserved = false
   let spendCommitted = false
   let reservationRemainingMinor: bigint | null = null
+  const evidence: OrchestrationEvidence = {}
 
   try {
     // 1. Request Resource (or simulate 402)
@@ -170,6 +213,11 @@ export async function executePurchaseWorkflow(
     const initialReq = await requestResource(params.resourceUrl)
 
     if (initialReq.type === "DELIVERED") {
+      evidence.resource = {
+        status: initialReq.status,
+        contentType: initialReq.contentType,
+        delivered: true,
+      }
       logStep("COMPLETED", "Resource was free; no payment required")
       const receipt: OrchestratorReceipt = {
         purchaseId,
@@ -203,7 +251,22 @@ export async function executePurchaseWorkflow(
         steps,
         receipt,
         deliveredResource: initialReq.data,
+        evidence,
       }
+    }
+
+    evidence.paymentRequired = {
+      rawHeaders: initialReq.rawHeaders,
+      rawPayload: initialReq.rawPayload,
+      requirements: initialReq.requirements.map((requirement) => ({
+        scheme: requirement.scheme,
+        network: requirement.network,
+        chainId: requirement.chainId,
+        assetAddress: requirement.assetAddress,
+        amountRaw: requirement.amountRaw.toString(),
+        payTo: requirement.payTo,
+        extra: requirement.extra,
+      })),
     }
 
     // 2. Select Settlement Asset from Portfolio
@@ -247,6 +310,7 @@ export async function executePurchaseWorkflow(
         finalState: "POLICY_BLOCKED",
         steps,
         receipt,
+        evidence,
       }
     }
 
@@ -261,6 +325,16 @@ export async function executePurchaseWorkflow(
 
     // 3. Resolve FX Rate Quote
     rateQuote = params.overrideRateQuote || (await getRateQuote(params.mandate.accountingCurrency, "USD"))
+    evidence.rateQuote = {
+      baseAsset: rateQuote.baseAsset,
+      quoteCurrency: rateQuote.quoteCurrency,
+      rateNumerator: rateQuote.rateNumerator.toString(),
+      rateDenominator: rateQuote.rateDenominator.toString(),
+      kind: rateQuote.kind,
+      source: rateQuote.source,
+      timestamp: rateQuote.timestamp.toISOString(),
+      expiresAt: rateQuote.expiresAt.toISOString(),
+    }
     logStep(
       "RATE_RESOLVED",
       `Rate resolved: 1 USD = ${rateQuote.rateNumerator}/${rateQuote.rateDenominator} ${rateQuote.quoteCurrency} (source: ${rateQuote.source})`
@@ -283,6 +357,16 @@ export async function executePurchaseWorkflow(
       isRateValid: true,
       isRateExpired: false,
     })
+
+    evidence.policyDecision = {
+      decision: policyDecision.decision,
+      reasonCodes: policyDecision.reasonCodes,
+      purchaseValueMinor: policyDecision.purchaseValueMinor.toString(),
+      spentBeforeMinor: policyDecision.spentBeforeMinor.toString(),
+      reservedBeforeMinor: policyDecision.reservedBeforeMinor.toString(),
+      remainingBeforeMinor: policyDecision.remainingBeforeMinor.toString(),
+      remainingAfterMinor: policyDecision.remainingAfterMinor?.toString(),
+    }
 
     if (policyDecision.decision === "BLOCKED") {
       logStep(
@@ -322,6 +406,7 @@ export async function executePurchaseWorkflow(
         finalState: "POLICY_BLOCKED",
         steps,
         receipt,
+        evidence,
       }
     }
 
@@ -379,6 +464,7 @@ export async function executePurchaseWorkflow(
           finalState: "POLICY_BLOCKED",
           steps,
           receipt,
+          evidence,
         }
       }
     }
@@ -400,6 +486,7 @@ export async function executePurchaseWorkflow(
       resourceUrl: params.resourceUrl,
     })
     txHash = paymentResult.txHash
+    evidence.settlementTxHash = txHash
 
     logStep("PAYMENT_SETTLED", `Payment settled on Celo with txHash: ${txHash}`)
 
@@ -413,6 +500,11 @@ export async function executePurchaseWorkflow(
     // 8. Re-request the paid resource. Never fabricate delivery.
     if (paymentResult.deliveredResource !== undefined) {
       deliveredResource = paymentResult.deliveredResource
+      evidence.resource = {
+        status: 200,
+        contentType: "application/octet-stream",
+        delivered: true,
+      }
       logStep("RESOURCE_RECEIVED", "Paid resource delivered by the x402 executor")
     } else if (paymentResult.paymentHeaders) {
       logStep("RESOURCE_RECEIVED", "Retrying resource request with real payment proof")
@@ -421,6 +513,11 @@ export async function executePurchaseWorkflow(
         throw new Error("RESOURCE_NOT_DELIVERED_AFTER_PAYMENT")
       }
       deliveredResource = retry.data
+      evidence.resource = {
+        status: retry.status,
+        contentType: retry.contentType,
+        delivered: true,
+      }
     } else {
       throw new Error("PAYMENT_PROOF_REQUIRED_FOR_RESOURCE_RETRY")
     }
@@ -466,6 +563,7 @@ export async function executePurchaseWorkflow(
       steps,
       receipt,
       deliveredResource,
+      evidence,
     }
   } catch (err: any) {
     const failedAfterSettlement = Boolean(txHash)
@@ -514,6 +612,15 @@ export async function executePurchaseWorkflow(
         remainingMandateMinor: params.mandate.dailyLimitMinor.toString(),
         remainingMandateFormatted: formatMoneyMinor(params.mandate.dailyLimitMinor),
         createdAt: new Date().toISOString(),
+      },
+      evidence: {
+        ...evidence,
+        settlementTxHash: txHash,
+        resource: evidence.resource || {
+          status: 0,
+          contentType: "unknown",
+          delivered: false,
+        },
       },
       error: err.message,
     }
