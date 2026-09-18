@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import {
+  CELO_CAIP2,
+  CELO_TOKENS,
+} from "@/config/celo-network"
 
 export const dynamic = "force-dynamic"
 
@@ -47,8 +51,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     accepts: [
       {
         scheme: "exact",
-        network: "eip155:42220",
-        asset: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // Celo Native USDC
+        network: CELO_CAIP2,
+        asset: CELO_TOKENS.USDC.address,
         amount: amountRaw,
         payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
       },
@@ -59,7 +63,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     status: 402,
     headers: {
       "Content-Type": "application/json",
-      "WWW-Authenticate": `x402 token="USDC", network="eip155:42220", amount="${amountRaw}"`,
+      "WWW-Authenticate": `x402 token="USDC", network=CELO_CAIP2, amount="${amountRaw}"`,
     },
   })
 }
