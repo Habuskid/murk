@@ -1,8 +1,11 @@
 "use client"
 
-import React from "react"
-import { ActivityItem } from "@/db/repository"
-import { ExternalLinkIcon, TerminalIcon, BoltIcon, ShieldAlertIcon } from "@/components/Icons"
+import type { ActivityItem } from "@/db/repository"
+import {
+  BoltIcon,
+  ExternalLinkIcon,
+  ShieldAlertIcon,
+} from "@/components/Icons"
 
 interface ActivityListProps {
   items: ActivityItem[]
@@ -11,116 +14,125 @@ interface ActivityListProps {
 export function ActivityList({ items }: ActivityListProps) {
   if (items.length === 0) {
     return (
-      <div className="w-full bg-surface rounded-[28px] p-8 border border-border card-elevation mt-4 text-center">
-        <div className="w-12 h-12 rounded-2xl bg-surface-inset border border-border flex items-center justify-center mx-auto mb-3 text-text-secondary">
-          <TerminalIcon className="w-5 h-5 text-text-secondary" />
-        </div>
-        <p className="text-sm font-bold text-text-primary">No Transactions Yet</p>
-        <p className="text-xs text-text-secondary mt-1 max-w-[280px] mx-auto leading-relaxed">
-          Live x402 purchases and blocked attempts will appear here.
+      <section className="rounded-[22px] border border-border bg-surface px-5 py-8 text-center">
+        <div className="text-sm font-semibold text-text-primary">No activity yet</div>
+        <p className="mx-auto mt-1 max-w-[280px] text-xs leading-relaxed text-text-secondary">
+          Completed purchases and policy blocks will appear here.
         </p>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="w-full space-y-3 mt-4">
-      {/* Section Title (Reference: "Payment History") */}
-      <div className="flex items-center justify-between px-1">
-        <h3 className="text-base font-bold text-text-primary">Payment History</h3>
-        <span className="text-xs text-text-secondary font-medium">
-          {items.length} {items.length === 1 ? "transaction" : "transactions"}
+    <section>
+      <div className="mb-3 flex items-end justify-between px-1">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+            Activity
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-[-0.025em] text-text-primary">
+            Recent decisions
+          </h2>
+        </div>
+        <span className="text-[11px] font-medium text-text-secondary">
+          {items.length} {items.length === 1 ? "entry" : "entries"}
         </span>
       </div>
 
-      {/* Grouping Tag */}
-      <div className="flex items-center gap-2 px-1">
-        <span className="text-xs font-semibold text-text-secondary">Today</span>
-        <div className="flex-1 h-[1px] bg-border" />
-      </div>
+      <div className="overflow-hidden rounded-[18px] border border-border bg-surface">
+        {items.map((activity, index) => {
+          const completed = activity.type === "COMPLETED"
 
-      {/* Transaction Cards (Reference UI Layout) */}
-      <div className="space-y-3">
-        {items.map((act) => {
-          const isCompleted = act.type === "COMPLETED"
-          let merchantName = act.merchantUrl || "External merchant"
+          let merchant = activity.merchantUrl || "External merchant"
           try {
-            merchantName = new URL(act.merchantUrl).hostname
+            merchant = new URL(activity.merchantUrl).hostname
           } catch {}
-
-          const resourceName = isCompleted ? "Paid resource" : "Purchase request"
 
           return (
             <div
-              key={act.id}
-              className="bg-surface rounded-2xl p-4 sm:p-5 border border-border card-elevation transition-all hover:border-accent/40"
+              key={activity.id}
+              className={[
+                "flex items-start gap-3 px-4 py-4 sm:px-5",
+                index > 0 ? "border-t border-border" : "",
+              ].join(" ")}
             >
-              {/* Top Row: Icon + Title + Amount */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {/* Brand/Merchant Squircle Icon */}
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                    isCompleted
-                      ? "bg-accent-soft text-accent border border-accent/20"
-                      : "bg-danger-soft text-danger border border-danger/20"
-                  }`}>
-                    {isCompleted ? <BoltIcon className="w-5 h-5" /> : <ShieldAlertIcon className="w-5 h-5" />}
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-bold text-text-primary leading-snug">
-                      {resourceName}
-                    </h4>
-                    <p className="text-xs text-text-secondary mt-0.5 font-medium">
-                      {merchantName}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right flex-shrink-0">
-                  <div className={`text-sm sm:text-base font-extrabold tabular-nums tracking-tight ${
-                    isCompleted ? "text-text-primary" : "text-danger"
-                  }`}>
-                    {isCompleted ? "-" : ""}{act.accountingCurrency} {act.accountingAmountFormatted}
-                  </div>
-                  <div className="text-[11px] text-text-secondary font-medium mt-0.5 tabular-nums">
-                    {act.settlementAmountFormatted} {act.settlementAsset}
-                  </div>
-                </div>
+              <div
+                className={[
+                  "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                  completed
+                    ? "bg-accent-soft text-accent"
+                    : "bg-danger-soft text-danger",
+                ].join(" ")}
+              >
+                {completed ? (
+                  <BoltIcon className="h-4 w-4" strokeWidth={1.9} />
+                ) : (
+                  <ShieldAlertIcon className="h-4 w-4" strokeWidth={1.9} />
+                )}
               </div>
 
-              {/* Bottom Row: Metadata Tag + Status Pill (Reference UI) */}
-              <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-border text-xs">
-                <div className="flex items-center gap-1.5 text-text-secondary text-xs">
-                  <span>{isCompleted ? "Celo Mainnet" : "No transaction"}</span>
-                  {act.txHash && (
-                    <a
-                      href={`https://celoscan.io/tx/${act.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline inline-flex items-center gap-0.5 ml-1 font-mono text-[11px]"
-                      title="View CeloScan receipt"
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-text-primary">
+                      {merchant}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-text-secondary">
+                      {completed ? "Purchase settled" : "Blocked before payment"}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <div
+                      className={[
+                        "text-sm font-semibold tabular-nums",
+                        completed ? "text-text-primary" : "text-danger",
+                      ].join(" ")}
                     >
-                      <span>{act.txHash.slice(0, 6)}...</span>
-                      <ExternalLinkIcon className="w-2.5 h-2.5" />
-                    </a>
-                  )}
+                      {completed ? "−" : ""}
+                      {activity.accountingCurrency} {activity.accountingAmountFormatted}
+                    </div>
+                    <div className="mt-0.5 text-[10px] font-medium text-text-secondary tabular-nums">
+                      {activity.settlementAmountFormatted} {activity.settlementAsset}
+                    </div>
+                  </div>
                 </div>
 
-                <span
-                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                    isCompleted
-                      ? "bg-accent-soft text-accent"
-                      : "bg-danger-soft text-danger"
-                  }`}
-                >
-                  {isCompleted ? "Paid" : "Blocked"}
-                </span>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0 text-[11px] text-text-secondary">
+                    {activity.txHash ? (
+                      <a
+                        href={`https://celoscan.io/tx/${activity.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex max-w-full items-center gap-1 font-mono text-accent"
+                      >
+                        <span className="truncate">
+                          {activity.txHash.slice(0, 8)}…{activity.txHash.slice(-4)}
+                        </span>
+                        <ExternalLinkIcon className="h-3 w-3 shrink-0" />
+                      </a>
+                    ) : (
+                      activity.reasonDescription || "No transaction created"
+                    )}
+                  </div>
+
+                  <span
+                    className={[
+                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      completed
+                        ? "bg-success-soft text-success"
+                        : "bg-danger-soft text-danger",
+                    ].join(" ")}
+                  >
+                    {completed ? "Settled" : "Blocked"}
+                  </span>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }
