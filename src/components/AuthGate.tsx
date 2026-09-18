@@ -106,7 +106,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={isSubmitting || otp.length !== 6}
-              className="flex h-13 w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Verifying..." : "Verify"}
             </button>
@@ -152,7 +152,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={isSubmitting || !email.trim()}
-              className="flex h-13 w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Sending code..." : "Continue"}
             </button>
