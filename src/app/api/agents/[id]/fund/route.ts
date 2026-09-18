@@ -12,7 +12,6 @@ import {
   CELO_CHAIN_ID,
   CELO_TOKENS,
   getCeloClient,
-  selectStableFeeCurrency,
 } from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 import { hasExactErc20Transfer } from "@/services/funding"
@@ -46,7 +45,7 @@ export async function PUT(
 
     if (!owner.walletAddress) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
@@ -81,20 +80,6 @@ export async function PUT(
       args: [agent.walletAddress, amountRaw],
     })
 
-    const otherSymbol = assetSymbol === "USDC" ? "USDT" : "USDC"
-    const feeCurrency = await selectStableFeeCurrency({
-      account: owner.walletAddress,
-      to: token.address,
-      data: transferData,
-      preferredSymbols: [
-        assetSymbol as keyof typeof CELO_TOKENS,
-        otherSymbol,
-      ],
-      spendRawBySymbol: {
-        [assetSymbol]: amountRaw,
-      } as Partial<Record<keyof typeof CELO_TOKENS, bigint>>,
-    })
-
     return NextResponse.json({
       chainId: CELO_CAIP2_NETWORK,
       transaction: {
@@ -102,7 +87,6 @@ export async function PUT(
         to: token.address,
         data: transferData,
         value: "0x0",
-        ...(feeCurrency ? { feeCurrency } : {}),
       },
       expectedTransfer: {
         tokenAddress: token.address,
@@ -142,7 +126,7 @@ export async function POST(
     const userWallet = await repository.findUserWallet(owner.userId)
     if (!userWallet || !owner.walletAddress) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
