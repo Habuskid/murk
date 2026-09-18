@@ -44,6 +44,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const owner = await requireAuthenticatedOwner(req)
+    const existingAgents = repository.listAgentsByOwner(owner.userId)
+    if (existingAgents.length > 0) {
+      return NextResponse.json(
+        {
+          error: "MVP_SINGLE_AGENT_LIMIT",
+          message:
+            "This hackathon build supports one isolated execution agent per user.",
+        },
+        { status: 409 }
+      )
+    }
+
     const body = await req.json()
     const validated = CreateAgentSchema.parse(body)
 
