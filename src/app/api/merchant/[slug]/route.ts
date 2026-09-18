@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic"
  * merchant, it does not verify a real x402 payment with a facilitator, and it
  * must never be used as golden-demo or submission evidence.
  */
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   if (process.env.ENABLE_LOCAL_X402_FIXTURE !== "true") {
     return NextResponse.json(
       {
@@ -27,9 +28,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     return NextResponse.json({
       fixture: true,
       status: "success",
-      purchasedItem: params.slug === "expensive-report" ? "Global Macro Agent Research Report" : "Research Dataset Access",
+      purchasedItem: slug === "expensive-report" ? "Global Macro Agent Research Report" : "Research Dataset Access",
       data: {
-        resourceId: `res_${params.slug}_2026`,
+        resourceId: `res_${slug}_2026`,
         accessGranted: true,
         deliveredAt: new Date().toISOString(),
         content: "Verified paid machine intelligence data delivered over Celo x402 protocol.",
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   }
 
   // Otherwise, return real HTTP 402 Payment Required!
-  const isExpensive = params.slug === "expensive-report"
+  const isExpensive = slug === "expensive-report"
   const amountRaw = isExpensive ? "2000000" : "1000000" // 2 USDC or 1 USDC
 
   const paymentRequirement = {
