@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NEXT_PUBLIC_CDP_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2ktbXVyay5jbGVyay5hY2NvdW50cy5kZXYk"
+      CLERK_SECRET_KEY: "sk_test_ci_placeholder"
       CELO_RPC_URL: https://forno.celo.org
       CELO_CHAIN_ID: "42220"
       EXCHANGE_RATE_API_URL: https://open.er-api.com/v6/latest/USD
@@ -27,7 +28,7 @@ jobs:
       - name: Use Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
