@@ -28,7 +28,6 @@
     "@x402/core": "^2.26.0",
     "@x402/evm": "^2.26.0",
     "@x402/fetch": "^2.26.0",
-    "@clerk/nextjs": "^7.9.4",
     "@portal-hq/web": "3.18.0"
   },
   "devDependencies": {
