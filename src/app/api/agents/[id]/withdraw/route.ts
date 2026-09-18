@@ -74,6 +74,14 @@ export async function POST(
       destination: owner.walletAddress,
     })
 
+    const replay = await repository.getIdempotencyResult(
+      validated.idempotencyKey,
+      hash
+    )
+    if (replay) {
+      return NextResponse.json(replay)
+    }
+
     const publicClient = getCeloClient()
     const balance = await publicClient.readContract({
       address: token.address,
