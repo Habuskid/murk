@@ -85,7 +85,7 @@ export function UiSandbox() {
         <div className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+              <p className="text-xs font-medium text-text-secondary">
                 Execution agent
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em] text-text-primary">
@@ -172,19 +172,20 @@ export function UiSandbox() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px]">
-          <span className="rounded-full border border-border bg-surface px-2.5 py-1 font-semibold text-text-secondary">
+        <div className="flex items-center gap-2 text-[11px] font-medium text-text-secondary">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Celo
           </span>
-          <span className="rounded-full bg-accent-soft px-2.5 py-1 font-semibold text-accent">
-            NGN
-          </span>
+          <span className="text-text-tertiary">/</span>
+          <span className="font-semibold text-accent">NGN</span>
         </div>
       </header>
 
+      <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
+
       <main className="space-y-4">{body}</main>
 
-      <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
     </div>
   )
 }
