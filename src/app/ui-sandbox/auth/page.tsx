@@ -14,7 +14,11 @@ export default async function AuthSandboxPage({
 
   const params = await searchParams
   const sandboxState =
-    params.state === "link-sent" ? "link-sent" : "signed-out"
+    params.state === "loading"
+      ? "loading"
+      : params.state === "link-sent"
+        ? "link-sent"
+        : "signed-out"
 
   return (
     <AuthGate sandboxState={sandboxState} sandboxEmail="builder@example.com">
