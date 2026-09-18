@@ -3,6 +3,7 @@ import type { Hex } from "viem"
 import { NextRequest, NextResponse } from "next/server"
 import { repository } from "@/db/repository"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
+import { selectStableFeeCurrency } from "@/services/celo"
 import {
   buildBindWalletTransaction,
   buildRegisterTransaction,
@@ -136,6 +137,12 @@ export async function POST(
       )}/erc8004/metadata`
       const tx = buildRegisterTransaction(agentURI)
 
+      const feeCurrency = await selectStableFeeCurrency({
+        account: owner.walletAddress,
+        to: tx.to,
+        data: tx.data,
+      })
+
       return NextResponse.json({
         chainId: "eip155:42220",
         transaction: {
@@ -143,6 +150,7 @@ export async function POST(
           to: tx.to,
           data: tx.data,
           value: "0x0",
+          ...(feeCurrency ? { feeCurrency } : {}),
         },
         agentURI,
       })
@@ -235,6 +243,12 @@ export async function POST(
         owner: owner.walletAddress,
       })
 
+      const feeCurrency = await selectStableFeeCurrency({
+        account: owner.walletAddress,
+        to: tx.to,
+        data: tx.data,
+      })
+
       return NextResponse.json({
         chainId: "eip155:42220",
         transaction: {
@@ -242,6 +256,7 @@ export async function POST(
           to: tx.to,
           data: tx.data,
           value: "0x0",
+          ...(feeCurrency ? { feeCurrency } : {}),
         },
         deadline: tx.deadline.toString(),
         expectedAgentWallet: agent.walletAddress,
