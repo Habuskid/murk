@@ -6,7 +6,6 @@ import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 import {
   CELO_CAIP2_NETWORK,
   CELO_CHAIN_ID,
-  selectStableFeeCurrency,
 } from "@/services/celo"
 import {
   buildBindWalletTransaction,
@@ -61,7 +60,7 @@ export async function GET(
 
     if (!owner.walletAddress) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
@@ -110,7 +109,7 @@ export async function POST(
 
     if (!owner.walletAddress) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
@@ -118,7 +117,7 @@ export async function POST(
     const userWallet = await repository.findUserWallet(owner.userId)
     if (!userWallet) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
@@ -142,12 +141,6 @@ export async function POST(
       )}/erc8004/metadata`
       const tx = buildRegisterTransaction(agentURI)
 
-      const feeCurrency = await selectStableFeeCurrency({
-        account: owner.walletAddress,
-        to: tx.to,
-        data: tx.data,
-      })
-
       return NextResponse.json({
         chainId: CELO_CAIP2_NETWORK,
         transaction: {
@@ -155,7 +148,6 @@ export async function POST(
           to: tx.to,
           data: tx.data,
           value: "0x0",
-          ...(feeCurrency ? { feeCurrency } : {}),
         },
         agentURI,
       })
@@ -248,12 +240,6 @@ export async function POST(
         owner: owner.walletAddress,
       })
 
-      const feeCurrency = await selectStableFeeCurrency({
-        account: owner.walletAddress,
-        to: tx.to,
-        data: tx.data,
-      })
-
       return NextResponse.json({
         chainId: CELO_CAIP2_NETWORK,
         transaction: {
@@ -261,7 +247,6 @@ export async function POST(
           to: tx.to,
           data: tx.data,
           value: "0x0",
-          ...(feeCurrency ? { feeCurrency } : {}),
         },
         deadline: tx.deadline.toString(),
         expectedAgentWallet: agent.walletAddress,
