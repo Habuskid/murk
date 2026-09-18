@@ -62,7 +62,7 @@ export function HeroMandate({
       <div className="overflow-hidden rounded-[22px] border border-border bg-surface">
         <div className="flex items-start justify-between px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+            <div className="text-xs font-medium text-text-secondary">
               Daily authority
             </div>
             <div className="mt-1 text-xs text-text-secondary">
