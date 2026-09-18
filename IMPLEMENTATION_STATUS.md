@@ -22,11 +22,14 @@ Status: PASSING
 
 Current GitHub Actions verifies:
 
-- dependency install with `npm install`;
-- Vitest suite;
+- reproducible dependency install with `npm ci`;
+- Vitest suite, including deterministic ERC-8004 signing/calldata coverage;
+- Drizzle migration-history validation with `drizzle-kit check`;
 - Next.js 16.3.3 production build;
 - independent external Celo x402 challenge probe;
 - live merchant payment-requirement inspection;
+- live reference-FX coverage for all eight locked accounting currencies;
+- stale-rate fail-closed verification;
 - browser UI sandbox build;
 - Chromium rendering and interaction tests.
 
@@ -87,14 +90,22 @@ The deterministic selector remains useful policy infrastructure, but demo claims
 
 ### Rate provider
 
-Status: CODED, LIVE COVERAGE VERIFICATION PENDING
+Status: PASSED FOR LOCKED MVP CURRENCY COVERAGE
 
-Reference FX adapter exists for the accounting layer.
+CI fetches live reference FX data and verifies all eight locked accounting currencies:
 
-Still required:
+- NGN;
+- KES;
+- BRL;
+- MXN;
+- COP;
+- AED;
+- SAR;
+- INR.
 
-- verify the live rate source across the locked accounting-currency set;
-- confirm stale/unavailable-rate failure behavior against the live provider.
+The gate also proves that a stale/expired quote is rejected.
+
+This proves provider coverage and freshness validation. The final paid E2E must still persist and display the exact quote used for the real purchase.
 
 ### Human authentication and embedded wallet
 
@@ -182,9 +193,11 @@ This complete path has not yet been demonstrated with real credentials and funde
 
 ## PERSIST
 
-Status: IMPLEMENTED IN CODE, LIVE NEON DATABASE VERIFICATION PENDING
+Status: IMPLEMENTED IN CODE, MIGRATION COMMITTED, LIVE NEON VERIFICATION PENDING
 
 The runtime repository is Neon/Drizzle-backed.
+
+The initial migration is committed under `drizzle/` and CI verifies migration-history consistency with `npm run db:check`.
 
 Persisted runtime domains include:
 
@@ -214,10 +227,13 @@ Financial concurrency hardening includes:
 
 Still required:
 
-- provision the real Neon database;
-- apply/verify the production schema;
+- provision a dedicated Murk Neon database through the Vercel-managed Neon integration;
+- configure `DATABASE_URL`;
+- apply the committed migration with `npm run db:migrate`;
 - run real application flows against that database;
 - verify restart persistence in the deployed environment.
+
+Direct project creation through the Neon API is unavailable for the connected organization because it is managed by Vercel. Existing unrelated Neon projects must not be repurposed without explicit owner approval.
 
 ## Agent Execution Wallet
 

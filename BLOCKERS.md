@@ -61,15 +61,23 @@ Status: BLOCKING DEPLOYED PERSISTENCE PROOF
 
 Runtime persistence is implemented through Neon/Drizzle in code.
 
+Already completed:
+
+- committed initial Drizzle migration;
+- reproducible `npm ci`;
+- CI migration-history validation.
+
 Still required:
 
-- provision the real Neon database;
+- provision a dedicated Murk database through the Vercel-managed Neon integration;
 - configure `DATABASE_URL`;
-- apply the current schema/migrations;
+- apply the committed migration with `npm run db:migrate`;
 - create a user/agent/mandate through the real app;
 - restart/redeploy the app;
 - verify state survives restart;
 - verify atomic spend reservation against the real database.
+
+Direct Neon project creation is restricted for the connected Vercel-managed organization. Do not repurpose an unrelated existing database without explicit owner approval.
 
 Do not describe deployed persistence as proven until this is completed.
 
@@ -198,12 +206,15 @@ Murk has not yet been deployed to the public production/demo URL.
 
 Before deployment:
 
-- regenerate and commit the package lock;
 - configure production environment variables;
-- provision/verify Neon;
+- provision/verify the dedicated Murk Neon database and apply the committed migration;
 - configure Portal callback allowlist for the deployed origin;
+- set `PUBLIC_APP_ORIGIN` to the deployed HTTPS origin;
+- run `npm run preflight:deploy`;
 - ensure `UI_SANDBOX_MODE` is unset/false;
 - verify `ENABLE_LOCAL_X402_FIXTURE=false`;
 - verify no test secrets or CI placeholders are present.
+
+Before final demo lock, run `npm run preflight:demo` as an additional gate.
 
 Deployment is not considered ready merely because `next build` passes.

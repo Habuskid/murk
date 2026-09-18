@@ -51,10 +51,14 @@ The full live golden path is **not complete yet**.
 
 ### Verified in CI
 
+- reproducible `npm ci` install;
 - Next.js 16.3.3 production build;
-- Vitest suite;
+- Vitest suite, including ERC-8004 calldata/signature tests;
+- Drizzle migration-history consistency;
 - Celo/x402 external 402 challenge discovery;
 - current merchant payment-requirement inspection;
+- live FX coverage for NGN, KES, BRL, MXN, COP, AED, SAR, and INR;
+- stale-rate rejection;
 - Chromium UI rendering;
 - 320px, 390px, 768px, and 1280px responsive checks;
 - horizontal-overflow checks;
@@ -73,8 +77,8 @@ The full live golden path is **not complete yet**.
 - real paid external x402 settlement;
 - delivered paid resource;
 - real agent withdrawal to the bound Portal wallet;
-- production Neon provisioning/schema verification;
-- ERC-8004 registration;
+- production Neon provisioning/migration/restart verification;
+- live ERC-8004 registration and execution-wallet binding;
 - final program-assigned ERC-8021 attribution proof;
 - public demo deployment.
 
@@ -240,7 +244,7 @@ Persisted domains include:
 - policy decisions;
 - delivered-resource evidence.
 
-A real Neon database still needs to be provisioned and tested in the deployed environment.
+The initial Drizzle migration is committed and checked in CI. A dedicated Murk Neon database still needs to be provisioned through the Vercel-managed Neon integration, migrated, and restart-tested in the deployed environment.
 
 ## Financial Concurrency
 
@@ -265,9 +269,20 @@ Live Celo verification of this path is still pending.
 The locked ownership model is:
 
 - human Portal wallet owns the identity NFT;
-- separate Murk execution EOA is bound as the agent wallet.
+- separate Murk execution EOA is bound as the verified agent wallet.
 
-Live registration is not implemented yet and must not be claimed as complete.
+Implemented in code:
+
+- Celo mainnet Identity Registry integration;
+- public agent metadata endpoint;
+- human-wallet registration transaction preparation;
+- Registered-event verification and real agent-ID persistence;
+- execution-wallet EIP-712 consent;
+- owner-submitted `setAgentWallet` binding;
+- post-transaction owner/wallet verification;
+- transaction evidence persistence.
+
+Live Portal-signed mainnet registration and binding are still required before this is claimed as complete.
 
 ## ERC-8021
 
@@ -279,8 +294,9 @@ Still required:
 
 - obtain the actual hackathon/program-assigned Murk code;
 - configure `CELO_ATTRIBUTION_CODE`;
-- prove the code on a qualifying live transaction;
-- verify attribution in the final x402 settlement path.
+- prove the code on a qualifying live Murk-originated transaction.
+
+The hosted x402 facilitator owns the final EIP-3009 settlement transaction, so Murk does not claim that facilitator calldata is ERC-8021-tagged. The preferred live attribution proof is Murk's human-owned ERC-8004 registration or binding transaction.
 
 ## Golden Demo Path
 
@@ -404,25 +420,28 @@ See [.env.example](./.env.example) for details.
 
 ## Install
 
-The committed `package-lock.json` is currently stale and still reflects the old dependency stack.
-
-Until it is regenerated, use:
-
-```bash
-npm install
-```
-
-Then:
-
-```bash
-npm test
-npm run build
-```
-
-After regenerating and committing the lockfile, clean installs should move back to:
+The lockfile is current and CI uses reproducible installs.
 
 ```bash
 npm ci
+npm test
+npm run db:check
+npm run build
+```
+
+Database migration commands:
+
+```bash
+npm run db:generate
+npm run db:check
+npm run db:migrate
+```
+
+Deployment and demo safety gates:
+
+```bash
+npm run preflight:deploy
+npm run preflight:demo
 ```
 
 ## Spikes
