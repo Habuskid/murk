@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { CreateAgentSchema } from "@/lib/validation"
 import { repository, AgentRecord, MandateRecord, WalletRecord } from "@/db/repository"
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
+import { resolveAgentExecutionWallet } from "@/services/agent-wallet"
 
 export const dynamic = "force-dynamic"
 
@@ -44,16 +44,14 @@ export async function POST(req: NextRequest) {
     const ownerId = repository.getDemoUserId()
     const agentId = `agent_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
 
-    // Create execution wallet for agent
-    const privKey = generatePrivateKey()
-    const account = privateKeyToAccount(privKey)
+    const executionWallet = await resolveAgentExecutionWallet(agentId)
 
     const wallet: WalletRecord = {
       id: `wal_${agentId}`,
       agentId,
       type: "AGENT",
-      address: account.address,
-      provider: "VIEM_SERVER_EOA",
+      address: executionWallet.address,
+      provider: executionWallet.provider,
       chainId: 42220,
       createdAt: new Date(),
     }
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
       timezone: validated.timezone,
       walletId: wallet.id,
       walletAddress: wallet.address,
-      erc8004AgentId: `8004_${agentId}`,
+      erc8004AgentId: undefined,
       allowedAssets: validated.allowedAssets,
       minimumReserves: {},
       createdAt: new Date(),
