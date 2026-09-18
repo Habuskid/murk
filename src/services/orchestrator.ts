@@ -430,6 +430,15 @@ export async function executePurchaseWorkflow(
           params.mandate.spentTodayMinor -
           params.mandate.reservedTodayMinor
 
+        evidence.policyDecision = {
+          decision: "BLOCKED",
+          reasonCodes: [REASON_CODES.DAILY_MANDATE_EXCEEDED],
+          purchaseValueMinor: accountingValueMinor.toString(),
+          spentBeforeMinor: params.mandate.spentTodayMinor.toString(),
+          reservedBeforeMinor: params.mandate.reservedTodayMinor.toString(),
+          remainingBeforeMinor: remainingBefore.toString(),
+        }
+
         const receipt: OrchestratorReceipt = {
           purchaseId,
           agentName: params.agentName,
