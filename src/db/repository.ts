@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto"
 import { and, desc, eq, isNull, sql } from "drizzle-orm"
 import { getDb, schema } from "./index"
-import { CELO_TOKENS } from "../services/celo"
+import { CELO_CHAIN_ID, CELO_TOKENS } from "../services/celo"
 import type {
   OrchestratorReceipt,
   OrchestrationEvidence,
@@ -117,7 +117,7 @@ function asAddress(value: string): `0x${string}` {
 }
 
 function assetConfig(symbol: string) {
-  const token = Object.values(CELO_TOKENS).find((item) => item.symbol === symbol)
+  const token = Object.values(CELO_TOKENS).find((item) => item?.symbol === symbol)
   if (!token) {
     throw new Error(`UNSUPPORTED_SETTLEMENT_ASSET:${symbol}`)
   }
@@ -271,7 +271,7 @@ class PersistentRepository {
 
   async findUserWallet(
     userId: string,
-    chainId = 42220
+    chainId = CELO_CHAIN_ID
   ): Promise<WalletRecord | null> {
     const db = getDb()
     const [row] = await db
@@ -397,7 +397,7 @@ class PersistentRepository {
           agentId: agent.id,
           assetSymbol: symbol,
           assetAddress: token.address,
-          chainId: 42220,
+          chainId: CELO_CHAIN_ID,
           enabled: true,
           minimumReserveRaw: agent.minimumReserves[symbol] || 0n,
           createdAt: new Date(),
@@ -443,7 +443,7 @@ class PersistentRepository {
         agentId: agent.id,
         assetSymbol: symbol,
         assetAddress: token.address,
-        chainId: 42220,
+        chainId: CELO_CHAIN_ID,
         enabled: true,
         minimumReserveRaw: agent.minimumReserves[symbol] || 0n,
         createdAt: new Date(),
@@ -669,7 +669,7 @@ class PersistentRepository {
         const requirementId = `preq_${purchase.id}_${index + 1}`
         const asset = Object.values(CELO_TOKENS).find(
           (token) =>
-            token.address.toLowerCase() === requirement.assetAddress.toLowerCase()
+            token?.address.toLowerCase() === requirement.assetAddress.toLowerCase()
         )
 
         statements.push(
