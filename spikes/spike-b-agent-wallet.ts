@@ -41,7 +41,7 @@ export function getCeloPublicClient() {
 
 export type AgentWalletInfo = {
   address: `0x${string}`
-  provider: "CDP_SERVER_EOA" | "VIEM_SERVER_EOA"
+  provider: "VIEM_SERVER_EOA"
   celoBalanceWei: bigint
   celoBalanceFormatted: string
   tokenBalances: {
@@ -95,9 +95,23 @@ export async function runSpikeB(): Promise<{
       })
     }
 
-    const message = `Murk agent wallet verification on Celo block ${blockNumber}`
-    const signature = await executionWallet.x402Signer.signMessage({
-      message,
+    const signature = await executionWallet.x402Signer.signTypedData({
+      domain: {
+        name: "Murk Agent Wallet Verification",
+        version: "1",
+        chainId: CELO_CHAIN_ID,
+      },
+      types: {
+        Verification: [
+          { name: "blockNumber", type: "uint256" },
+          { name: "agent", type: "address" },
+        ],
+      },
+      primaryType: "Verification",
+      message: {
+        blockNumber,
+        agent: executionWallet.address,
+      },
     })
 
     const walletInfo: AgentWalletInfo = {
