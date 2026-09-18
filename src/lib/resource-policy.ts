@@ -106,6 +106,19 @@ function configuredResourceUrls(): Set<string> {
   )
 }
 
+function isAllowedTestnetSettlementHarness(resource: URL): boolean {
+  const isTestnet = process.env.NEXT_PUBLIC_MURK_NETWORK !== "mainnet"
+  const enabled = process.env.ENABLE_TESTNET_X402_MERCHANT === "true"
+
+  return (
+    isTestnet &&
+    enabled &&
+    resource.pathname === "/api/testnet/x402-resource" &&
+    resource.search === "" &&
+    resource.hash === ""
+  )
+}
+
 function isAllowedLocalFixture(resource: URL): boolean {
   if (
     process.env.NODE_ENV === "production" ||
@@ -150,6 +163,13 @@ export function assertAllowedX402Purchase(input: {
 
   assertPublicExternalUrl(resource)
   assertPublicExternalUrl(merchant)
+
+  if (isAllowedTestnetSettlementHarness(resource)) {
+    return {
+      merchantOrigin: merchant.origin,
+      resourceUrl: resource.toString(),
+    }
+  }
 
   const allowed = configuredResourceUrls()
   if (allowed.size === 0) {
