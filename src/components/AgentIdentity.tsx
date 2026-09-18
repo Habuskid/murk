@@ -8,6 +8,12 @@ import {
 } from "@/components/Icons"
 import { authedFetch } from "@/lib/authed-fetch"
 import { usePortalWallet } from "@/components/MurkPortalProvider"
+import {
+  CELO_CAIP2,
+  CELO_ERC8004_IDENTITY_REGISTRY,
+  CELO_EXPLORER_URL,
+  CELO_NETWORK_LABEL,
+} from "@/config/celo-network"
 
 type IdentityStatus = {
   registered: boolean
@@ -21,7 +27,7 @@ type IdentityStatus = {
 }
 
 type PreparedTransaction = {
-  chainId: "eip155:42220" | "eip155:11142220"
+  chainId: typeof CELO_CAIP2 | "eip155:11142220"
   transaction: {
     from: `0x${string}`
     to: `0x${string}`
@@ -268,7 +274,7 @@ export function AgentIdentity({
           </div>
 
           <a
-            href="https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+            href="${CELO_EXPLORER_URL}/address/${CELO_ERC8004_IDENTITY_REGISTRY}"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent"
@@ -287,7 +293,7 @@ export function AgentIdentity({
           className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-xs font-semibold text-text-primary transition hover:bg-surface-inset disabled:cursor-not-allowed disabled:opacity-45"
         >
           <ShieldCheckIcon className="h-4 w-4 text-accent" strokeWidth={1.9} />
-          {busy === "REGISTER" ? "Registering on Celo…" : "Register identity"}
+          {busy === "REGISTER" ? `Registering on ${CELO_NETWORK_LABEL}…` : "Register identity"}
         </button>
       )}
 
@@ -321,7 +327,7 @@ export function AgentIdentity({
 
       {lastTxHash && (
         <a
-          href={`https://celoscan.io/tx/${lastTxHash}`}
+          href={`${CELO_EXPLORER_URL}/tx/${lastTxHash}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] text-accent"
