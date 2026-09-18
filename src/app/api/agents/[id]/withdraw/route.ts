@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic"
  * Withdrawal remains fail-closed until the authenticated
  * embedded-user-wallet signing flow is verified on Celo mainnet.
  */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
-    await requireOwnedAgent(req, params.id)
+    await requireOwnedAgent(req, id)
     const body = await req.json()
     WithdrawAgentSchema.parse(body)
 
