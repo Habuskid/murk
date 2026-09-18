@@ -25,6 +25,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Fast-forward to latest feature branch
+        run: git pull --ff-only origin feat/privy-auth
+
       - name: Sync npm lockfile
         run: npm install --package-lock-only --ignore-scripts
 
