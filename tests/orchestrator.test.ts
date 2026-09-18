@@ -367,6 +367,67 @@ describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
     expect(result.receipt.remainingMandateMinor).toBe("500000")
   })
 
+  it("keeps spend reserved when x402 payment outcome is uncertain", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn()
+    const releaseSpend = vi.fn()
+    const uncertainError = Object.assign(
+      new Error("X402_PAYMENT_OUTCOME_UNCERTAIN"),
+      { code: "X402_PAYMENT_OUTCOME_UNCERTAIN" }
+    )
+    const paymentExecutor = vi.fn().mockRejectedValue(uncertainError)
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_uncertain_payment",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("PAYMENT_FAILED")
+    expect(paymentExecutor).toHaveBeenCalledTimes(1)
+    expect(commitSpend).not.toHaveBeenCalled()
+    expect(releaseSpend).not.toHaveBeenCalled()
+    expect(result.receipt.txHash).toBeNull()
+    expect(result.receipt.resourceDeliveryStatus).toBe(
+      "PAYMENT_OUTCOME_UNCERTAIN"
+    )
+    expect(result.receipt.reasonCodes).toContain(
+      "PAYMENT_OUTCOME_UNCERTAIN"
+    )
+    expect(result.receipt.remainingMandateMinor).toBe("366973")
+  })
+
   it("commits spend after settlement and never repays when resource delivery fails", async () => {
     vi.spyOn(x402Module, "requestResource")
       .mockResolvedValueOnce({
