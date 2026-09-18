@@ -1,39 +1,80 @@
+import { createHash } from "node:crypto"
+import { PrivyClient } from "@privy-io/node"
 import { NextRequest } from "next/server"
 import { repository, AgentRecord, UserRecord } from "@/db/repository"
-import {
-  MURK_SESSION_COOKIE,
-  verifyMurkSessionToken,
-} from "@/lib/murk-session"
 
 export type AuthenticatedOwner = {
   userId: string
   providerUserId: string
   walletAddress?: `0x${string}`
-  portalClientId: string
+}
+
+let privyClient: PrivyClient | null = null
+
+function getPrivyClient(): PrivyClient {
+  if (privyClient) return privyClient
+
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
+  const appSecret = process.env.PRIVY_APP_SECRET
+
+  if (!appId || !appSecret) {
+    throw new Error("PRIVY_AUTH_NOT_CONFIGURED")
+  }
+
+  privyClient = new PrivyClient({
+    appId,
+    appSecret,
+  })
+
+  return privyClient
+}
+
+function extractAccessToken(req: NextRequest): string {
+  const header = req.headers.get("authorization")
+  if (header?.startsWith("Bearer ")) {
+    const token = header.slice("Bearer ".length).trim()
+    if (token) return token
+  }
+
+  const cookieToken = req.cookies.get("privy-token")?.value
+  if (cookieToken) return cookieToken
+
+  throw new Error("AUTHORIZATION_REQUIRED")
+}
+
+function userIdForProvider(providerUserId: string): string {
+  const digest = createHash("sha256")
+    .update(providerUserId)
+    .digest("hex")
+    .slice(0, 24)
+
+  return `usr_${digest}`
 }
 
 export async function requireAuthenticatedOwner(
   req: NextRequest
 ): Promise<AuthenticatedOwner> {
-  const token = req.cookies.get(MURK_SESSION_COOKIE)?.value
-  if (!token) {
-    throw new Error("AUTHORIZATION_REQUIRED")
-  }
+  const accessToken = extractAccessToken(req)
 
-  let session
+  let claims
   try {
-    session = verifyMurkSessionToken(token)
+    claims = await getPrivyClient().utils().auth().verifyAccessToken(accessToken)
   } catch {
     throw new Error("AUTHORIZATION_REQUIRED")
   }
 
-  const providerUserId = `portal_${session.endUserId}`
+  const privyUserId = claims.user_id
+  if (!privyUserId) {
+    throw new Error("AUTHORIZATION_REQUIRED")
+  }
+
+  const providerUserId = `privy_${privyUserId}`
   let user = await repository.findUserByProviderId(providerUserId)
 
   if (!user) {
     const now = new Date()
     user = {
-      id: `usr_${session.endUserId}`,
+      id: userIdForProvider(providerUserId),
       providerUserId,
       email: "",
       createdAt: now,
@@ -48,7 +89,6 @@ export async function requireAuthenticatedOwner(
     userId: user.id,
     providerUserId,
     walletAddress: wallet?.address,
-    portalClientId: session.clientId,
   }
 }
 
@@ -67,11 +107,11 @@ export function authErrorResponse(error: unknown): {
     return { status: 404, body: { error: "Agent not found" } }
   }
 
-  if (message === "PORTAL_WALLET_NOT_READY") {
+  if (message === "PRIVY_WALLET_NOT_READY") {
     return { status: 409, body: { error: message } }
   }
 
-  if (message === "MURK_SESSION_SECRET_NOT_CONFIGURED") {
+  if (message === "PRIVY_AUTH_NOT_CONFIGURED") {
     return { status: 503, body: { error: message } }
   }
 
