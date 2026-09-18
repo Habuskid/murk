@@ -54,20 +54,23 @@ Unsupported assets must remain disabled rather than simulated.
 ## Authentication and Human Wallet
 
 - Email-first onboarding
-- Email OTP
-- Coinbase CDP Embedded Wallet EOA is the primary provider candidate
+- Email OTP via Clerk
+- Portal Web MPC wallet is the human embedded wallet provider
+- Portal browser authentication uses a server-issued Web OTP so the Custodian API key never reaches the DOM
+- Celo mainnet is configured as `eip155:42220`
 - No external wallet requirement for ordinary users
-- Human wallet must remain portable
-- Secure private-key export/recovery must be available through the provider's isolated export mechanism
-- Application JavaScript and backend must not receive the exported private key
+- Human wallet must support Portal backup/recovery
+- Human wallet portability must be verified through Portal Eject
+- Ejected private-key material must never be sent to Murk's backend, logs, analytics, or database
 
 ## Agent Wallet
 
-- Separate execution wallet from the human wallet
-- Primary candidate: CDP Server Wallet EOA
-- Pre-approved fallback if CDP server wallet cannot operate reliably on Celo: a server-side viem EOA with signing material stored only as protected server secret
+- Separate execution wallet from the human Portal wallet
+- MVP execution wallet is a dedicated server-side viem EOA
+- Its private key is a protected server-only secret
 - Agent private key must never reach the browser
 - Agent can only spend assets physically delegated to its execution wallet
+- Until per-agent key custody exists, the MVP must not pretend to provision multiple independent execution wallets
 
 ## Financial Policy
 
