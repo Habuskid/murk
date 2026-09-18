@@ -160,10 +160,30 @@ export function AgentFunds({
     const idempotencyKey = `fund_${crypto.randomUUID()}`
 
     try {
-      const result = await portal.sendAsset("eip155:42220", {
-        to: walletAddress,
-        token: assetSymbol,
-        amount: amount.trim(),
+      const prepareResponse = await authedFetch(
+        `/api/agents/${agentId}/fund`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assetSymbol,
+            amountRaw: amountRaw.toString(),
+          }),
+        }
+      )
+      const prepared = await prepareResponse.json()
+
+      if (!prepareResponse.ok) {
+        throw new Error(
+          prepared.error || "Could not prepare the funding transaction."
+        )
+      }
+
+      const result = await portal.request({
+        chainId: prepared.chainId,
+        method: "eth_sendTransaction",
+        params: [prepared.transaction],
+        signatureApprovalMemo: `Fund Murk agent with ${amount.trim()} ${assetSymbol}`,
       })
 
       const txHash = normalizeTxHash(result)
