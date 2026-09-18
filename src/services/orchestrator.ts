@@ -108,6 +108,7 @@ export type ExecutePurchaseParams = {
   agentId: string
   agentName: string
   agentAddress: `0x${string}`
+  agentStatus?: "DRAFT" | "ACTIVE" | "PAUSED" | "DISABLED"
   mandate: SpendingMandate
   allowedAssetSymbols: string[]
   merchantUrl: string
@@ -266,7 +267,7 @@ export async function executePurchaseWorkflow(
 
     // 5. Evaluate Policy
     policyDecision = evaluatePolicy({
-      agentStatus: "ACTIVE",
+      agentStatus: params.agentStatus ?? "ACTIVE",
       mandate: params.mandate,
       purchaseValueMinor: accountingValueMinor,
       isAssetAllowed: params.allowedAssetSymbols.includes(selectedAsset),
