@@ -131,6 +131,22 @@ jobs:
           for attempt in {1..20}; do
             if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health" > /tmp/murk-health.json; then
               cat /tmp/murk-health.json
+              node -e '
+                const fs = require("fs");
+                const health = JSON.parse(fs.readFileSync("/tmp/murk-health.json", "utf8"));
+                if (health?.chainId !== 42220) {
+                  console.error("Expected Celo mainnet chainId 42220, got", health?.chainId);
+                  process.exit(1);
+                }
+                if (health?.celoRpc?.status !== "healthy") {
+                  console.error("Celo mainnet RPC health is not healthy");
+                  process.exit(1);
+                }
+                if (health?.rateProvider?.status !== "healthy") {
+                  console.error("Rate provider health is not healthy");
+                  process.exit(1);
+                }
+              '
               exit 0
             fi
             sleep 3
