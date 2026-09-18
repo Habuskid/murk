@@ -585,8 +585,17 @@ export async function executePurchaseWorkflow(
     }
   } catch (err: any) {
     const failedAfterSettlement = Boolean(txHash)
+    const paymentOutcomeUncertain =
+      err?.code === "X402_PAYMENT_OUTCOME_UNCERTAIN" ||
+      err?.message === "X402_PAYMENT_OUTCOME_UNCERTAIN"
 
-    if (!failedAfterSettlement && spendReserved && !spendCommitted && params.releaseSpend) {
+    if (
+      !failedAfterSettlement &&
+      !paymentOutcomeUncertain &&
+      spendReserved &&
+      !spendCommitted &&
+      params.releaseSpend
+    ) {
       try {
         await params.releaseSpend(purchaseId)
         spendReserved = false
@@ -602,7 +611,7 @@ export async function executePurchaseWorkflow(
     const failureState: OrchestrationState = failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
 
     const remainingAfterFailure =
-      failedAfterSettlement
+      failedAfterSettlement || paymentOutcomeUncertain
         ? (
             reservationRemainingMinor ??
             policyDecision?.remainingAfterMinor ??
@@ -642,12 +651,26 @@ export async function executePurchaseWorkflow(
         rateNumerator: (rateQuote?.rateNumerator || 1n).toString(),
         rateDenominator: (rateQuote?.rateDenominator || 1n).toString(),
         policyDecision: policyDecision?.decision || "BLOCKED",
-        reasonCodes: [failedAfterSettlement ? "RESOURCE_NOT_DELIVERED" : "SYSTEM_ERROR"],
-        humanReadableReasons: [err.message],
+        reasonCodes: [
+          failedAfterSettlement
+            ? "RESOURCE_NOT_DELIVERED"
+            : paymentOutcomeUncertain
+              ? "PAYMENT_OUTCOME_UNCERTAIN"
+              : "SYSTEM_ERROR",
+        ],
+        humanReadableReasons: [
+          paymentOutcomeUncertain
+            ? "Payment outcome is uncertain; spending authority remains reserved until reconciliation"
+            : err.message,
+        ],
         network: "Celo Mainnet (42220)",
         chainId: 42220,
         txHash,
-        resourceDeliveryStatus: failedAfterSettlement ? "FAILED_AFTER_PAYMENT" : "FAILED",
+        resourceDeliveryStatus: failedAfterSettlement
+          ? "FAILED_AFTER_PAYMENT"
+          : paymentOutcomeUncertain
+            ? "PAYMENT_OUTCOME_UNCERTAIN"
+            : "FAILED",
         remainingMandateMinor: remainingAfterFailure.toString(),
         remainingMandateFormatted: formatMoneyMinor(remainingAfterFailure, 2),
         createdAt: new Date().toISOString(),
