@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import {
   createWalletClient,
+  encodeFunctionData,
   http,
   parseAbi,
 } from "viem"
@@ -11,6 +12,10 @@ import { repository } from "@/db/repository"
 import { CELO_RPC_URL, CELO_TOKENS, getCeloClient } from "@/services/celo"
 import { resolveAgentViemAccount } from "@/services/agent-wallet"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
+import {
+  appendMurkAttribution,
+  verifyMurkAttribution,
+} from "@/services/attribution"
 
 export const dynamic = "force-dynamic"
 
@@ -128,11 +133,15 @@ export async function POST(
       transport: http(CELO_RPC_URL),
     })
 
-    const txHash = await walletClient.writeContract({
-      address: token.address,
+    const transferData = encodeFunctionData({
       abi: ERC20_ABI,
       functionName: "transfer",
       args: [owner.walletAddress, amountRaw],
+    })
+
+    const txHash = await walletClient.sendTransaction({
+      to: token.address,
+      data: appendMurkAttribution(transferData),
       feeCurrency: token.address,
     })
 
@@ -202,6 +211,19 @@ export async function POST(
       blockNumber: receipt.blockNumber,
     })
 
+    const attribution = await verifyMurkAttribution(txHash).catch((error) => {
+      console.error("ERC-8021 attribution verification failed", {
+        txHash,
+        error: error instanceof Error ? error.message : String(error),
+      })
+
+      return {
+        configuredCode: process.env.CELO_ATTRIBUTION_CODE || null,
+        verified: false,
+        observedCodes: [] as string[],
+      }
+    })
+
     const responsePayload = {
       confirmed: true,
       fundsMoved: true,
@@ -209,6 +231,7 @@ export async function POST(
       assetSymbol: validated.assetSymbol,
       amountRaw: validated.amountRaw,
       destinationAddress: owner.walletAddress,
+      attribution,
     }
 
     await repository.saveIdempotencyResult({
