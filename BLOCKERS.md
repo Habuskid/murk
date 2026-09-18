@@ -34,28 +34,23 @@ Still required:
 
 The local `/api/merchant/*` route is a development fixture only and is never valid external-merchant evidence.
 
-## B2. Portal production configuration and live browser proof
+## B2. Privy configuration and live browser proof
 
 Status: BLOCKING HUMAN-WALLET E2E
 
-Portal-only auth/wallet code is implemented.
+Privy auth/wallet integration is implemented and passes install, tests, migration checks, and production build on the feature branch.
 
 Still required outside the repository:
 
-- enable Authentication for the Portal environment;
-- enable `EMAIL_MAGIC_LINK`;
-- verify the sending domain;
-- create the email template containing `{{{MAGIC_LINK}}}`;
-- allowlist local/deployed `/auth/callback`;
-- configure `PORTAL_AUTH_ENVIRONMENT_ID`;
-- configure `PORTAL_AUTH_FROM_EMAIL`;
-- configure `PORTAL_AUTH_TEMPLATE_ID`;
-- configure server-only `PORTAL_CUSTODIAN_API_KEY`;
-- configure `MURK_SESSION_SECRET`;
-- perform a real email-link round trip;
-- verify Portal MPC wallet create/reuse on Celo;
-- verify backup/recovery;
-- verify Portal Eject before claiming wallet portability.
+- create/configure the Murk Privy app;
+- enable the intended email and wallet login methods;
+- allow the deployed Murk origin;
+- configure `NEXT_PUBLIC_PRIVY_APP_ID`;
+- configure server-only `PRIVY_APP_SECRET`;
+- perform a real login round trip;
+- verify Privy embedded wallet create/reuse on Celo Sepolia;
+- confirm the wallet address survives reload and is persisted in Neon;
+- execute one real human-signed Celo Sepolia transaction.
 
 Do not introduce another identity/wallet provider to avoid this configuration.
 
@@ -85,17 +80,17 @@ Direct Neon project creation is restricted for the connected Vercel-managed orga
 
 Do not describe deployed persistence as proven until this is completed.
 
-## B5. Live Portal funding transaction
+## B5. Live Privy-wallet funding transaction
 
 Status: IMPLEMENTED, LIVE VERIFICATION REQUIRED
 
 Current code path:
 
-`Portal human wallet -> ERC-20 transfer -> Celo receipt -> Murk exact Transfer verification -> persisted transaction -> agent activation`
+`Privy human wallet -> ERC-20 transfer -> Celo receipt -> Murk exact Transfer verification -> persisted transaction -> agent activation`
 
 Still required:
 
-- real funded Portal wallet;
+- real funded Privy wallet;
 - real USDC/USDT transfer on Celo;
 - successful exact `from/to/token/amount` verification;
 - persisted transaction evidence;
@@ -107,14 +102,14 @@ A browser-supplied transaction hash without matching onchain evidence must conti
 
 Status: IMPLEMENTED, LIVE VERIFICATION REQUIRED
 
-Current code restricts the destination to the authenticated user's persisted Portal wallet.
+Current code restricts the destination to the authenticated user's persisted Privy wallet.
 
 Still required:
 
 - fund a real agent EOA;
 - execute a small return transaction;
 - verify Celo fee-currency behavior using the selected stablecoin;
-- confirm the user Portal wallet receives the funds;
+- confirm the user Privy wallet receives the funds;
 - confirm transaction persistence and explorer evidence;
 - test insufficient fee-balance behavior.
 
@@ -128,7 +123,7 @@ Implemented:
 
 - registration against the current Celo Identity Registry;
 - public metadata endpoint;
-- Portal-owner registration transaction preparation;
+- Privy-wallet-owner registration transaction preparation;
 - Registered-event verification and real agent ID persistence;
 - execution-wallet EIP-712 consent;
 - owner-submitted setAgentWallet transaction preparation;
@@ -138,7 +133,7 @@ Implemented:
 Still required:
 
 - deploy Murk so the metadata URI is publicly resolvable;
-- register on Celo Sepolia through the real Portal wallet;
+- register on Celo Sepolia through the real Privy wallet;
 - bind the real derived execution wallet;
 - preserve Sepolia explorer evidence;
 - repeat on mainnet before claiming mainnet completion.
@@ -221,7 +216,7 @@ Before Sepolia deployment:
 - create/link the dedicated Murk staging Vercel project;
 - provision/verify an isolated staging Neon database through the Vercel-managed integration;
 - configure the GitHub `staging` environment secrets;
-- configure Portal callbacks for the stable staging origin;
+- configure the deployed staging origin in Privy;
 - configure the Celo x402 Sepolia API key and seller address;
 - run the guarded staging workflow.
 
@@ -229,7 +224,7 @@ Before mainnet deployment:
 
 - configure production environment variables;
 - provision/verify the dedicated Murk Neon database and apply the committed migration;
-- configure Portal callback allowlist for the deployed origin;
+- allow the deployed origin in Privy;
 - set `PUBLIC_APP_ORIGIN` to the deployed HTTPS origin;
 - run `npm run preflight:deploy`;
 - ensure `UI_SANDBOX_MODE` is unset/false;
