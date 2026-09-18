@@ -5,6 +5,8 @@ import { executePurchaseWorkflow } from "@/services/orchestrator"
 import { SpendingMandate } from "@/core/types"
 import { executeApprovedX402Payment } from "@/services/x402-payment"
 
+import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
