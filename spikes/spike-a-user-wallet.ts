@@ -6,7 +6,7 @@
  * backup UX, or Eject UX.
  *
  * Required manual evidence:
- * - Clerk email OTP sign-in completed in Murk
+ * - Portal email magic-link sign-in completed in Murk
  * - Portal Web OTP session issued by Murk backend
  * - Portal MPC wallet created/reused in the browser
  * - EVM address registered in Murk
