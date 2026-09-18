@@ -1,0 +1,76 @@
+name: UI Sandbox
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/app/**"
+      - "src/components/**"
+      - "src/app/globals.css"
+      - "tailwind.config.ts"
+      - "package.json"
+      - "scripts/capture-ui.mjs"
+      - ".github/workflows/ui-sandbox.yml"
+
+concurrency:
+  group: murk-ui-sandbox
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UI_SANDBOX_MODE: "true"
+      PORTAL_AUTH_ENVIRONMENT_ID: "ui-sandbox"
+      PORTAL_AUTH_FROM_EMAIL: "ui@example.com"
+      PORTAL_AUTH_TEMPLATE_ID: "ui-sandbox"
+      PORTAL_CUSTODIAN_API_KEY: "ui-sandbox"
+      MURK_SESSION_SECRET: "ui-sandbox-session-secret-32-bytes-minimum"
+      AGENT_WALLET_MASTER_SECRET: "1111111111111111111111111111111111111111111111111111111111111111"
+      CELO_RPC_URL: "https://forno.celo.org"
+      NEXT_PUBLIC_CELO_RPC_URL: "https://forno.celo.org"
+      CELO_CHAIN_ID: "42220"
+      DATABASE_URL: "postgres://ui:ui@127.0.0.1:5432/ui"
+      NEXT_PUBLIC_X402_RESOURCE_URL: "https://agent402.tools/api/answer?q=what%20is%20celo"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Start sandbox
+        run: |
+          npm start > /tmp/murk-ui.log 2>&1 &
+          echo $! > /tmp/murk-ui.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/ui-sandbox >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/murk-ui.log
+          exit 1
+
+      - name: Capture browser screenshots
+        run: npm run ui:capture
+
+      - name: Upload UI screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: murk-ui-sandbox
+          path: artifacts/ui/*.png
+          if-no-files-found: error
+          retention-days: 7
