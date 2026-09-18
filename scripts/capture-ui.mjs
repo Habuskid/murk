@@ -25,15 +25,15 @@ for (const testCase of cases) {
   await page.goto(baseUrl + testCase.path, { waitUntil: "networkidle" })
 
   if (testCase.name.includes("agent")) {
-    await page.getByRole("button", { name: "Agent" }).click()
+    await page.getByRole("button", { name: "Agent", exact: true }).click()
   }
 
   if (testCase.name.includes("activity")) {
-    await page.getByRole("button", { name: "Activity" }).click()
+    await page.getByRole("button", { name: "Activity", exact: true }).click()
   }
 
   if (testCase.name.includes("policy")) {
-    await page.getByRole("button", { name: "Policy" }).click()
+    await page.getByRole("button", { name: "Policy", exact: true }).click()
   }
 
   await page.screenshot({
