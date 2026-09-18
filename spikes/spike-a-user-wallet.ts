@@ -10,13 +10,14 @@
  * - Portal Web OTP session issued by Murk backend
  * - Portal MPC wallet created/reused in the browser
  * - EVM address registered in Murk
- * - Celo mainnet signing/transaction verified
+ * - signing/transaction verified on the configured Celo network
  * - Portal backup/recovery verified
  * - Portal Eject/private-key portability verified
  */
 
 import { isAddress } from "viem"
-import { getCeloPublicClient, CELO_CHAIN_ID } from "./spike-b-agent-wallet"
+import { getCeloPublicClient } from "./spike-b-agent-wallet"
+import { CELO_CHAIN_ID } from "../src/services/celo"
 
 export type UserWalletSpikeResult = {
   provider: "PORTAL_MPC"
