@@ -2,30 +2,14 @@
  * Spike B: Persistent server agent wallet on Celo.
  *
  * Passes only when Murk can resolve the actual configured execution wallet,
- * read Celo mainnet state for that address, and sign with the same persistent
+ * read the configured Celo network state for that address, and sign with the same persistent
  * execution identity used by the runtime x402 client.
  */
 
 import { createPublicClient, http, formatEther, formatUnits, parseAbi } from "viem"
-import { celo } from "viem/chains"
 import { resolveAgentExecutionWallet } from "../src/services/agent-wallet"
 
-import { CELO_CHAIN_ID, CELO_RPC_URL } from "../src/services/celo"
-
-export const CELO_TOKENS = {
-  USDC: {
-    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as `0x${string}`,
-    decimals: 6,
-    symbol: "USDC",
-    name: "USD Coin",
-  },
-  USDT: {
-    address: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e" as `0x${string}`,
-    decimals: 6,
-    symbol: "USDT",
-    name: "Tether USD",
-  },
-} as const
+import { CELO_CHAIN, CELO_CHAIN_ID, CELO_RPC_URL, CELO_TOKENS } from "../src/services/celo"
 
 const ERC20_ABI = parseAbi([
   "function balanceOf(address owner) view returns (uint256)",
@@ -33,7 +17,7 @@ const ERC20_ABI = parseAbi([
 
 export function getCeloPublicClient() {
   return createPublicClient({
-    chain: celo,
+    chain: CELO_CHAIN,
     transport: http(CELO_RPC_URL),
   })
 }
@@ -78,6 +62,8 @@ export async function runSpikeB(): Promise<{
 
     const tokenBalances = []
     for (const token of Object.values(CELO_TOKENS)) {
+      if (!token) continue
+
       const rawBalance = await publicClient.readContract({
         address: token.address,
         abi: ERC20_ABI,
