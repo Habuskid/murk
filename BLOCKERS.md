@@ -182,10 +182,17 @@ Status: BLOCKING DEMO LOCK
 
 Murk has deterministic block logic and browser/UI proof, but the final demo must show a real external request that is rejected before signing.
 
-Acceptable live proof:
+Preferred live proof:
 
-- a real merchant request whose accounting value exceeds the per-purchase limit; or
-- a second real request that exceeds the remaining daily authority after the first successful purchase.
+- use the same verified external merchant/resource as the successful purchase;
+- lower the per-purchase authority below the resource's live accounting value;
+- request the same real resource again;
+- prove the request is blocked before signing.
+
+Alternative proof:
+
+- a separately verified external resource whose accounting value exceeds the per-purchase limit; or
+- a later real request that exceeds remaining daily authority.
 
 Required evidence:
 
