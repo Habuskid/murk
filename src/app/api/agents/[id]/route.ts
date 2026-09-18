@@ -20,9 +20,10 @@ async function syncLiveAddress(agentId: string) {
   return agent
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
-    const { agent: ownedAgent } = await requireOwnedAgent(req, params.id)
+    const { agent: ownedAgent } = await requireOwnedAgent(req, id)
     const agent = await syncLiveAddress(ownedAgent.id)
     const mandate = repository.getLatestMandate(agent.id)
 
@@ -52,9 +53,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
-    const { agent } = await requireOwnedAgent(req, params.id)
+    const { agent } = await requireOwnedAgent(req, id)
     const body = await req.json()
     const validated = UpdateAgentSchema.parse(body)
 
