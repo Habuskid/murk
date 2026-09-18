@@ -64,7 +64,7 @@ The full live golden path is **not yet complete**.
 
 - independent external Celo x402 merchant;
 - a real successful x402 payment and delivered resource;
-- Clerk email OTP + Portal embedded MPC wallet;
+- Portal-managed email magic-link authentication + Portal embedded MPC wallet;
 - real human-wallet funding;
 - real human-wallet withdrawal;
 - Neon-backed runtime persistence;
@@ -75,12 +75,31 @@ The full live golden path is **not yet complete**.
 
 Murk deliberately fails closed where these integrations are not yet wired. It does not fabricate success.
 
+## Human Authentication and Wallet
+
+Murk uses Portal for both the human identity flow and embedded wallet.
+
+```text
+Email
+-> Portal magic link
+-> Portal end-user/client
+-> signed Murk HttpOnly session
+-> Portal Web MPC wallet
+-> Celo address
+```
+
+Murk does not use Coinbase CDP or Clerk.
+
+The Portal Custodian API key stays server-side. The Web SDK authenticates through Murk's server `authUrl`, which mints one-time Portal Web OTPs for the already-authenticated client.
+
+Portal backup/recovery and Eject remain required verification gates before Murk claims wallet portability.
+
 ## Golden Path
 
 The target live demo is:
 
 ```text
-Email OTP
+Portal email magic link
 -> Portal embedded user wallet
 -> create Research Agent
 -> choose accounting currency
@@ -241,7 +260,7 @@ NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL=
 EXCHANGE_RATE_API_URL=
 ```
 
-Additional Portal variables exist for the upcoming embedded-wallet integration.
+Portal authentication requires a configured Auth Environment, verified sending domain, email template, server-only Custodian API key, and Murk session secret. See `.env.example` and `BLOCKERS.md`.
 
 ## Install
 
