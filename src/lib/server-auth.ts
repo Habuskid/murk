@@ -1,56 +1,6 @@
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { NextRequest } from "next/server"
-import { CdpClient } from "@coinbase/cdp-sdk"
-import { repository, AgentRecord, UserRecord, WalletRecord } from "@/db/repository"
-
-let cdpClient: CdpClient | null = null
-
-function getServerCdpClient(): CdpClient {
-  const apiKeyId = process.env.CDP_API_KEY_ID
-  const apiKeySecret = process.env.CDP_API_KEY_SECRET
-
-  if (!apiKeyId || !apiKeySecret) {
-    throw new Error("CDP_SERVER_AUTH_NOT_CONFIGURED")
-  }
-
-  if (!cdpClient) {
-    cdpClient = new CdpClient({
-      apiKeyId,
-      apiKeySecret,
-    })
-  }
-
-  return cdpClient
-}
-
-function extractBearerToken(req: NextRequest): string {
-  const header = req.headers.get("authorization")
-  if (!header?.startsWith("Bearer ")) {
-    throw new Error("AUTHORIZATION_REQUIRED")
-  }
-
-  const token = header.slice("Bearer ".length).trim()
-  if (!token) {
-    throw new Error("AUTHORIZATION_REQUIRED")
-  }
-
-  return token
-}
-
-function extractEmail(authenticationMethods: unknown): string | undefined {
-  if (!Array.isArray(authenticationMethods)) return undefined
-
-  for (const method of authenticationMethods) {
-    if (
-      method &&
-      typeof method === "object" &&
-      typeof (method as { email?: unknown }).email === "string"
-    ) {
-      return (method as { email: string }).email.trim().toLowerCase()
-    }
-  }
-
-  return undefined
-}
+import { repository, AgentRecord, UserRecord } from "@/db/repository"
 
 export type AuthenticatedOwner = {
   userId: string
@@ -60,35 +10,32 @@ export type AuthenticatedOwner = {
 }
 
 export async function requireAuthenticatedOwner(
-  req: NextRequest
+  _req?: NextRequest
 ): Promise<AuthenticatedOwner> {
-  const accessToken = extractBearerToken(req)
+  let clerkUserId: string | null = null
 
-  let endUser
   try {
-    endUser = await getServerCdpClient().endUser.validateAccessToken({
-      accessToken,
-    })
+    const session = await auth()
+    clerkUserId = session.userId
   } catch {
-    throw new Error("INVALID_OR_EXPIRED_ACCESS_TOKEN")
+    throw new Error("AUTHORIZATION_REQUIRED")
   }
 
-  const providerUserId = endUser.userId
-  if (!providerUserId) {
-    throw new Error("CDP_USER_ID_MISSING")
+  if (!clerkUserId) {
+    throw new Error("AUTHORIZATION_REQUIRED")
   }
 
-  const email = extractEmail(endUser.authenticationMethods)
-  const walletAddress = endUser.evmAccountObjects?.[0]?.address as
-    | `0x${string}`
-    | undefined
+  const clerkUser = await currentUser().catch(() => null)
+  const email =
+    clerkUser?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || undefined
 
-  let user = repository.findUserByProviderId(providerUserId)
+  let user = repository.findUserByProviderId(clerkUserId)
+
   if (!user) {
     const now = new Date()
     user = {
-      id: `usr_${providerUserId}`,
-      providerUserId,
+      id: `usr_${clerkUserId}`,
+      providerUserId: clerkUserId,
       email: email || "",
       createdAt: now,
       updatedAt: now,
@@ -100,23 +47,13 @@ export async function requireAuthenticatedOwner(
     repository.saveUser(user)
   }
 
-  if (walletAddress) {
-    repository.upsertUserWallet({
-      id: `wal_user_${providerUserId}`,
-      userId: user.id,
-      type: "USER",
-      address: walletAddress,
-      provider: "CDP_EMBEDDED_WALLET",
-      chainId: 42220,
-      createdAt: new Date(),
-    } satisfies WalletRecord)
-  }
+  const wallet = repository.findUserWallet(user.id)
 
   return {
     userId: user.id,
-    providerUserId,
+    providerUserId: clerkUserId,
     email,
-    walletAddress,
+    walletAddress: wallet?.address,
   }
 }
 
@@ -126,10 +63,7 @@ export function authErrorResponse(error: unknown): {
 } {
   const message = error instanceof Error ? error.message : "AUTHENTICATION_FAILED"
 
-  if (
-    message === "AUTHORIZATION_REQUIRED" ||
-    message === "INVALID_OR_EXPIRED_ACCESS_TOKEN"
-  ) {
+  if (message === "AUTHORIZATION_REQUIRED") {
     return { status: 401, body: { error: message } }
   }
 
@@ -137,13 +71,12 @@ export function authErrorResponse(error: unknown): {
     return { status: 404, body: { error: "Agent not found" } }
   }
 
-  if (message === "CDP_SERVER_AUTH_NOT_CONFIGURED") {
-    return { status: 503, body: { error: message } }
+  if (message === "PORTAL_WALLET_NOT_READY") {
+    return { status: 409, body: { error: message } }
   }
 
   return { status: 500, body: { error: message } }
 }
-
 
 export async function requireOwnedAgent(
   req: NextRequest,
