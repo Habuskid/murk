@@ -29,6 +29,7 @@ export function AgentSettings({
   onLimitsUpdated,
 }: AgentSettingsProps) {
   const [isPaused, setIsPaused] = useState(agentStatus === "PAUSED")
+  const canTogglePause = agentStatus === "ACTIVE" || agentStatus === "PAUSED"
   const [editMode, setEditMode] = useState(false)
   const [newDaily, setNewDaily] = useState(dailyLimitFormatted.replace(/,/g, ""))
   const [newPerPurchase, setNewPerPurchase] = useState(
@@ -55,6 +56,7 @@ export function AgentSettings({
   }
 
   const togglePause = async () => {
+    if (!canTogglePause) return
     const action = isPaused ? "resume" : "pause"
 
     try {
@@ -133,12 +135,22 @@ export function AgentSettings({
         <span
           className={[
             "rounded-full px-2.5 py-1 text-[11px] font-semibold",
-            isPaused
-              ? "bg-danger-soft text-danger"
-              : "bg-success-soft text-success",
+            agentStatus === "ACTIVE"
+              ? "bg-success-soft text-success"
+              : agentStatus === "PAUSED"
+                ? "bg-danger-soft text-danger"
+                : agentStatus === "DRAFT"
+                  ? "bg-accent-soft text-accent"
+                  : "bg-surface-inset text-text-secondary",
           ].join(" ")}
         >
-          {isPaused ? "Paused" : "Active"}
+          {agentStatus === "ACTIVE"
+            ? "Active"
+            : agentStatus === "PAUSED"
+              ? "Paused"
+              : agentStatus === "DRAFT"
+                ? "Needs funding"
+                : "Disabled"}
         </span>
       </div>
 
@@ -247,17 +259,24 @@ export function AgentSettings({
       <div className="mt-5 border-t border-border pt-4">
         <div className="text-xs font-semibold text-text-primary">Agent control</div>
         <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-          Pausing prevents new purchases before any transaction is signed.
+          {agentStatus === "DRAFT"
+            ? "Fund the execution wallet first. Murk activates the agent only after the transfer is confirmed on Celo."
+            : agentStatus === "DISABLED"
+              ? "This agent is disabled and cannot make new purchases."
+              : "Pausing prevents new purchases before any transaction is signed."}
         </p>
 
         <button
           type="button"
           onClick={() => void togglePause()}
+          disabled={!canTogglePause}
           className={[
-            "mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-xs font-semibold transition active:scale-[0.99]",
-            isPaused
-              ? "border-success/25 bg-success-soft text-success"
-              : "border-danger/20 bg-danger-soft text-danger",
+            "mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-xs font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-inset disabled:text-text-tertiary",
+            canTogglePause
+              ? isPaused
+                ? "border-success/25 bg-success-soft text-success"
+                : "border-danger/20 bg-danger-soft text-danger"
+              : "",
           ].join(" ")}
         >
           {isPaused ? (
@@ -265,7 +284,11 @@ export function AgentSettings({
           ) : (
             <PauseIcon className="h-4 w-4" strokeWidth={1.9} />
           )}
-          {isPaused ? "Resume agent" : "Pause agent"}
+          {canTogglePause
+            ? isPaused
+              ? "Resume agent"
+              : "Pause agent"
+            : "Agent not active"}
         </button>
       </div>
 
