@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { parseUnits } from "viem"
 import { usePortalWallet } from "@/components/MurkPortalProvider"
 import { authedFetch } from "@/lib/authed-fetch"
+import { PUBLIC_CELO_EXPLORER_BASE_URL } from "@/lib/celo-public"
 import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
@@ -274,7 +275,7 @@ export function AgentFunds({
         </div>
 
         <a
-          href={`https://celoscan.io/address/${walletAddress}`}
+          href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/address/${walletAddress}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-secondary transition hover:text-text-primary"
@@ -424,7 +425,7 @@ export function AgentFunds({
 
           {lastTxHash && (
             <a
-              href={`https://celoscan.io/tx/${lastTxHash}`}
+              href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/tx/${lastTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 block truncate font-mono text-[10px] text-accent"
@@ -491,7 +492,7 @@ export function AgentFunds({
 
           {withdrawalTxHash && (
             <a
-              href={`https://celoscan.io/tx/${withdrawalTxHash}`}
+              href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/tx/${withdrawalTxHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 block truncate font-mono text-[10px] text-accent"
