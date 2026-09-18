@@ -19,6 +19,9 @@ interface PurchaseRunnerProps {
   onPurchaseComplete: (receipt: OrchestratorReceipt) => void
 }
 
+const APPROVED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_RESOURCE_URL || ""
+const BLOCKED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL || ""
+
 const WORKFLOW_STEPS = [
   { key: "CHECK_SERVICE", label: "Merchant x402 Challenge Handshake" },
   { key: "SELECT_ASSET", label: "Multi-Asset Discovery & FX Rate Quote" },
@@ -39,27 +42,35 @@ export function PurchaseRunner({
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1)
   const [activeReceipt, setActiveReceipt] = useState<OrchestratorReceipt | null>(null)
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
+  const [runError, setRunError] = useState<string | null>(null)
 
   const isBlocked = selectedScenario === "blocked"
+  const configuredResourceUrl = isBlocked ? BLOCKED_RESOURCE_URL : APPROVED_RESOURCE_URL
+  const isConfigured = Boolean(configuredResourceUrl)
 
   const triggerPurchase = async () => {
     setIsRunning(true)
     setActiveReceipt(null)
     setShowTechnicalDetails(false)
+    setRunError(null)
+    setCurrentStepIndex(0)
 
-    // Visual step progression
-    for (let i = 0; i < (isBlocked ? 3 : 5); i++) {
-      setCurrentStepIndex(i)
-      await new Promise((r) => setTimeout(r, 220))
+    if (!configuredResourceUrl) {
+      setRunError(
+        isBlocked
+          ? "No external blocked-scenario x402 resource is configured."
+          : "No external x402 resource is configured."
+      )
+      setIsRunning(false)
+      setCurrentStepIndex(-1)
+      return
     }
 
     try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+      const resource = new URL(configuredResourceUrl)
       const payload = {
-        merchantUrl: `${origin}/api/merchant`,
-        resourceUrl: isBlocked
-          ? `${origin}/api/merchant/expensive-report`
-          : `${origin}/api/merchant/dataset`,
+        merchantUrl: resource.origin,
+        resourceUrl: configuredResourceUrl,
         idempotencyKey: `run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       }
 
@@ -70,8 +81,17 @@ export function PurchaseRunner({
       })
 
       const data = await res.json()
-      setCurrentStepIndex(5)
       setIsRunning(false)
+
+      if (!res.ok) {
+        setRunError(data.error || "The live purchase could not be completed.")
+        setCurrentStepIndex(-1)
+        return
+      }
+
+      if (Array.isArray(data.steps)) {
+        setCurrentStepIndex(Math.min(data.steps.length - 1, WORKFLOW_STEPS.length - 1))
+      }
 
       if (data.receipt) {
         setActiveReceipt(data.receipt)
@@ -79,6 +99,8 @@ export function PurchaseRunner({
       }
     } catch (err) {
       setIsRunning(false)
+      setCurrentStepIndex(-1)
+      setRunError(err instanceof Error ? err.message : "The live purchase could not be completed.")
     }
   }
 
@@ -163,13 +185,13 @@ export function PurchaseRunner({
         <div className="flex justify-between">
           <span className="text-text-secondary">Target Resource:</span>
           <span className="text-text-primary font-mono text-[11px] font-medium">
-            {isBlocked ? "/api/merchant/expensive-report" : "/api/merchant/dataset"}
+            {configuredResourceUrl || "Not configured"}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-text-secondary">Merchant Cost:</span>
           <span className="text-text-primary font-bold tabular-nums">
-            {isBlocked ? "2.00 USDC (~NGN 2,660.00)" : "1.00 USDC (~NGN 1,330.00)"}
+            {isConfigured ? "Read from the merchant's live 402 response" : "Unavailable"}
           </span>
         </div>
         <div className="flex justify-between items-center">
@@ -177,7 +199,7 @@ export function PurchaseRunner({
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
             isBlocked ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
           }`}>
-            {isBlocked ? "BLOCKED BEFORE SIGNING (0 Gas)" : "APPROVED & EXECUTED ON-CHAIN"}
+            {isBlocked ? "BLOCKED BY REAL POLICY EVALUATION" : "LIVE X402 PURCHASE"}
           </span>
         </div>
       </div>
@@ -186,7 +208,7 @@ export function PurchaseRunner({
       <div className="mt-4">
         <button
           onClick={triggerPurchase}
-          disabled={isRunning}
+          disabled={isRunning || !isConfigured}
           className={`w-full py-3.5 px-4 rounded-2xl text-xs font-bold tracking-wide transition-all duration-150 flex items-center justify-center gap-2 shadow-xs active:scale-[0.99] disabled:opacity-50 ${
             isBlocked
               ? "bg-danger text-white hover:bg-danger/90"
@@ -201,13 +223,19 @@ export function PurchaseRunner({
           ) : (
             <>
               {isBlocked ? <ShieldAlertIcon className="w-4 h-4" /> : <BoltIcon className="w-4 h-4" />}
-              <span>{isBlocked ? "Execute Blocked Scenario (2 USDC)" : "Execute Approved Scenario (1 USDC)"}</span>
+              <span>{isBlocked ? "Run Blocked Scenario" : "Run Live x402 Purchase"}</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Step Progress Timeline */}
+      {runError && (
+        <div className="mt-4 rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-xs text-danger">
+          {runError}
+        </div>
+      )}
+
+            {/* Step Progress Timeline */}
       {isRunning && (
         <div className="mt-4 p-4 bg-surface-inset rounded-2xl border border-border animate-in fade-in duration-200">
           <div className="space-y-3">
