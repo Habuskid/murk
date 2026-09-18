@@ -68,7 +68,6 @@ export const FundAgentSchema = z.object({
 export const WithdrawAgentSchema = z.object({
   assetSymbol: z.enum(MVP_SETTLEMENT_ASSETS),
   amountRaw: BigIntStringSchema,
-  destinationAddress: EvmAddressSchema,
   idempotencyKey: z.string().min(8, "Idempotency key required for financial mutation"),
 })
 
