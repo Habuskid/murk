@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import { MurkCDPProvider } from "@/components/MurkCDPProvider"
 
 export const metadata: Metadata = {
   title: "Murk | Spending Authority for Autonomous Agents",
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="flex min-h-[100dvh] flex-col items-center justify-start antialiased">
-        <div className="w-full max-w-md md:max-w-lg min-h-[100dvh] flex flex-col px-4 py-6">
-          {children}
-        </div>
+        <MurkCDPProvider>
+          <div className="w-full max-w-md md:max-w-lg min-h-[100dvh] flex flex-col px-4 py-6">
+            {children}
+          </div>
+        </MurkCDPProvider>
       </body>
     </html>
   )
