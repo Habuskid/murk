@@ -47,3 +47,6 @@ jobs:
 
       - name: Inspect external merchant asset choices
         run: npm run spike:d
+
+      - name: Verify live accounting FX coverage
+        run: npm run spike:e
