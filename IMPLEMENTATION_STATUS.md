@@ -258,18 +258,31 @@ Current flow:
 
 ## ERC-8004
 
-Status: NOT INTEGRATED
+Status: IMPLEMENTED IN CODE, LIVE MAINNET VERIFICATION PENDING
 
-Architecture decision:
+Implemented:
 
-- human Portal wallet should own the ERC-8004 identity NFT;
-- separate Murk execution EOA should be bound as the agent wallet.
+- current Celo Identity Registry address;
+- public agent metadata endpoint;
+- human Portal wallet registration transaction preparation;
+- onchain Registered-event verification;
+- real agent ID persistence;
+- EIP-712 consent signed by the derived execution EOA;
+- human-owner setAgentWallet transaction preparation;
+- ownerOf/getAgentWallet post-transaction verification;
+- registration/binding transaction persistence;
+- deterministic unit test that recovers the execution-wallet consent signer.
+
+Ownership model remains:
+
+- human Portal wallet owns the ERC-8004 identity NFT;
+- separate Murk execution EOA is bound as the verified agent wallet.
 
 Still required:
 
-- live Celo registration;
-- real agent ID;
-- ownership/binding transaction;
+- deployed public metadata origin;
+- live Portal-signed Celo registration;
+- live binding transaction;
 - explorer evidence.
 
 ## ERC-8021
@@ -287,8 +300,14 @@ Implemented:
 Still required:
 
 - obtain/configure the actual hackathon/program-assigned Murk attribution code;
-- prove the assigned code on a qualifying live transaction;
-- verify how attribution is represented in the final paid x402 settlement path.
+- prove the assigned code on a qualifying live Murk-originated transaction.
+
+Attribution boundary:
+
+- Murk app-originated contract transactions such as ERC-8004 registration/binding can carry the ERC-8021 suffix;
+- the hosted x402 facilitator submits the final EIP-3009 settlement transaction, so Murk does not control that settlement calldata and must not claim it is Murk-tagged.
+
+The preferred live attribution proof is the meaningful human-owned ERC-8004 registration or wallet-binding transaction.
 
 Do not claim completed hackathon attribution until live proof exists.
 
