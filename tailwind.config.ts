@@ -16,6 +16,7 @@ const config: Config = {
         "surface-hover": "var(--surface-hover)",
         "text-primary": "var(--text-primary)",
         "text-secondary": "var(--text-secondary)",
+        "text-tertiary": "var(--text-tertiary)",
         border: "var(--border)",
         accent: {
           DEFAULT: "var(--accent)",
@@ -28,6 +29,10 @@ const config: Config = {
         danger: {
           DEFAULT: "var(--danger)",
           soft: "var(--danger-soft)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          soft: "var(--warning-soft)",
         },
         nav: {
           DEFAULT: "var(--nav)",
