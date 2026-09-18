@@ -62,8 +62,8 @@ export async function POST(
     const validated = CreatePurchaseSchema.parse(body)
 
     const approvedResource = assertAllowedX402Purchase({
-      merchantUrl: approvedResource.merchantOrigin,
-      resourceUrl: approvedResource.resourceUrl,
+      merchantUrl: validated.merchantUrl,
+      resourceUrl: validated.resourceUrl,
     })
 
     const requestHash = purchaseRequestHash({
