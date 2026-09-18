@@ -4,172 +4,227 @@ This file records unresolved blockers that affect the locked Murk golden path.
 
 Coding agents must not hide, bypass, simulate, or silently replace these blockers.
 
-## B1. Independent external Celo x402 resource
+## B1. Real paid external Celo x402 execution
 
-Status: LIVE 402 CHALLENGE VERIFIED, PAID EXECUTION STILL REQUIRED
+Status: BLOCKING END-TO-END
 
-CI now verifies an independent external x402 resource:
+CI verifies a real independent 402 challenge from:
 
 `https://agent402.tools/api/answer?q=what%20is%20celo`
 
-Verified:
+Already verified:
 
-- real HTTP 402 response;
-- payment requirements parse successfully;
-- `eip155:42220`;
-- one live Celo payment requirement.
+- real HTTP 402;
+- Celo network requirement;
+- payment-requirement parsing;
+- current merchant discovery.
 
-Still required before golden-demo lock:
+Still required:
 
-- fund the real Murk execution wallet;
-- successful paid retry;
-- real settlement response with transaction hash;
-- real resource returned.
+- fund a real Murk execution wallet;
+- execute the exact Murk-approved x402 payment;
+- obtain confirmed Celo settlement evidence;
+- obtain the real paid resource;
+- persist the resulting receipt/audit evidence;
+- prove no duplicate payment occurs if resource delivery fails after settlement.
 
-The live merchant currently exposes one Celo requirement, so Murk must not claim multi-asset selection against this specific merchant unless that changes and Spike D proves it.
+The local `/api/merchant/*` route is a development fixture only and is never valid external-merchant evidence.
 
-The local `/api/merchant/*` route remains a development fixture only. It is not valid hackathon evidence.
+## B2. Portal production configuration and live browser proof
 
-## B2. Live x402 v2 execution has not been runtime-verified
+Status: BLOCKING HUMAN-WALLET E2E
 
-Status: IMPLEMENTED IN CODE, NOT VERIFIED
+Portal-only auth/wallet code is implemented.
 
-The repo now uses the current x402 v2 package family and includes a policy-bound executor in:
+Still required outside the repository:
 
-`src/services/x402-payment.ts`
+- enable Authentication for the Portal environment;
+- enable `EMAIL_MAGIC_LINK`;
+- verify the sending domain;
+- create the email template containing `{{{MAGIC_LINK}}}`;
+- allowlist local/deployed `/auth/callback`;
+- configure `PORTAL_AUTH_ENVIRONMENT_ID`;
+- configure `PORTAL_AUTH_FROM_EMAIL`;
+- configure `PORTAL_AUTH_TEMPLATE_ID`;
+- configure server-only `PORTAL_CUSTODIAN_API_KEY`;
+- configure `MURK_SESSION_SECRET`;
+- perform a real email-link round trip;
+- verify Portal MPC wallet create/reuse on Celo;
+- verify backup/recovery;
+- verify Portal Eject before claiming wallet portability.
 
-The executor:
+Do not introduce another identity/wallet provider to avoid this configuration.
 
-- registers Exact EVM on eip155:42220;
-- uses the server agent EOA;
-- disables the SDK's generic spend-control layer because Murk policy already authorizes the exact payment;
-- constrains x402 selection to the exact token, amount, payTo, network, and scheme Murk approved;
-- extracts settlement evidence from the x402 payment response;
-- fails if settlement evidence is missing.
+## B3. Package lock is stale
 
-This is not considered passed until `npm install`, `npm run build`, and a real live purchase succeed.
+Status: BLOCKING CLEAN REPRODUCIBLE INSTALL
 
-## B3. Package lock is stale after dependency migrations
+`package.json` is current, but committed `package-lock.json` still describes the old stack, including legacy Coinbase/Next 14/x402 dependencies.
 
-Status: BLOCKING CLEAN INSTALL WITH npm ci
+Current CI passes because it runs:
 
-`package.json` has been migrated from the legacy `x402` package to:
+`npm install`
 
-- `@x402/core`
-- `@x402/evm`
-- `@x402/fetch`
+A clean reproducible install with:
 
-The current `package-lock.json` has not yet been regenerated.
+`npm ci`
 
-Required action in the development environment:
+is not valid until the lockfile is regenerated.
+
+Required action:
 
 ```bash
 npm install
+git add package-lock.json
+git commit -m "chore: regenerate lockfile for current Murk stack"
 ```
 
-Then commit the regenerated `package-lock.json`.
+Do not revert current dependencies merely to match the stale lockfile.
 
-Do not revert to the legacy x402 package to avoid this step.
+## B4. Real Neon database provisioning and schema verification
 
-## B4. Portal-managed authentication + embedded user wallet
+Status: BLOCKING DEPLOYED PERSISTENCE PROOF
 
-Status: CODED, LIVE PORTAL CONFIGURATION / VERIFICATION REQUIRED
+Runtime persistence is implemented through Neon/Drizzle in code.
 
-Murk no longer uses Coinbase CDP or Clerk.
+Still required:
 
-Current architecture:
+- provision the real Neon database;
+- configure `DATABASE_URL`;
+- apply the current schema/migrations;
+- create a user/agent/mandate through the real app;
+- restart/redeploy the app;
+- verify state survives restart;
+- verify atomic spend reservation against the real database.
 
-- Portal `EMAIL_MAGIC_LINK` authenticates the human user;
-- Portal creates/reuses the user's Portal client during sign-in;
-- Murk exchanges the single-use callback token server-side;
-- Murk validates the returned Client Session Token against Portal's `/clients/me` endpoint;
-- Murk stores only a signed HttpOnly application session containing the Portal end-user/client identity;
-- Portal Web SDK authenticates through Murk's server `authUrl` using one-time Web OTPs;
-- Portal Web MPC wallet is created/reused in the browser;
-- Celo address is registered back to Murk;
-- Portal backup/recovery and Eject must be verified before claiming portability.
+Do not describe deployed persistence as proven until this is completed.
 
-Required configuration:
+## B5. Live Portal funding transaction
 
-- `PORTAL_AUTH_ENVIRONMENT_ID`
-- `PORTAL_AUTH_FROM_EMAIL`
-- `PORTAL_AUTH_TEMPLATE_ID`
-- `PORTAL_CUSTODIAN_API_KEY`
-- `MURK_SESSION_SECRET`
+Status: IMPLEMENTED, LIVE VERIFICATION REQUIRED
 
-Portal dashboard configuration additionally requires:
+Current code path:
 
-- Authentication enabled for the environment;
-- `EMAIL_MAGIC_LINK` enabled;
-- a verified sending domain;
-- a Portal email template containing `{{{MAGIC_LINK}}}`;
-- the deployed/local callback URL allowlisted as `/auth/callback`.
+`Portal human wallet -> ERC-20 transfer -> Celo receipt -> Murk exact Transfer verification -> persisted transaction -> agent activation`
 
-Live browser verification is still required.
+Still required:
 
-## B5. User-wallet funding and withdrawal
+- real funded Portal wallet;
+- real USDC/USDT transfer on Celo;
+- successful exact `from/to/token/amount` verification;
+- persisted transaction evidence;
+- updated live agent balance.
 
-Status: FAIL-CLOSED, NOT INTEGRATED
+A browser-supplied transaction hash without matching onchain evidence must continue to fail.
 
-The endpoints now return HTTP 501 and `fundsMoved: false`.
+## B6. Live agent withdrawal / recovery transaction
 
-This is intentional.
+Status: IMPLEMENTED, LIVE VERIFICATION REQUIRED
 
-They must remain fail-closed until the authenticated Portal wallet signs real Celo transactions.
+Current code restricts the destination to the authenticated user's persisted Portal wallet.
 
-## B6. Neon runtime persistence
+Still required:
 
-Status: SCHEMA EXISTS, RUNTIME NOT WIRED
+- fund a real agent EOA;
+- execute a small return transaction;
+- verify Celo fee-currency behavior using the selected stablecoin;
+- confirm the user Portal wallet receives the funds;
+- confirm transaction persistence and explorer evidence;
+- test insufficient fee-balance behavior.
 
-`src/db/schema.ts` and `src/db/index.ts` exist.
-
-The active application repository is still an in-memory singleton in `src/db/repository.ts`.
-
-Until replaced:
-
-- state does not survive production restart;
-- owner identity is demo-seeded;
-- spend reservations are not database-atomic;
-- implementation does not satisfy PERSIST.
-
-Do not describe Neon as active runtime persistence until this is fixed.
+Do not add arbitrary withdrawal destinations.
 
 ## B7. Real ERC-8004 registration
 
 Status: NOT INTEGRATED
 
-The seeded demo record contains a placeholder-like agent ID.
+Locked ownership model:
 
-The UI no longer presents it as verified.
+- human Portal wallet owns the ERC-8004 identity NFT;
+- separate Murk execution EOA is bound as the agent wallet.
 
-Required before claim:
+Still required:
 
-- real Celo registration;
-- agent ID;
-- registration transaction;
-- explorer evidence.
+- implement registration against the current Celo registry;
+- register on Celo mainnet;
+- persist the real agent ID;
+- bind/verify the execution wallet;
+- preserve registration transaction evidence;
+- show explorer evidence.
 
-## B8. Correct ERC-8021 attribution
+Do not seed or display a placeholder agent ID as verified.
 
-Status: NOT INTEGRATED
+## B8. Final ERC-8021 hackathon attribution proof
 
-The old helper that hashes a local string is not sufficient evidence of the current Celo hackathon attribution requirement.
+Status: PARTIALLY INTEGRATED, LIVE PROOF REQUIRED
 
-Required:
+Implemented:
 
-- register Murk for the current Celo builder attribution flow;
-- obtain the assigned builder tag;
-- integrate the current official attribution-tag mechanism;
-- prove it on an actual qualifying transaction.
+- ERC-8021-compatible suffix generation via `ox/erc8021`;
+- configured code validation;
+- direct transaction suffix append helper;
+- verification helper;
+- withdrawal path can append/verify the configured code without making recovery depend on attribution.
 
-Do not claim ERC-8021 attribution until onchain verified.
+Still required:
 
-## B9. Multi-asset x402 selection
+- obtain the actual program-assigned Murk attribution code;
+- configure `CELO_ATTRIBUTION_CODE`;
+- prove the assigned code on a qualifying live transaction;
+- verify attribution behavior on the final x402 settlement path.
 
-Status: UNKNOWN UNTIL LIVE MERCHANT PROBE
+Do not use a hostname-derived code as a substitute for a program-assigned hackathon code.
 
-Murk supports deterministic selection logic, but the golden demo may only claim multi-asset selection if the configured independent merchant actually exposes more than one supported Celo asset.
+## B9. Current golden merchant is single-asset
 
-`spike-d-multi-asset.ts` now observes merchant reality rather than hard-coding an answer.
+Status: VERIFIED LIMITATION
 
-If the live merchant exposes one asset, do not fabricate another.
+The independent merchant currently exposes one Celo payment requirement.
+
+Therefore:
+
+- do not claim the golden merchant offers multiple accepted stablecoins;
+- do not fabricate a second accepted asset;
+- do not present deterministic multi-asset selection as live merchant proof.
+
+If a different independent merchant with multiple verified Celo requirements is found, rerun the spike before changing the demo claim.
+
+## B10. Golden blocked scenario still needs live proof
+
+Status: BLOCKING DEMO LOCK
+
+Murk has deterministic block logic and browser/UI proof, but the final demo must show a real external request that is rejected before signing.
+
+Acceptable live proof:
+
+- a real merchant request whose accounting value exceeds the per-purchase limit; or
+- a second real request that exceeds the remaining daily authority after the first successful purchase.
+
+Required evidence:
+
+- original external 402;
+- accounting conversion/rate evidence;
+- deterministic reason code;
+- zero payment execution;
+- no transaction hash;
+- zero funds moved.
+
+Do not use the UI sandbox or local self-merchant as final blocked-scenario evidence.
+
+## B11. Final deployment environment
+
+Status: NOT DEPLOYED
+
+Murk has not yet been deployed to the public production/demo URL.
+
+Before deployment:
+
+- regenerate and commit the package lock;
+- configure production environment variables;
+- provision/verify Neon;
+- configure Portal callback allowlist for the deployed origin;
+- ensure `UI_SANDBOX_MODE` is unset/false;
+- verify `ENABLE_LOCAL_X402_FIXTURE=false`;
+- verify no test secrets or CI placeholders are present.
+
+Deployment is not considered ready merely because `next build` passes.
