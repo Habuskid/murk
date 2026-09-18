@@ -10,7 +10,7 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { wrapFetchWithPayment } from "@x402/fetch"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
-import { CELO_RPC_URL, getCeloClient } from "./celo"
+import { CELO_CAIP2_NETWORK, CELO_RPC_URL, getCeloClient } from "./celo"
 import { resolveAgentExecutionWallet } from "./agent-wallet"
 import { hasExactErc20Transfer } from "./funding"
 
@@ -80,7 +80,7 @@ export async function executeApprovedX402Payment(
   const client = x402Client.fromConfig({
     schemes: [
       {
-        network: "eip155:42220",
+        network: CELO_CAIP2_NETWORK,
         client: new ExactEvmScheme(executionWallet.x402Signer, {
           rpcUrl: CELO_RPC_URL,
         }),
@@ -94,7 +94,7 @@ export async function executeApprovedX402Payment(
       const exact = accepts.find((candidate) => {
         return (
           candidate.scheme === "exact" &&
-          candidate.network === "eip155:42220" &&
+          candidate.network === CELO_CAIP2_NETWORK &&
           normalizeAddress(candidate.asset) ===
             normalizeAddress(approved.assetAddress) &&
           BigInt(candidate.amount) === approved.amountRaw &&
