@@ -266,7 +266,7 @@ function MurkWalletApp() {
                   <BotIcon className="h-5 w-5" strokeWidth={1.9} />
                 </div>
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+                  <div className="text-xs font-medium text-text-secondary">
                     Execution agent
                   </div>
                   <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em] text-text-primary">
