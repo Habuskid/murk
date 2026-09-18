@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { IBM_Plex_Mono, Manrope } from "next/font/google"
 import "./globals.css"
-import { MurkPortalProvider } from "@/components/MurkPortalProvider"
+import { MurkWalletProvider } from "@/components/MurkWalletProvider"
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -38,11 +38,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable} ${ibmPlexMono.variable}`}>
       <body className="min-h-[100dvh] bg-background font-sans text-text-primary antialiased">
-        <MurkPortalProvider>
+        <MurkWalletProvider>
           <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1040px] flex-col px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
             {children}
           </div>
-        </MurkPortalProvider>
+        </MurkWalletProvider>
       </body>
     </html>
   )
