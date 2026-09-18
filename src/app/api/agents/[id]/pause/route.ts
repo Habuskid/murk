@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     agent.status = "PAUSED"
     agent.updatedAt = new Date()
-    repository.saveAgent(agent)
+    await repository.saveAgent(agent)
 
     return NextResponse.json({ success: true, status: agent.status })
   } catch (error) {
