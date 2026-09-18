@@ -64,7 +64,7 @@ The full live golden path is **not yet complete**.
 
 - independent external Celo x402 merchant;
 - a real successful x402 payment and delivered resource;
-- email OTP embedded user wallet;
+- Clerk email OTP + Portal embedded MPC wallet;
 - real human-wallet funding;
 - real human-wallet withdrawal;
 - Neon-backed runtime persistence;
@@ -81,7 +81,7 @@ The target live demo is:
 
 ```text
 Email OTP
--> embedded user wallet
+-> Portal embedded user wallet
 -> create Research Agent
 -> choose accounting currency
 -> define daily mandate
@@ -241,7 +241,7 @@ NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL=
 EXCHANGE_RATE_API_URL=
 ```
 
-Additional CDP variables exist for the upcoming embedded-wallet integration.
+Additional Portal variables exist for the upcoming embedded-wallet integration.
 
 ## Install
 
