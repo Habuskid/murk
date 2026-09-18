@@ -14,7 +14,10 @@ import { GET as agentDetailGet, PATCH as agentDetailPatch } from "../src/app/api
 import { GET as agentBalancesGet } from "../src/app/api/agents/[id]/balances/route"
 import { POST as agentPausePost } from "../src/app/api/agents/[id]/pause/route"
 import { POST as agentResumePost } from "../src/app/api/agents/[id]/resume/route"
-import { POST as agentFundPost } from "../src/app/api/agents/[id]/fund/route"
+import {
+  POST as agentFundPost,
+  PUT as agentFundPreparePut,
+} from "../src/app/api/agents/[id]/fund/route"
 import { POST as agentWithdrawPost } from "../src/app/api/agents/[id]/withdraw/route"
 import { POST as agentPurchasesPost } from "../src/app/api/agents/[id]/purchases/route"
 import { GET as purchasesDetailGet } from "../src/app/api/purchases/[id]/route"
@@ -122,6 +125,20 @@ describe("API security boundary", () => {
             assetSymbol: "USDC",
             amountRaw: "1000000",
             idempotencyKey: "fund_test_0001",
+          }),
+        }),
+        context
+      )
+    )
+
+    await expectUnauthorized(
+      await agentFundPreparePut(
+        request("/api/agents/agent_demo_01/fund", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assetSymbol: "USDC",
+            amountRaw: "1000000",
           }),
         }),
         context
