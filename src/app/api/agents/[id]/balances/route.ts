@@ -2,46 +2,48 @@ import { NextRequest, NextResponse } from "next/server"
 import { repository } from "@/db/repository"
 import { getAgentPortfolio } from "@/services/celo"
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
+import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const ownerId = repository.getDemoUserId()
-  const agent = repository.findAgentById(params.id, ownerId)
-
-  if (!agent) {
-    return NextResponse.json({ error: "Agent not found" }, { status: 404 })
-  }
-
   try {
+    const { agent } = await requireOwnedAgent(req, params.id)
+
     const liveAddress = await resolveAgentExecutionAddress(agent.id)
     if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
       agent.walletAddress = liveAddress
       agent.updatedAt = new Date()
       repository.saveAgent(agent)
     }
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "AGENT_WALLET_UNAVAILABLE",
-      },
-      { status: 503 }
+
+    const portfolio = await getAgentPortfolio(
+      agent.walletAddress,
+      agent.allowedAssets,
+      agent.minimumReserves
     )
-  }
 
-  try {
-    const portfolio = await getAgentPortfolio(agent.walletAddress, agent.allowedAssets, agent.minimumReserves)
-    const formatted = portfolio.map((p) => ({
-      symbol: p.symbol,
-      address: p.address,
-      decimals: p.decimals,
-      enabled: p.enabled,
-      rawBalance: p.walletBalanceRaw.toString(),
-      formattedBalance: (Number(p.walletBalanceRaw) / 10 ** p.decimals).toFixed(2),
-    }))
+    return NextResponse.json({
+      balances: portfolio.map((item) => ({
+        symbol: item.symbol,
+        address: item.address,
+        decimals: item.decimals,
+        enabled: item.enabled,
+        rawBalance: item.walletBalanceRaw.toString(),
+        formattedBalance: (
+          Number(item.walletBalanceRaw) / 10 ** item.decimals
+        ).toFixed(2),
+      })),
+    })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    if (mapped.status !== 500) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
 
-    return NextResponse.json({ balances: formatted })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Balance read failed" },
+      { status: 500 }
+    )
   }
 }
