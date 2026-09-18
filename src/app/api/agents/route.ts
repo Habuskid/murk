@@ -7,6 +7,7 @@ import {
   type WalletRecord,
 } from "@/db/repository"
 import { resolveAgentExecutionWallet } from "@/services/agent-wallet"
+import { CELO_CHAIN_ID } from "@/services/celo"
 import { authErrorResponse, requireAuthenticatedOwner } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       type: "AGENT",
       address: executionWallet.address,
       provider: executionWallet.provider,
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       createdAt: now,
     }
 
