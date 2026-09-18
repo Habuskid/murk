@@ -140,15 +140,33 @@ export async function runSpikeE(): Promise<{ success: boolean; quotes: RateQuote
       console.log(` - 1 ${q.baseAsset} = ~${approx} ${q.quoteCurrency} (${q.rateNumerator}/${q.rateDenominator}) [Valid: ${isValid}]`)
     }
 
-    // Explicit check for Spike E minimum requirements: NGN, AED, BRL
-    const hasNgn = quotes.some(q => q.quoteCurrency === "NGN")
-    const hasAed = quotes.some(q => q.quoteCurrency === "AED")
-    const hasBrl = quotes.some(q => q.quoteCurrency === "BRL")
-
-    if (!hasNgn || !hasAed || !hasBrl) {
-      throw new Error("Missing required quotes for NGN, AED, or BRL")
+    if (quotes.length !== MVP_CURRENCIES.length) {
+      throw new Error(
+        `Expected ${MVP_CURRENCIES.length} locked accounting currencies, got ${quotes.length}`
+      )
     }
 
+    for (const currency of MVP_CURRENCIES) {
+      const quote = quotes.find(q => q.quoteCurrency === currency)
+      if (!quote) {
+        throw new Error(`Missing required quote for ${currency}`)
+      }
+      if (!validateRateQuote(quote)) {
+        throw new Error(`Live quote failed freshness/math validation for ${currency}`)
+      }
+    }
+
+    const staleQuote: RateQuote = {
+      ...quotes[0],
+      timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+    }
+
+    if (validateRateQuote(staleQuote)) {
+      throw new Error("Stale rate was incorrectly accepted")
+    }
+
+    console.log("Verified all locked currencies and stale-rate fail-closed behavior.")
     console.log("SPIKE E RESULT: PASSED\n")
     return { success: true, quotes }
   } catch (err: any) {
@@ -159,5 +177,12 @@ export async function runSpikeE(): Promise<{ success: boolean; quotes: RateQuote
 
 // Allow direct execution
 if (process.argv[1]?.includes("spike-e-rate-provider")) {
-  runSpikeE().catch(console.error)
+  runSpikeE()
+    .then((result) => {
+      if (!result.success) process.exitCode = 1
+    })
+    .catch((error) => {
+      console.error(error)
+      process.exitCode = 1
+    })
 }
