@@ -10,9 +10,10 @@ import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
-    const { agent } = await requireOwnedAgent(req, params.id)
+    const { agent } = await requireOwnedAgent(req, id)
 
     try {
       const liveAddress = await resolveAgentExecutionAddress(agent.id)
