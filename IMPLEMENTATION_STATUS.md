@@ -22,15 +22,19 @@ Status: CODE EXISTS
 
 ### External x402 challenge
 
-Status: BLOCKED UNTIL X402_PROBE_RESOURCE_URL IS CONFIGURED
+Status: PASSED
 
-The spike no longer accepts a simulated merchant body as success.
+CI successfully verified a real independent Celo x402 challenge from:
+
+`https://agent402.tools/api/answer?q=what%20is%20celo`
+
+The live response exposed one Celo payment requirement. This proves discovery/parsing, not paid settlement.
 
 ### Multi-asset merchant support
 
-Status: UNKNOWN
+Status: CURRENT GOLDEN MERCHANT IS SINGLE-ASSET
 
-The spike now inspects the real external merchant.
+Spike D inspects the live merchant. Murk must not claim multi-asset selection against this merchant unless the live response changes and the spike proves multiple accepted Celo assets.
 
 ### Rate provider
 
@@ -57,6 +61,19 @@ Implemented in code:
 - Portal backup/Eject verification gates.
 
 Still requires real Portal authentication configuration, Custodian credentials, and browser verification.
+
+### Production build
+
+Status: PASSED
+
+CI passes on Next.js 16.3.3 after the migration from the older Next file-tracing path.
+
+Verified in CI:
+
+- dependency install;
+- test suite;
+- production Next build;
+- external x402 challenge probe.
 
 ## CORE
 
