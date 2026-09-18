@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { repository } from "@/db/repository"
 import { getAgentPortfolio } from "@/services/celo"
+import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
 
 export const dynamic = "force-dynamic"
 
@@ -10,6 +11,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (!agent) {
     return NextResponse.json({ error: "Agent not found" }, { status: 404 })
+  }
+
+  try {
+    const liveAddress = await resolveAgentExecutionAddress(agent.id)
+    if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
+      agent.walletAddress = liveAddress
+      agent.updatedAt = new Date()
+      repository.saveAgent(agent)
+    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "AGENT_WALLET_UNAVAILABLE",
+      },
+      { status: 503 }
+    )
   }
 
   try {
