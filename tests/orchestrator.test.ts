@@ -3,12 +3,16 @@
  * Verifies Golden Path (Approved) and Blocked Path per GOLDEN_DEMO.md
  */
 
-import { describe, it, expect, vi } from "vitest"
+import { afterEach, describe, it, expect, vi } from "vitest"
 import { executePurchaseWorkflow } from "../src/services/orchestrator"
 import { SpendingMandate, CandidateAsset, RateQuote } from "../src/core/types"
 import * as x402Module from "../src/services/x402"
 
 describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   // Demo Persona from GOLDEN_DEMO.md:
   // Agent: Research Agent
   // Accounting currency: NGN
@@ -218,5 +222,225 @@ describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
     expect(result.receipt.reasonCodes).toContain("DAILY_MANDATE_EXCEEDED")
     expect(result.receipt.humanReadableReasons).toContain("Daily spending authority exceeded")
     expect(result.receipt.remainingMandateMinor).toBe("100000") // Exactly 1,000 NGN remaining
+  })
+
+  it("does not reserve or sign when the agent is paused", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const reserveSpend = vi.fn()
+    const paymentExecutor = vi.fn()
+
+    const result = await executePurchaseWorkflow({
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "PAUSED",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("POLICY_BLOCKED")
+    expect(result.receipt.reasonCodes).toContain("AGENT_PAUSED")
+    expect(reserveSpend).not.toHaveBeenCalled()
+    expect(paymentExecutor).not.toHaveBeenCalled()
+    expect(result.receipt.txHash).toBeNull()
+  })
+
+  it("blocks before signing when the atomic spend reservation loses a race", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const reserveSpend = vi
+      .fn()
+      .mockRejectedValue(new Error("SPEND_RESERVATION_REJECTED"))
+    const paymentExecutor = vi.fn()
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_reservation_race",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("POLICY_BLOCKED")
+    expect(result.receipt.txHash).toBeNull()
+    expect(result.receipt.reasonCodes).toContain("DAILY_MANDATE_EXCEEDED")
+    expect(result.evidence?.policyDecision?.decision).toBe("BLOCKED")
+    expect(paymentExecutor).not.toHaveBeenCalled()
+  })
+
+  it("releases the reservation when payment fails before settlement", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn()
+    const releaseSpend = vi.fn().mockResolvedValue(undefined)
+    const paymentExecutor = vi
+      .fn()
+      .mockRejectedValue(new Error("PAYMENT_BROADCAST_FAILED"))
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_payment_failure",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("PAYMENT_FAILED")
+    expect(reserveSpend).toHaveBeenCalledTimes(1)
+    expect(paymentExecutor).toHaveBeenCalledTimes(1)
+    expect(releaseSpend).toHaveBeenCalledWith("pur_payment_failure")
+    expect(commitSpend).not.toHaveBeenCalled()
+    expect(result.receipt.txHash).toBeNull()
+    expect(result.receipt.remainingMandateMinor).toBe("500000")
+  })
+
+  it("commits spend after settlement and never repays when resource delivery fails", async () => {
+    vi.spyOn(x402Module, "requestResource")
+      .mockResolvedValueOnce({
+        type: "PAYMENT_REQUIRED",
+        status: 402,
+        requirements: [
+          {
+            scheme: "exact",
+            network: "eip155:42220",
+            chainId: 42220,
+            assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+            amountRaw: 1000000n,
+            payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+          },
+        ],
+        rawHeaders: {},
+        rawPayload: {},
+      })
+      .mockResolvedValueOnce({
+        type: "PAYMENT_REQUIRED",
+        status: 402,
+        requirements: [
+          {
+            scheme: "exact",
+            network: "eip155:42220",
+            chainId: 42220,
+            assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+            amountRaw: 1000000n,
+            payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+          },
+        ],
+        rawHeaders: {},
+        rawPayload: {},
+      })
+
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn().mockResolvedValue(undefined)
+    const releaseSpend = vi.fn().mockResolvedValue(undefined)
+    const paymentExecutor = vi.fn().mockResolvedValue({
+      txHash:
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      paymentHeaders: {
+        "PAYMENT-SIGNATURE": "real-payment-proof-placeholder",
+      },
+    })
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_resource_failure",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("RESOURCE_FAILED")
+    expect(paymentExecutor).toHaveBeenCalledTimes(1)
+    expect(commitSpend).toHaveBeenCalledWith("pur_resource_failure")
+    expect(releaseSpend).not.toHaveBeenCalled()
+    expect(result.receipt.txHash).toBe(
+      "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
+    expect(result.receipt.resourceDeliveryStatus).toBe("FAILED_AFTER_PAYMENT")
+    expect(result.receipt.remainingMandateMinor).toBe("366973")
   })
 })
