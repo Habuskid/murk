@@ -121,7 +121,12 @@ export type ExecutePurchaseParams = {
     assetAddress: string
     amountRaw: bigint
     payTo: string
-  }) => Promise<{ txHash: `0x${string}` }>
+    resourceUrl: string
+  }) => Promise<{
+    txHash: `0x${string}`
+    paymentHeaders?: Record<string, string>
+    deliveredResource?: unknown
+  }>
 }
 
 export async function executePurchaseWorkflow(
@@ -315,29 +320,35 @@ export async function executePurchaseWorkflow(
     logStep("SPEND_RESERVED", `Reserved ${accountingValueMinor} minor units against mandate`)
 
     // 7. Execute Payment
-    logStep("PAYMENT_SUBMITTED", `Executing payment on Celo for ${settlementAmountRaw} raw units`)
-    if (params.paymentExecutor) {
-      const res = await params.paymentExecutor({
-        selectedAsset,
-        assetAddress: selectedAssetAddress,
-        amountRaw: settlementAmountRaw,
-        payTo,
-      })
-      txHash = res.txHash
-    } else {
-      // Default live simulated hash for headless test if executor not passed
-      txHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}` as `0x${string}`
+    if (!params.paymentExecutor) {
+      throw new Error("LIVE_PAYMENT_EXECUTOR_REQUIRED")
     }
+
+    logStep("PAYMENT_SUBMITTED", `Executing payment on Celo for ${settlementAmountRaw} raw units`)
+    const paymentResult = await params.paymentExecutor({
+      selectedAsset,
+      assetAddress: selectedAssetAddress,
+      amountRaw: settlementAmountRaw,
+      payTo,
+      resourceUrl: params.resourceUrl,
+    })
+    txHash = paymentResult.txHash
 
     logStep("PAYMENT_SETTLED", `Payment settled on Celo with txHash: ${txHash}`)
 
-    // 8. Re-request Resource with Payment Proof
-    logStep("RESOURCE_RECEIVED", "Retrying resource request with payment proof header")
-    deliveredResource = {
-      status: "success",
-      purchasedItem: "Research Dataset Access",
-      deliveredAt: new Date().toISOString(),
-      receiptRef: purchaseId,
+    // 8. Re-request the paid resource. Never fabricate delivery.
+    if (paymentResult.deliveredResource !== undefined) {
+      deliveredResource = paymentResult.deliveredResource
+      logStep("RESOURCE_RECEIVED", "Paid resource delivered by the x402 executor")
+    } else if (paymentResult.paymentHeaders) {
+      logStep("RESOURCE_RECEIVED", "Retrying resource request with real payment proof")
+      const retry = await requestResource(params.resourceUrl, paymentResult.paymentHeaders)
+      if (retry.type !== "DELIVERED") {
+        throw new Error("RESOURCE_NOT_DELIVERED_AFTER_PAYMENT")
+      }
+      deliveredResource = retry.data
+    } else {
+      throw new Error("PAYMENT_PROOF_REQUIRED_FOR_RESOURCE_RETRY")
     }
 
     // 9. Complete & Finalize
@@ -380,10 +391,12 @@ export async function executePurchaseWorkflow(
       deliveredResource,
     }
   } catch (err: any) {
-    logStep("PAYMENT_FAILED", `Orchestrator error: ${err.message}`)
+    const failedAfterSettlement = Boolean(txHash)
+    const failureState: OrchestrationState = failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
+    logStep(failureState, `Orchestrator error: ${err.message}`)
     return {
       purchaseId,
-      finalState: "PAYMENT_FAILED",
+      finalState: failureState,
       steps,
       receipt: {
         purchaseId,
@@ -400,13 +413,13 @@ export async function executePurchaseWorkflow(
         rateTimestamp: (rateQuote?.timestamp || new Date()).toISOString(),
         rateNumerator: (rateQuote?.rateNumerator || 1n).toString(),
         rateDenominator: (rateQuote?.rateDenominator || 1n).toString(),
-        policyDecision: "BLOCKED",
-        reasonCodes: ["SYSTEM_ERROR"],
+        policyDecision: policyDecision?.decision || "BLOCKED",
+        reasonCodes: [failedAfterSettlement ? "RESOURCE_NOT_DELIVERED" : "SYSTEM_ERROR"],
         humanReadableReasons: [err.message],
         network: "Celo Mainnet (42220)",
         chainId: 42220,
-        txHash: null,
-        resourceDeliveryStatus: "FAILED",
+        txHash,
+        resourceDeliveryStatus: failedAfterSettlement ? "FAILED_AFTER_PAYMENT" : "FAILED",
         remainingMandateMinor: params.mandate.dailyLimitMinor.toString(),
         remainingMandateFormatted: formatMoneyMinor(params.mandate.dailyLimitMinor),
         createdAt: new Date().toISOString(),
