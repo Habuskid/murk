@@ -1,17 +1,31 @@
+import { createHash } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { CreatePurchaseSchema } from "@/lib/validation"
-import { repository, PurchaseRecord } from "@/db/repository"
+import { repository, type PurchaseRecord } from "@/db/repository"
 import { executePurchaseWorkflow } from "@/services/orchestrator"
-import { SpendingMandate } from "@/core/types"
+import type { SpendingMandate } from "@/core/types"
 import { executeApprovedX402Payment } from "@/services/x402-payment"
-
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+function purchaseRequestHash(input: {
+  agentId: string
+  merchantUrl: string
+  resourceUrl: string
+}): string {
+  return createHash("sha256")
+    .update(JSON.stringify(input))
+    .digest("hex")
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id } = await params
+
   try {
     const { agent } = await requireOwnedAgent(req, id)
 
@@ -20,34 +34,48 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
         agent.walletAddress = liveAddress
         agent.updatedAt = new Date()
-        repository.saveAgent(agent)
+        await repository.saveAgent(agent)
       }
     } catch (error) {
       return NextResponse.json(
         {
-          error: error instanceof Error ? error.message : "AGENT_WALLET_UNAVAILABLE",
+          error:
+            error instanceof Error
+              ? error.message
+              : "AGENT_WALLET_UNAVAILABLE",
         },
         { status: 503 }
       )
     }
 
-    const mandate = repository.getLatestMandate(agent.id)
+    const mandate = await repository.getLatestMandate(agent.id)
     if (!mandate) {
-      return NextResponse.json({ error: "No mandate found for agent" }, { status: 400 })
+      return NextResponse.json(
+        { error: "No mandate found for agent" },
+        { status: 400 }
+      )
     }
 
     const body = await req.json()
     const validated = CreatePurchaseSchema.parse(body)
 
-    // Idempotency check
-    const existing = repository.idempotency.get(validated.idempotencyKey)
+    const requestHash = purchaseRequestHash({
+      agentId: agent.id,
+      merchantUrl: validated.merchantUrl,
+      resourceUrl: validated.resourceUrl,
+    })
+
+    const existing = await repository.getIdempotencyResult(
+      validated.idempotencyKey,
+      requestHash
+    )
     if (existing) {
-      return NextResponse.json(existing.result)
+      return NextResponse.json(existing)
     }
 
-    const purchaseId = `pur_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    const purchaseId = `pur_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`
+    const now = new Date()
 
-    // Initial purchase record
     const purchaseRecord: PurchaseRecord = {
       id: purchaseId,
       agentId: agent.id,
@@ -56,12 +84,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       resourceUrl: validated.resourceUrl,
       state: "CREATED",
       accountingCurrency: agent.accountingCurrency,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     }
-    repository.savePurchase(purchaseRecord)
 
-    // Execute state machine
+    await repository.savePurchase(purchaseRecord)
+
     const spendingMandate: SpendingMandate = {
       id: mandate.id,
       agentId: agent.id,
@@ -84,22 +112,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       allowedAssetSymbols: agent.allowedAssets,
       merchantUrl: validated.merchantUrl,
       resourceUrl: validated.resourceUrl,
+      reserveSpend: ({ purchaseId: reservedPurchaseId, amountMinor }) =>
+        repository.reserveSpend({
+          purchaseId: reservedPurchaseId,
+          agentId: agent.id,
+          mandateId: mandate.id,
+          amountMinor,
+        }),
+      commitSpend: (committedPurchaseId) =>
+        repository.commitSpend(committedPurchaseId),
+      releaseSpend: (releasedPurchaseId) =>
+        repository.releaseSpend(releasedPurchaseId),
       paymentExecutor: executeApprovedX402Payment,
     })
 
-    // Update purchase record with final outcome
     purchaseRecord.state = result.finalState
     purchaseRecord.selectedAsset = result.receipt.settlementAsset
-    purchaseRecord.settlementAmountRaw = BigInt(result.receipt.settlementAmountRaw || 0)
-    purchaseRecord.accountingAmountMinor = BigInt(result.receipt.accountingValueMinor || 0)
+    purchaseRecord.settlementAmountRaw = BigInt(
+      result.receipt.settlementAmountRaw || "0"
+    )
+    purchaseRecord.accountingAmountMinor = BigInt(
+      result.receipt.accountingValueMinor || "0"
+    )
     purchaseRecord.receipt = result.receipt
     purchaseRecord.updatedAt = new Date()
+
     if (result.finalState === "COMPLETED") {
       purchaseRecord.completedAt = new Date()
-      // Commit spend to mandate
-      mandate.spentTodayMinor += purchaseRecord.accountingAmountMinor
     }
-    repository.savePurchase(purchaseRecord)
+
+    await repository.savePurchase(purchaseRecord)
 
     const responsePayload = {
       purchaseId: result.purchaseId,
@@ -109,9 +151,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       steps: result.steps,
     }
 
-    repository.idempotency.set(validated.idempotencyKey, {
+    await repository.saveIdempotencyResult({
+      key: validated.idempotencyKey,
+      operation: "PURCHASE",
+      resourceId: agent.id,
+      requestHash,
+      resultReference: purchaseId,
       result: responsePayload,
-      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     return NextResponse.json(responsePayload, { status: 201 })
@@ -121,9 +168,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json(mapped.body, { status: mapped.status })
     }
 
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Purchase initiation failed" },
-      { status: 400 }
-    )
+    const message =
+      error instanceof Error ? error.message : "Purchase initiation failed"
+
+    if (message === "IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST") {
+      return NextResponse.json({ error: message }, { status: 409 })
+    }
+
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }
