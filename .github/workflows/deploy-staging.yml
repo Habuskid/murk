@@ -57,8 +57,11 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
-      - name: Checkout Sepolia staging branch
+      - name: Checkout current main release candidate
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Use Node 22
         uses: actions/setup-node@v4
