@@ -216,7 +216,7 @@ function MurkWalletApp() {
       )}
 
       {activeTab === "home" && (
-        <main className="mx-auto w-full max-w-[760px] space-y-4 animate-in fade-in duration-150">
+        <main className="w-full space-y-4 animate-in fade-in duration-150">
           <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
             <div className="space-y-4">
               <HeroMandate
@@ -256,65 +256,81 @@ function MurkWalletApp() {
       )}
 
       {activeTab === "agents" && (
-        <main className="space-y-4 animate-in fade-in duration-150">
-          <div className="rounded-[28px] border border-[#EAEAE7] bg-surface p-6 card-elevation sm:p-7">
-            <div className="mb-4 flex items-center justify-between border-b border-[#EAEAE7] pb-4">
-              <div>
-                <h2 className="text-sm font-bold text-[#111111]">{agent.name}</h2>
-                <p className="mt-0.5 text-xs text-[#767676]">
-                  Controlled autonomous execution on Celo
-                </p>
-              </div>
-              <span className="rounded-full border border-[#EAEAE7] bg-[#F7F7F5] px-2.5 py-1 text-xs font-semibold text-[#767676]">
-                {agentStatus}
-              </span>
-            </div>
-
-            <div className="space-y-4 rounded-2xl border border-[#EAEAE7] bg-[#F7F7F5] p-5">
+        <main className="mx-auto w-full max-w-[760px] animate-in fade-in duration-150">
+          <section className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EAEAE7] bg-surface">
-                  <BotIcon className="h-6 w-6 text-accent" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                  <BotIcon className="h-5 w-5" strokeWidth={1.9} />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-[#111111]">{agent.name}</div>
-                  <div className="mt-0.5 font-mono text-[11px] text-[#767676]">
-                    {agent.walletAddress.slice(0, 10)}...{agent.walletAddress.slice(-8)}
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+                    Execution agent
+                  </div>
+                  <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em] text-text-primary">
+                    {agent.name}
+                  </h2>
+                  <div className="mt-1 font-mono text-[11px] text-text-secondary">
+                    {agent.walletAddress.slice(0, 10)}…{agent.walletAddress.slice(-6)}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 border-t border-[#EAEAE7] pt-3 text-xs">
-                <div className="rounded-xl border border-[#EAEAE7] bg-surface p-3.5">
-                  <span className="block text-[#767676]">Daily mandate</span>
-                  <strong className="mt-1 block text-base font-bold text-[#111111] tabular-nums">
-                    {agent.accountingCurrency} {formatMoneyMinor(dailyLimitMinor, 2)}
-                  </strong>
+              <span
+                className={[
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                  agentStatus === "PAUSED"
+                    ? "bg-danger-soft text-danger"
+                    : "bg-success-soft text-success",
+                ].join(" ")}
+              >
+                {agentStatus === "PAUSED" ? "Paused" : "Active"}
+              </span>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-[14px] border border-border sm:grid sm:grid-cols-2">
+              <div className="bg-surface-inset px-4 py-4 sm:border-r sm:border-border">
+                <div className="text-[11px] font-medium text-text-secondary">
+                  Daily authority
                 </div>
-                <div className="rounded-xl border border-[#EAEAE7] bg-surface p-3.5">
-                  <span className="block text-[#767676]">Per-purchase limit</span>
-                  <strong className="mt-1 block text-base font-bold text-[#111111] tabular-nums">
-                    {agent.accountingCurrency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}
-                  </strong>
+                <div className="mt-1 text-lg font-semibold tracking-[-0.02em] text-text-primary tabular-nums">
+                  {agent.accountingCurrency} {formatMoneyMinor(dailyLimitMinor, 2)}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#111111]">
-                <ShieldCheckIcon className="h-4 w-4 text-accent" />
-                <span>Execution wallet isolated from the user wallet</span>
+              <div className="border-t border-border bg-surface-inset px-4 py-4 sm:border-t-0">
+                <div className="text-[11px] font-medium text-text-secondary">
+                  Per purchase
+                </div>
+                <div className="mt-1 text-lg font-semibold tracking-[-0.02em] text-text-primary tabular-nums">
+                  {agent.accountingCurrency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}
+                </div>
               </div>
             </div>
-          </div>
+
+            <div className="mt-5 flex items-start gap-2.5 border-t border-border pt-4">
+              <ShieldCheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={1.9} />
+              <div>
+                <div className="text-xs font-semibold text-text-primary">
+                  Isolated execution wallet
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+                  This wallet can spend only the funds delegated to the agent and remains separate from your Portal wallet.
+                </p>
+              </div>
+            </div>
+          </section>
         </main>
       )}
 
       {activeTab === "activity" && (
-        <main className="space-y-4 animate-in fade-in duration-150">
+        <main className="mx-auto w-full max-w-[760px] space-y-4 animate-in fade-in duration-150">
           <ActivityList items={activity} />
         </main>
       )}
 
       {activeTab === "settings" && (
-        <main className="space-y-4 animate-in fade-in duration-150">
+        <main className="mx-auto w-full max-w-[760px] space-y-4 animate-in fade-in duration-150">
           <AgentSettings
             agentId={agent.id}
             agentStatus={agentStatus}
