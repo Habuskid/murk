@@ -69,6 +69,44 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Validate required staging configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            DATABASE_URL
+            PORTAL_AUTH_ENVIRONMENT_ID
+            PORTAL_AUTH_FROM_EMAIL
+            PORTAL_AUTH_TEMPLATE_ID
+            PORTAL_CUSTODIAN_API_KEY
+            MURK_SESSION_SECRET
+            AGENT_WALLET_MASTER_SECRET
+            PUBLIC_APP_ORIGIN
+            CELO_ATTRIBUTION_CODE
+            X402_API_KEY
+            TESTNET_X402_SELLER_ADDRESS
+            VERCEL_TOKEN
+            VERCEL_ORG_ID
+            VERCEL_PROJECT_ID
+          )
+
+          missing=()
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required staging configuration: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+          if [ "$NEXT_PUBLIC_MURK_NETWORK" != "testnet" ]; then
+            echo "Staging must run with NEXT_PUBLIC_MURK_NETWORK=testnet"
+            exit 1
+          fi
+
       - name: Install exact dependencies
         run: npm ci
 
@@ -140,10 +178,12 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: |
+          set -euo pipefail
+          DEPLOYED_SHA="$(git rev-parse HEAD)"
           {
             echo "## Murk Sepolia release candidate"
             echo ""
-            echo "- Commit: `$GITHUB_SHA`"
+            echo "- Commit: `$DEPLOYED_SHA`"
             echo "- Deployment: $DEPLOYMENT_URL"
             echo "- Chain: Celo Sepolia (11142220)"
             echo "- Next gate: complete the live flow and run npm run e2e:verify"
