@@ -29,8 +29,8 @@
     "@x402/evm": "^2.26.0",
     "@x402/fetch": "^2.26.0",
     "@portal-hq/web": "3.18.0",
-    "@celo/attribution-tags": "0.4.0",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "ox": "^0.14.8"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
