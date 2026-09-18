@@ -51,6 +51,7 @@ export function buildRegisterTransaction(agentURI: string): {
 export async function parseRegisteredAgent(input: {
   txHash: Hex
   expectedOwner: Address
+  expectedAgentURI: string
 }): Promise<{
   agentId: bigint
   owner: Address
@@ -96,6 +97,10 @@ export async function parseRegisteredAgent(input: {
       const owner = decoded.args.owner
       if (owner.toLowerCase() !== input.expectedOwner.toLowerCase()) {
         throw new Error("ERC8004_REGISTRATION_OWNER_MISMATCH")
+      }
+
+      if (decoded.args.agentURI !== input.expectedAgentURI) {
+        throw new Error("ERC8004_REGISTRATION_URI_MISMATCH")
       }
 
       return {
