@@ -7,7 +7,7 @@ import {
   ShieldCheckIcon,
 } from "@/components/Icons"
 import { authedFetch } from "@/lib/authed-fetch"
-import { usePortalWallet } from "@/components/MurkPortalProvider"
+import { useMurkWallet } from "@/components/MurkWalletProvider"
 import {
   CELO_CAIP2,
   CELO_ERC8004_IDENTITY_REGISTRY,
@@ -43,34 +43,12 @@ interface AgentIdentityProps {
   onUpdated?: () => Promise<void> | void
 }
 
-function normalizePortalTxHash(result: unknown): `0x${string}` {
-  if (typeof result === "string" && /^0x[a-fA-F0-9]{64}$/.test(result)) {
-    return result as `0x${string}`
-  }
-
-  if (result && typeof result === "object") {
-    const candidate = result as {
-      result?: unknown
-      txHash?: unknown
-      data?: { txHash?: unknown }
-    }
-    const value =
-      candidate.result ?? candidate.txHash ?? candidate.data?.txHash
-
-    if (typeof value === "string" && /^0x[a-fA-F0-9]{64}$/.test(value)) {
-      return value as `0x${string}`
-    }
-  }
-
-  throw new Error("PORTAL_TRANSACTION_HASH_MISSING")
-}
-
 export function AgentIdentity({
   agentId,
   erc8004AgentId,
   onUpdated,
 }: AgentIdentityProps) {
-  const { portal, isReady } = usePortalWallet()
+  const { sendTransaction, isReady } = useMurkWallet()
   const [status, setStatus] = useState<IdentityStatus | null>(null)
   const [busy, setBusy] = useState<"REGISTER" | "BIND" | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -103,18 +81,11 @@ export function AgentIdentity({
     prepared: PreparedTransaction,
     memo: string
   ): Promise<`0x${string}`> => {
-    if (!portal || !isReady) {
-      throw new Error("PORTAL_WALLET_NOT_READY")
+    if (!isReady) {
+      throw new Error("PRIVY_WALLET_NOT_READY")
     }
 
-    const result = await portal.request({
-      chainId: prepared.chainId,
-      method: "eth_sendTransaction",
-      params: [prepared.transaction],
-      signatureApprovalMemo: memo,
-    })
-
-    return normalizePortalTxHash(result)
+    return sendTransaction(prepared.transaction, memo)
   }
 
   const registerIdentity = async () => {
@@ -239,7 +210,7 @@ export function AgentIdentity({
             Onchain identity
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-            ERC-8004 keeps the identity NFT in your Portal wallet while the
+            ERC-8004 keeps the identity NFT in your human wallet while the
             execution wallet is verified separately.
           </p>
         </div>
@@ -314,7 +285,7 @@ export function AgentIdentity({
       {verified && (
         <div className="mt-3 flex items-start gap-2 rounded-[12px] bg-success-soft px-3.5 py-3 text-[11px] leading-relaxed text-success">
           <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          The Portal wallet owns the identity and Murk's isolated execution
+          Your human wallet owns the identity and Murk's isolated execution
           wallet is verified onchain.
         </div>
       )}
