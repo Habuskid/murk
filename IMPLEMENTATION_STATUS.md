@@ -392,6 +392,12 @@ Visual hierarchy, typography, icons, responsive composition, and first-run UX ha
 
 Remaining polish must be driven by the real E2E flow and final demo recording, not invented states.
 
+### Blocked demo resource strategy
+
+Status: CODED, LIVE PROOF PENDING
+
+The blocked demo no longer depends on finding a second high-value merchant. Murk can reuse the same verified external x402 resource after the user lowers the per-purchase authority below that resource's live accounting value. This produces a genuine external 402 while proving the deterministic policy blocks before signing.
+
 ## DEMO LOCK
 
 Status: NOT READY
