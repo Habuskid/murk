@@ -17,7 +17,10 @@
     "spikes": "tsx spikes/run-all-spikes.ts",
     "ui:capture": "node scripts/capture-ui.mjs",
     "preflight:deploy": "node scripts/preflight.mjs deploy",
-    "preflight:demo": "node scripts/preflight.mjs demo"
+    "preflight:demo": "node scripts/preflight.mjs demo",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
