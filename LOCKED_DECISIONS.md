@@ -54,9 +54,14 @@ Unsupported assets must remain disabled rather than simulated.
 ## Authentication and Human Wallet
 
 - Email-first onboarding
-- Email OTP via Clerk
+- Portal-managed authentication is the only human identity provider for the MVP
+- Use Portal `EMAIL_MAGIC_LINK` authentication
+- Do not add Clerk, Coinbase CDP, Auth.js, Supabase Auth, or another identity provider unless the owner explicitly changes this decision
+- Portal creates/reuses the user's Portal client during authentication
+- Murk exchanges the single-use Portal callback token server-side and creates a signed HttpOnly Murk session
+- Portal Web SDK authenticates through Murk's server `authUrl` using one-time Portal Web OTPs
+- Portal Custodian API key remains server-only and never reaches the DOM
 - Portal Web MPC wallet is the human embedded wallet provider
-- Portal browser authentication uses a server-issued Web OTP so the Custodian API key never reaches the DOM
 - Celo mainnet is configured as `eip155:42220`
 - No external wallet requirement for ordinary users
 - Human wallet must support Portal backup/recovery
