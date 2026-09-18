@@ -1,7 +1,6 @@
 "use client"
 
 import Portal from "@portal-hq/web"
-import { useAuth } from "@clerk/nextjs"
 import React, {
   createContext,
   useCallback,
@@ -36,8 +35,16 @@ async function registerWalletAddress(address: `0x${string}`) {
   }
 }
 
+async function hasMurkSession(): Promise<boolean> {
+  const response = await fetch("/api/auth/me", {
+    method: "GET",
+    credentials: "same-origin",
+    cache: "no-store",
+  })
+  return response.ok
+}
+
 export function MurkPortalProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useAuth()
   const [portal, setPortal] = useState<Portal | null>(null)
   const [walletAddress, setWalletAddress] = useState<`0x${string}` | null>(null)
   const [isReady, setIsReady] = useState(false)
@@ -45,29 +52,22 @@ export function MurkPortalProvider({ children }: { children: React.ReactNode }) 
   const [error, setError] = useState<string | null>(null)
 
   const initializePortal = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) {
+    setError(null)
+
+    const authenticated = await hasMurkSession().catch(() => false)
+    if (!authenticated) {
       setPortal(null)
       setWalletAddress(null)
       setIsReady(false)
+      setIsLoading(false)
       return
     }
 
     setIsLoading(true)
-    setError(null)
 
     try {
-      const sessionResponse = await fetch("/api/portal/session", {
-        method: "POST",
-        credentials: "same-origin",
-      })
-      const session = await sessionResponse.json()
-
-      if (!sessionResponse.ok) {
-        throw new Error(session.error || "Could not initialize Portal session")
-      }
-
       const instance = new Portal({
-        authToken: session.authToken,
+        authUrl: `${window.location.origin}/api/portal/authenticate`,
         rpcConfig: {
           "eip155:42220":
             process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo.org",
@@ -77,9 +77,15 @@ export function MurkPortalProvider({ children }: { children: React.ReactNode }) 
       await new Promise<void>((resolve, reject) => {
         let settled = false
 
-        instance.onReady(async () => {
+        const unsubscribeError = instance.onInitializationError((reason) => {
           if (settled) return
           settled = true
+          unsubscribeError?.()
+          reject(new Error(reason || "PORTAL_INITIALIZATION_FAILED"))
+        })
+
+        instance.onReady(async () => {
+          if (settled) return
 
           try {
             const exists = await instance.doesWalletExist()
@@ -90,11 +96,13 @@ export function MurkPortalProvider({ children }: { children: React.ReactNode }) 
             const address = (await instance.getEip155Address()) as `0x${string}`
             await registerWalletAddress(address)
 
+            settled = true
             setPortal(instance)
             setWalletAddress(address)
             setIsReady(true)
             resolve()
           } catch (cause) {
+            settled = true
             reject(cause)
           }
         })
@@ -110,11 +118,13 @@ export function MurkPortalProvider({ children }: { children: React.ReactNode }) 
       setPortal(null)
       setWalletAddress(null)
       setIsReady(false)
-      setError(cause instanceof Error ? cause.message : "Portal wallet unavailable")
+      setError(
+        cause instanceof Error ? cause.message : "Portal wallet unavailable"
+      )
     } finally {
       setIsLoading(false)
     }
-  }, [isLoaded, isSignedIn])
+  }, [])
 
   useEffect(() => {
     void initializePortal()
