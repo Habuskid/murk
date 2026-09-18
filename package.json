@@ -38,10 +38,11 @@
     "@x402/core": "^2.26.0",
     "@x402/evm": "^2.26.0",
     "@x402/fetch": "^2.26.0",
-    "@portal-hq/web": "3.18.0",
     "lucide-react": "^0.468.0",
     "ox": "^0.14.8",
-    "@x402/next": "^2.26.0"
+    "@x402/next": "^2.26.0",
+    "@privy-io/react-auth": "3.43.0",
+    "@privy-io/node": "0.34.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
