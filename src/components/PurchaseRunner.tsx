@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { OrchestratorReceipt } from "@/services/orchestrator"
+import type { OrchestratorReceipt } from "@/services/orchestrator"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
   BoltIcon,
