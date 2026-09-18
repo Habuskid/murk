@@ -65,15 +65,32 @@ export async function POST(
       resourceUrl: validated.resourceUrl,
     })
 
-    const existing = await repository.getIdempotencyResult(
-      validated.idempotencyKey,
-      requestHash
-    )
-    if (existing) {
-      return NextResponse.json(existing)
-    }
-
     const purchaseId = `pur_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`
+
+    const claim = await repository.claimIdempotencyKey({
+      key: validated.idempotencyKey,
+      operation: "PURCHASE",
+      resourceId: agent.id,
+      requestHash,
+      resultReference: purchaseId,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    })
+
+    if (claim.status === "REPLAY") {
+      return NextResponse.json(claim.result)
+    }
+    if (claim.status === "CONFLICT") {
+      return NextResponse.json(
+        { error: "IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST" },
+        { status: 409 }
+      )
+    }
+    if (claim.status === "IN_PROGRESS") {
+      return NextResponse.json(
+        { error: "IDEMPOTENCY_REQUEST_IN_PROGRESS" },
+        { status: 409 }
+      )
+    }
     const now = new Date()
 
     const purchaseRecord: PurchaseRecord = {
