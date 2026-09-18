@@ -183,6 +183,49 @@ class Store {
     return "usr_demo_01"
   }
 
+  findUserByProviderId(providerUserId: string): UserRecord | null {
+    for (const user of this.users.values()) {
+      if (user.providerUserId === providerUserId) return user
+    }
+    return null
+  }
+
+  saveUser(user: UserRecord) {
+    this.users.set(user.id, user)
+  }
+
+  upsertUserWallet(wallet: WalletRecord) {
+    for (const [id, existing] of this.wallets.entries()) {
+      if (
+        existing.type === "USER" &&
+        existing.userId === wallet.userId &&
+        existing.chainId === wallet.chainId
+      ) {
+        this.wallets.set(id, {
+          ...existing,
+          address: wallet.address,
+          provider: wallet.provider,
+        })
+        return
+      }
+    }
+
+    this.wallets.set(wallet.id, wallet)
+  }
+
+  findUserWallet(userId: string, chainId = 42220): WalletRecord | null {
+    for (const wallet of this.wallets.values()) {
+      if (
+        wallet.type === "USER" &&
+        wallet.userId === userId &&
+        wallet.chainId === chainId
+      ) {
+        return wallet
+      }
+    }
+    return null
+  }
+
   findAgentById(agentId: string, ownerUserId?: string): AgentRecord | null {
     const agent = this.agents.get(agentId)
     if (!agent) return null
