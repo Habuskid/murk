@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en" className={`${manrope.variable} ${ibmPlexMono.variable}`}>
       <body className="min-h-[100dvh] bg-background font-sans text-text-primary antialiased">
         <MurkPortalProvider>
-          <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
+          <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1040px] flex-col px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6">
             {children}
           </div>
         </MurkPortalProvider>
