@@ -7,14 +7,14 @@ import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 export const dynamic = "force-dynamic"
 
 async function syncLiveAddress(agentId: string) {
-  const agent = repository.findAgentById(agentId)
+  const agent = await repository.findAgentById(agentId)
   if (!agent) throw new Error("AGENT_NOT_FOUND")
 
   const liveAddress = await resolveAgentExecutionAddress(agent.id)
   if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
     agent.walletAddress = liveAddress
     agent.updatedAt = new Date()
-    repository.saveAgent(agent)
+    await repository.saveAgent(agent)
   }
 
   return agent
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { agent: ownedAgent } = await requireOwnedAgent(req, id)
     const agent = await syncLiveAddress(ownedAgent.id)
-    const mandate = repository.getLatestMandate(agent.id)
+    const mandate = await repository.getLatestMandate(agent.id)
 
     return NextResponse.json({
       id: agent.id,
@@ -64,10 +64,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (validated.allowedAssets) agent.allowedAssets = validated.allowedAssets
 
     agent.updatedAt = new Date()
-    repository.saveAgent(agent)
+    await repository.saveAgent(agent)
 
     if (validated.dailyLimitMinor || validated.perPurchaseLimitMinor) {
-      const current = repository.getLatestMandate(agent.id)
+      const current = await repository.getLatestMandate(agent.id)
       const nextVersion = (current?.version || 0) + 1
 
       const newMandate: MandateRecord = {
@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         supersededAt: null,
         createdAt: new Date(),
       }
-      repository.createMandate(newMandate)
+      await repository.createMandate(newMandate)
     }
 
     return NextResponse.json({
