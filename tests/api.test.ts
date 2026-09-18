@@ -66,7 +66,7 @@ describe("API security boundary", () => {
   })
 
   it("protects agent detail, balances, and policy mutation", async () => {
-    const context = { params: { id: "agent_demo_01" } }
+    const context = { params: Promise.resolve({ id: "agent_demo_01" }) }
 
     await expectUnauthorized(
       await agentDetailGet(request("/api/agents/agent_demo_01"), context)
