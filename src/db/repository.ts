@@ -249,4 +249,12 @@ class Store {
   }
 }
 
-export const repository = new Store()
+const globalForRepository = globalThis as unknown as {
+  repository: Store | undefined
+}
+
+export const repository = globalForRepository.repository ?? new Store()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForRepository.repository = repository
+}

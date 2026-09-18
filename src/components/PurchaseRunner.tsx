@@ -42,11 +42,12 @@ export function PurchaseRunner({
     }
 
     try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
       const payload = {
-        merchantUrl: "https://api.research-provider.com",
+        merchantUrl: `${origin}/api/merchant`,
         resourceUrl: isBlockedAttempt
-          ? "https://api.research-provider.com/v1/expensive-report"
-          : "https://api.research-provider.com/v1/dataset",
+          ? `${origin}/api/merchant/expensive-report`
+          : `${origin}/api/merchant/dataset`,
         idempotencyKey: `run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       }
 
