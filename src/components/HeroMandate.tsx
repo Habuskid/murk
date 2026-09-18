@@ -55,7 +55,33 @@ export function HeroMandate({
       : 0
 
   const isPaused = agentStatus === "PAUSED"
+  const canTogglePause = agentStatus === "ACTIVE" || agentStatus === "PAUSED"
   const prefix = currencyLabel(currency)
+
+  const statusPresentation =
+    agentStatus === "ACTIVE"
+      ? {
+          label: "Active",
+          container: "bg-success-soft text-success",
+          dot: "bg-success",
+        }
+      : agentStatus === "PAUSED"
+        ? {
+            label: "Paused",
+            container: "bg-danger-soft text-danger",
+            dot: "bg-danger",
+          }
+        : agentStatus === "DRAFT"
+          ? {
+              label: "Needs funding",
+              container: "bg-accent-soft text-accent",
+              dot: "bg-accent",
+            }
+          : {
+              label: "Disabled",
+              container: "bg-surface-inset text-text-secondary",
+              dot: "bg-text-tertiary",
+            }
 
   return (
     <section className="space-y-3">
@@ -74,18 +100,16 @@ export function HeroMandate({
             <span
               className={[
                 "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                isPaused
-                  ? "bg-danger-soft text-danger"
-                  : "bg-success-soft text-success",
+                statusPresentation.container,
               ].join(" ")}
             >
               <span
                 className={[
                   "h-1.5 w-1.5 rounded-full",
-                  isPaused ? "bg-danger" : "bg-success",
+                  statusPresentation.dot,
                 ].join(" ")}
               />
-              {isPaused ? "Paused" : "Active"}
+              {statusPresentation.label}
             </span>
 
             <button
@@ -152,11 +176,14 @@ export function HeroMandate({
           <button
             type="button"
             onClick={onTogglePause}
+            disabled={!canTogglePause}
             className={[
-              "flex min-h-16 flex-col items-center justify-center gap-1.5 border-r border-border px-2 text-[11px] font-semibold transition",
-              isPaused
-                ? "text-success hover:bg-success-soft"
-                : "text-danger hover:bg-danger-soft",
+              "flex min-h-16 flex-col items-center justify-center gap-1.5 border-r border-border px-2 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:text-text-tertiary",
+              canTogglePause
+                ? isPaused
+                  ? "text-success hover:bg-success-soft"
+                  : "text-danger hover:bg-danger-soft"
+                : "",
             ].join(" ")}
           >
             {isPaused ? (
@@ -164,7 +191,7 @@ export function HeroMandate({
             ) : (
               <PauseIcon className="h-4 w-4" strokeWidth={1.9} />
             )}
-            {isPaused ? "Resume" : "Pause"}
+            {canTogglePause ? (isPaused ? "Resume" : "Pause") : "Not active"}
           </button>
 
           <button
