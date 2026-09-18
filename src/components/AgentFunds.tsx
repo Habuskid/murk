@@ -24,7 +24,7 @@ interface AgentFundsProps {
   agentId: string
   walletAddress: string
   balances: TokenBalance[]
-  onFundingConfirmed?: () => Promise<void> | void
+  onBalancesChanged?: () => Promise<void> | void
 }
 
 function normalizeTxHash(result: unknown): `0x${string}` {
@@ -54,7 +54,7 @@ export function AgentFunds({
   agentId,
   walletAddress,
   balances,
-  onFundingConfirmed,
+  onBalancesChanged,
 }: AgentFundsProps) {
   const { portal, walletAddress: userWalletAddress, isReady, error: portalError } =
     usePortalWallet()
@@ -67,10 +67,22 @@ export function AgentFunds({
   >("IDLE")
   const [fundingError, setFundingError] = useState<string | null>(null)
   const [lastTxHash, setLastTxHash] = useState<string | null>(null)
+  const [withdrawAssetSymbol, setWithdrawAssetSymbol] = useState("USDC")
+  const [withdrawAmount, setWithdrawAmount] = useState("0.5")
+  const [withdrawalState, setWithdrawalState] = useState<
+    "IDLE" | "SUBMITTING" | "CONFIRMED"
+  >("IDLE")
+  const [withdrawalError, setWithdrawalError] = useState<string | null>(null)
+  const [withdrawalTxHash, setWithdrawalTxHash] = useState<string | null>(null)
 
   const selectedToken = useMemo(
     () => balances.find((token) => token.symbol === assetSymbol),
     [balances, assetSymbol]
+  )
+
+  const withdrawalToken = useMemo(
+    () => balances.find((token) => token.symbol === withdrawAssetSymbol),
+    [balances, withdrawAssetSymbol]
   )
 
   const handleCopy = () => {
@@ -162,7 +174,7 @@ export function AgentFunds({
       await confirmFunding(txHash, amountRaw, idempotencyKey)
 
       setFundingState("CONFIRMED")
-      await onFundingConfirmed?.()
+      await onBalancesChanged?.()
     } catch (cause) {
       setFundingState("IDLE")
       setFundingError(
@@ -173,6 +185,58 @@ export function AgentFunds({
 
   const fundingBusy =
     fundingState === "SIGNING" || fundingState === "CONFIRMING"
+
+
+  const handleWithdraw = async () => {
+    if (!userWalletAddress) {
+      setWithdrawalError("Portal wallet is not ready.")
+      return
+    }
+
+    if (!withdrawalToken) {
+      setWithdrawalError("Selected asset is unavailable.")
+      return
+    }
+
+    let amountRaw: bigint
+    try {
+      amountRaw = parseUnits(withdrawAmount.trim(), withdrawalToken.decimals)
+      if (amountRaw <= 0n) throw new Error("INVALID_AMOUNT")
+    } catch {
+      setWithdrawalError("Enter a valid positive amount.")
+      return
+    }
+
+    setWithdrawalError(null)
+    setWithdrawalTxHash(null)
+    setWithdrawalState("SUBMITTING")
+
+    try {
+      const response = await authedFetch(`/api/agents/${agentId}/withdraw`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetSymbol: withdrawAssetSymbol,
+          amountRaw: amountRaw.toString(),
+          idempotencyKey: `withdraw_${crypto.randomUUID()}`,
+        }),
+      })
+
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(body.message || body.error || "Withdrawal failed.")
+      }
+
+      setWithdrawalTxHash(body.txHash || null)
+      setWithdrawalState("CONFIRMED")
+      await onBalancesChanged?.()
+    } catch (cause) {
+      setWithdrawalState("IDLE")
+      setWithdrawalError(
+        cause instanceof Error ? cause.message : "Withdrawal failed."
+      )
+    }
+  }
 
   return (
     <div className="mt-4 w-full rounded-[28px] border border-border bg-surface p-6 card-elevation transition-all">
@@ -326,6 +390,74 @@ export function AgentFunds({
             className="mt-2 block truncate font-mono text-[10px] text-accent"
           >
             {lastTxHash}
+          </a>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-border bg-white p-4">
+        <div className="mb-3">
+          <div className="text-xs font-bold text-text-primary">
+            Return funds
+          </div>
+          <div className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+            Sends only to your registered Portal wallet. Leave a small balance
+            behind so Celo can charge gas in the selected stablecoin.
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[110px_1fr] gap-2">
+          <select
+            value={withdrawAssetSymbol}
+            onChange={(event) => setWithdrawAssetSymbol(event.target.value)}
+            disabled={withdrawalState === "SUBMITTING"}
+            className="h-11 rounded-xl border border-border bg-[#F7F7F5] px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+          >
+            {balances.map((token) => (
+              <option key={token.symbol} value={token.symbol}>
+                {token.symbol}
+              </option>
+            ))}
+          </select>
+
+          <input
+            value={withdrawAmount}
+            onChange={(event) => setWithdrawAmount(event.target.value)}
+            inputMode="decimal"
+            disabled={withdrawalState === "SUBMITTING"}
+            placeholder="Amount"
+            className="h-11 rounded-xl border border-border bg-[#F7F7F5] px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void handleWithdraw()}
+          disabled={
+            !userWalletAddress ||
+            withdrawalState === "SUBMITTING" ||
+            !withdrawalToken
+          }
+          className="mt-3 flex h-11 w-full items-center justify-center rounded-xl border border-border bg-[#171717] px-4 text-xs font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {withdrawalState === "SUBMITTING"
+            ? "Returning funds on Celo..."
+            : withdrawalState === "CONFIRMED"
+              ? "Funds returned"
+              : "Withdraw to my Portal wallet"}
+        </button>
+
+        {withdrawalError && (
+          <div className="mt-2 text-[11px] text-danger">{withdrawalError}</div>
+        )}
+
+        {withdrawalTxHash && (
+          <a
+            href={`https://celoscan.io/tx/${withdrawalTxHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block truncate font-mono text-[10px] text-accent"
+          >
+            {withdrawalTxHash}
           </a>
         )}
       </div>
