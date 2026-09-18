@@ -122,7 +122,7 @@ export function AgentSettings({
     <section className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+          <div className="text-xs font-medium text-text-secondary">
             Policy
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.025em] text-text-primary">
