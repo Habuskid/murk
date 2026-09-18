@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { CdpClient } from "@coinbase/cdp-sdk"
-import { repository, UserRecord, WalletRecord } from "@/db/repository"
+import { repository, AgentRecord, UserRecord, WalletRecord } from "@/db/repository"
 
 let cdpClient: CdpClient | null = null
 
@@ -138,4 +138,19 @@ export function authErrorResponse(error: unknown): {
   }
 
   return { status: 500, body: { error: message } }
+}
+
+
+export async function requireOwnedAgent(
+  req: NextRequest,
+  agentId: string
+): Promise<{ owner: AuthenticatedOwner; agent: AgentRecord }> {
+  const owner = await requireAuthenticatedOwner(req)
+  const agent = repository.findAgentById(agentId, owner.userId)
+
+  if (!agent) {
+    throw new Error("AGENT_NOT_FOUND")
+  }
+
+  return { owner, agent }
 }
