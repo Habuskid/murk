@@ -10,6 +10,10 @@ import { Navigation, type TabKey } from "@/components/Navigation"
 import { PurchaseRunner } from "@/components/PurchaseRunner"
 import { MurkLogoIcon } from "@/components/Icons"
 import type { ActivityItem } from "@/db/repository"
+import {
+  CELO_NETWORK_LABEL,
+  IS_CELO_TESTNET,
+} from "@/config/celo-network"
 
 const activityFixture: ActivityItem[] = [
   {
@@ -186,8 +190,14 @@ export function UiSandbox({
         <div className="flex items-center gap-2 text-[11px] font-medium text-text-secondary">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            Celo
+            {CELO_NETWORK_LABEL}
           </span>
+          {IS_CELO_TESTNET && (
+            <>
+              <span className="text-text-tertiary">/</span>
+              <span className="font-semibold text-warning">Testnet</span>
+            </>
+          )}
           <span className="text-text-tertiary">/</span>
           <span className="font-semibold text-accent">NGN</span>
         </div>
