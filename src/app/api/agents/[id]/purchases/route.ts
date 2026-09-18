@@ -18,6 +18,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: "Agent not found" }, { status: 404 })
     }
 
+    try {
+      const liveAddress = await resolveAgentExecutionAddress(agent.id)
+      if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
+        agent.walletAddress = liveAddress
+        agent.updatedAt = new Date()
+        repository.saveAgent(agent)
+      }
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: error instanceof Error ? error.message : "AGENT_WALLET_UNAVAILABLE",
+        },
+        { status: 503 }
+      )
+    }
+
     const mandate = repository.getLatestMandate(agent.id)
     if (!mandate) {
       return NextResponse.json({ error: "No mandate found for agent" }, { status: 400 })
