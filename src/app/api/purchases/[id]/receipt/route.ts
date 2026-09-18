@@ -4,10 +4,11 @@ import { authErrorResponse, requireAuthenticatedOwner } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const owner = await requireAuthenticatedOwner(req)
-    const purchase = repository.getPurchaseById(params.id)
+    const purchase = repository.getPurchaseById(id)
 
     if (!purchase) {
       return NextResponse.json({ error: "Purchase not found" }, { status: 404 })
