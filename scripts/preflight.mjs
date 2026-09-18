@@ -56,23 +56,29 @@ function requireHttpsUrl(name, options = {}) {
   }
 }
 
-const expectedChainId = mode === "staging" ? "11142220" : "42220"
-const chainId = requireValue("CELO_CHAIN_ID")
+const networkMode = requireValue("NEXT_PUBLIC_MURK_NETWORK")
+if (networkMode && !["testnet", "mainnet"].includes(networkMode)) {
+  errors.push("NEXT_PUBLIC_MURK_NETWORK must be testnet or mainnet")
+}
+
+if (mode === "staging" && networkMode && networkMode !== "testnet") {
+  errors.push("Murk staging must use NEXT_PUBLIC_MURK_NETWORK=testnet")
+}
+
+if (mode === "demo" && networkMode && networkMode !== "mainnet") {
+  errors.push("Murk demo lock must use NEXT_PUBLIC_MURK_NETWORK=mainnet")
+}
+
+const expectedChainId = networkMode === "mainnet" ? "42220" : "11142220"
+const chainId = value("CELO_CHAIN_ID")
+const publicChainId = value("NEXT_PUBLIC_CELO_CHAIN_ID")
+
 if (chainId && chainId !== expectedChainId) {
-  errors.push(
-    `CELO_CHAIN_ID must be ${expectedChainId} for Murk ${mode}`
-  )
+  errors.push(`CELO_CHAIN_ID conflicts with NEXT_PUBLIC_MURK_NETWORK=${networkMode}`)
 }
 
-const publicChainId = requireValue("NEXT_PUBLIC_CELO_CHAIN_ID")
 if (publicChainId && publicChainId !== expectedChainId) {
-  errors.push(
-    `NEXT_PUBLIC_CELO_CHAIN_ID must be ${expectedChainId} for Murk ${mode}`
-  )
-}
-
-if (chainId && publicChainId && chainId !== publicChainId) {
-  errors.push("CELO_CHAIN_ID and NEXT_PUBLIC_CELO_CHAIN_ID must match")
+  errors.push(`NEXT_PUBLIC_CELO_CHAIN_ID conflicts with NEXT_PUBLIC_MURK_NETWORK=${networkMode}`)
 }
 
 const rpcUrl = requireHttpsUrl("CELO_RPC_URL", { disallowLocalhost: true })
@@ -80,16 +86,18 @@ const publicRpcUrl = requireHttpsUrl("NEXT_PUBLIC_CELO_RPC_URL", {
   disallowLocalhost: true,
 })
 
-if (mode === "staging") {
-  for (const [name, url] of [
-    ["CELO_RPC_URL", rpcUrl],
-    ["NEXT_PUBLIC_CELO_RPC_URL", publicRpcUrl],
-  ]) {
-    if (url && !url.hostname.includes("sepolia")) {
-      warnings.push(
-        `${name} does not contain "sepolia"; verify it really targets Celo Sepolia`
-      )
-    }
+for (const [name, url] of [
+  ["CELO_RPC_URL", rpcUrl],
+  ["NEXT_PUBLIC_CELO_RPC_URL", publicRpcUrl],
+]) {
+  if (!url) continue
+
+  const isSepoliaHost = url.hostname.includes("sepolia")
+  if (networkMode === "testnet" && !isSepoliaHost) {
+    errors.push(`${name} must point to Celo Sepolia in testnet mode`)
+  }
+  if (networkMode === "mainnet" && isSepoliaHost) {
+    errors.push(`${name} must not point to Celo Sepolia in mainnet mode`)
   }
 }
 requireHttpsUrl("EXCHANGE_RATE_API_URL", { disallowLocalhost: true })
@@ -178,6 +186,14 @@ if (facilitator) {
     const url = new URL(facilitator)
     if (url.protocol !== "https:") {
       errors.push("X402_FACILITATOR_URL must use https")
+    }
+
+    const isSepoliaFacilitator = url.hostname.includes("sepolia")
+    if (networkMode === "testnet" && !isSepoliaFacilitator) {
+      errors.push("X402_FACILITATOR_URL must use the Celo Sepolia facilitator in testnet mode")
+    }
+    if (networkMode === "mainnet" && isSepoliaFacilitator) {
+      errors.push("X402_FACILITATOR_URL must use the mainnet facilitator in mainnet mode")
     }
   } catch {
     errors.push("X402_FACILITATOR_URL must be a valid URL")
