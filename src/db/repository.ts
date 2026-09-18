@@ -647,6 +647,47 @@ class PersistentRepository {
     })
   }
 
+  async saveTransaction(input: {
+    id: string
+    purchaseId?: string
+    walletId: string
+    purpose: string
+    chainId: number
+    txHash: string
+    assetAddress?: string
+    amountRaw?: bigint
+    fromAddress: string
+    toAddress?: string
+    status: "CREATED" | "SUBMITTED" | "CONFIRMED" | "REVERTED" | "FAILED"
+    submittedAt?: Date
+    confirmedAt?: Date
+    blockNumber?: bigint
+    errorCode?: string
+  }): Promise<void> {
+    const db = getDb()
+
+    await db
+      .insert(schema.transactions)
+      .values({
+        id: input.id,
+        purchaseId: input.purchaseId || null,
+        walletId: input.walletId,
+        purpose: input.purpose,
+        chainId: input.chainId,
+        txHash: input.txHash,
+        assetAddress: input.assetAddress || null,
+        amountRaw: input.amountRaw || null,
+        fromAddress: input.fromAddress,
+        toAddress: input.toAddress || null,
+        status: input.status,
+        submittedAt: input.submittedAt || new Date(),
+        confirmedAt: input.confirmedAt || null,
+        blockNumber: input.blockNumber || null,
+        errorCode: input.errorCode || null,
+      })
+      .onConflictDoNothing()
+  }
+
   async getIdempotencyResult(
     key: string,
     requestHash?: string
