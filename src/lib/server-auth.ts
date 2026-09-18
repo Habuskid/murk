@@ -28,7 +28,7 @@ export async function requireAuthenticatedOwner(
   }
 
   const providerUserId = `portal_${session.endUserId}`
-  let user = repository.findUserByProviderId(providerUserId)
+  let user = await repository.findUserByProviderId(providerUserId)
 
   if (!user) {
     const now = new Date()
@@ -39,10 +39,10 @@ export async function requireAuthenticatedOwner(
       createdAt: now,
       updatedAt: now,
     } satisfies UserRecord
-    repository.saveUser(user)
+    await repository.saveUser(user)
   }
 
-  const wallet = repository.findUserWallet(user.id)
+  const wallet = await repository.findUserWallet(user.id)
 
   return {
     userId: user.id,
@@ -83,7 +83,7 @@ export async function requireOwnedAgent(
   agentId: string
 ): Promise<{ owner: AuthenticatedOwner; agent: AgentRecord }> {
   const owner = await requireAuthenticatedOwner(req)
-  const agent = repository.findAgentById(agentId, owner.userId)
+  const agent = await repository.findAgentById(agentId, owner.userId)
 
   if (!agent) {
     throw new Error("AGENT_NOT_FOUND")
