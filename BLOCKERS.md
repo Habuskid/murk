@@ -55,32 +55,6 @@ Still required outside the repository:
 
 Do not introduce another identity/wallet provider to avoid this configuration.
 
-## B3. Package lock is stale
-
-Status: BLOCKING CLEAN REPRODUCIBLE INSTALL
-
-`package.json` is current, but committed `package-lock.json` still describes the old stack, including legacy Coinbase/Next 14/x402 dependencies.
-
-Current CI passes because it runs:
-
-`npm install`
-
-A clean reproducible install with:
-
-`npm ci`
-
-is not valid until the lockfile is regenerated.
-
-Required action:
-
-```bash
-npm install
-git add package-lock.json
-git commit -m "chore: regenerate lockfile for current Murk stack"
-```
-
-Do not revert current dependencies merely to match the stale lockfile.
-
 ## B4. Real Neon database provisioning and schema verification
 
 Status: BLOCKING DEPLOYED PERSISTENCE PROOF
@@ -134,23 +108,27 @@ Still required:
 
 Do not add arbitrary withdrawal destinations.
 
-## B7. Real ERC-8004 registration
+## B7. Live ERC-8004 registration and binding
 
-Status: NOT INTEGRATED
+Status: IMPLEMENTED IN CODE, LIVE VERIFICATION REQUIRED
 
-Locked ownership model:
+Implemented:
 
-- human Portal wallet owns the ERC-8004 identity NFT;
-- separate Murk execution EOA is bound as the agent wallet.
+- registration against the current Celo Identity Registry;
+- public metadata endpoint;
+- Portal-owner registration transaction preparation;
+- Registered-event verification and real agent ID persistence;
+- execution-wallet EIP-712 consent;
+- owner-submitted setAgentWallet transaction preparation;
+- owner/wallet binding verification;
+- transaction evidence persistence.
 
 Still required:
 
-- implement registration against the current Celo registry;
-- register on Celo mainnet;
-- persist the real agent ID;
-- bind/verify the execution wallet;
-- preserve registration transaction evidence;
-- show explorer evidence.
+- deploy Murk so the metadata URI is publicly resolvable;
+- register on Celo mainnet through the real Portal wallet;
+- bind the real derived execution wallet;
+- preserve explorer evidence.
 
 Do not seed or display a placeholder agent ID as verified.
 
@@ -170,8 +148,9 @@ Still required:
 
 - obtain the actual program-assigned Murk attribution code;
 - configure `CELO_ATTRIBUTION_CODE`;
-- prove the assigned code on a qualifying live transaction;
-- verify attribution behavior on the final x402 settlement path.
+- prove the assigned code on a qualifying live Murk-originated transaction.
+
+The hosted x402 facilitator submits the final EIP-3009 settlement transaction, so Murk cannot honestly append its suffix to that facilitator-owned calldata. The preferred qualifying proof is the Murk-generated ERC-8004 registration or binding transaction.
 
 Do not use a hostname-derived code as a substitute for a program-assigned hackathon code.
 
