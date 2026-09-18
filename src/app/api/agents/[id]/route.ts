@@ -1,84 +1,73 @@
 import { NextRequest, NextResponse } from "next/server"
 import { UpdateAgentSchema } from "@/lib/validation"
 import { repository, MandateRecord } from "@/db/repository"
-
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
+import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
+async function syncLiveAddress(agentId: string) {
+  const agent = repository.findAgentById(agentId)
+  if (!agent) throw new Error("AGENT_NOT_FOUND")
+
+  const liveAddress = await resolveAgentExecutionAddress(agent.id)
+  if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
+    agent.walletAddress = liveAddress
+    agent.updatedAt = new Date()
+    repository.saveAgent(agent)
+  }
+
+  return agent
+}
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const ownerId = repository.getDemoUserId()
-  const agent = repository.findAgentById(params.id, ownerId)
-
-  if (!agent) {
-    return NextResponse.json({ error: "Agent not found" }, { status: 404 })
-  }
-
   try {
-    const liveAddress = await resolveAgentExecutionAddress(agent.id)
-    if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
-      agent.walletAddress = liveAddress
-      agent.updatedAt = new Date()
-      repository.saveAgent(agent)
-    }
+    const { agent: ownedAgent } = await requireOwnedAgent(req, params.id)
+    const agent = await syncLiveAddress(ownedAgent.id)
+    const mandate = repository.getLatestMandate(agent.id)
+
+    return NextResponse.json({
+      id: agent.id,
+      name: agent.name,
+      status: agent.status,
+      accountingCurrency: agent.accountingCurrency,
+      timezone: agent.timezone,
+      walletAddress: agent.walletAddress,
+      erc8004AgentId: agent.erc8004AgentId,
+      allowedAssets: agent.allowedAssets,
+      mandate: mandate
+        ? {
+            version: mandate.version,
+            dailyLimitMinor: mandate.dailyLimitMinor.toString(),
+            perPurchaseLimitMinor: mandate.perPurchaseLimitMinor.toString(),
+            spentTodayMinor: mandate.spentTodayMinor.toString(),
+            reservedTodayMinor: mandate.reservedTodayMinor.toString(),
+            status: mandate.status,
+          }
+        : null,
+    })
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "AGENT_WALLET_UNAVAILABLE",
-      },
-      { status: 503 }
-    )
+    const mapped = authErrorResponse(error)
+    return NextResponse.json(mapped.body, { status: mapped.status })
   }
-
-  const mandate = repository.getLatestMandate(agent.id)
-
-  return NextResponse.json({
-    id: agent.id,
-    name: agent.name,
-    status: agent.status,
-    accountingCurrency: agent.accountingCurrency,
-    timezone: agent.timezone,
-    walletAddress: agent.walletAddress,
-    erc8004AgentId: agent.erc8004AgentId,
-    allowedAssets: agent.allowedAssets,
-    mandate: mandate
-      ? {
-          version: mandate.version,
-          dailyLimitMinor: mandate.dailyLimitMinor.toString(),
-          perPurchaseLimitMinor: mandate.perPurchaseLimitMinor.toString(),
-          spentTodayMinor: mandate.spentTodayMinor.toString(),
-          reservedTodayMinor: mandate.reservedTodayMinor.toString(),
-          status: mandate.status,
-        }
-      : null,
-  })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const ownerId = repository.getDemoUserId()
-    const agent = repository.findAgentById(params.id, ownerId)
-
-    if (!agent) {
-      return NextResponse.json({ error: "Agent not found" }, { status: 404 })
-    }
-
+    const { agent } = await requireOwnedAgent(req, params.id)
     const body = await req.json()
     const validated = UpdateAgentSchema.parse(body)
 
-    if (validated.name) {
-      agent.name = validated.name
-    }
-    if (validated.allowedAssets) {
-      agent.allowedAssets = validated.allowedAssets
-    }
+    if (validated.name) agent.name = validated.name
+    if (validated.allowedAssets) agent.allowedAssets = validated.allowedAssets
+
     agent.updatedAt = new Date()
     repository.saveAgent(agent)
 
-    // If financial policy changes, create a new mandate version per LOCKED_DECISIONS.md
     if (validated.dailyLimitMinor || validated.perPurchaseLimitMinor) {
       const current = repository.getLatestMandate(agent.id)
       const nextVersion = (current?.version || 0) + 1
+
       const newMandate: MandateRecord = {
         id: `man_${agent.id}_v${nextVersion}`,
         agentId: agent.id,
@@ -108,7 +97,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       accountingCurrency: agent.accountingCurrency,
       allowedAssets: agent.allowedAssets,
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Update failed" }, { status: 400 })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    if (mapped.status !== 500) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Update failed" },
+      { status: 400 }
+    )
   }
 }
