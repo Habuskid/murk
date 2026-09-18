@@ -7,6 +7,10 @@ on:
         description: 'Type DEPLOY_MURK_MAINNET to run the production deployment'
         required: true
         type: string
+      tested_commit:
+        description: 'Full SHA that passed the Sepolia live E2E gate'
+        required: true
+        type: string
 
 concurrency:
   group: murk-production-deploy
@@ -32,6 +36,7 @@ jobs:
 
       PUBLIC_APP_ORIGIN: ${{ secrets.PUBLIC_APP_ORIGIN }}
 
+      NEXT_PUBLIC_MURK_NETWORK: "mainnet"
       CELO_RPC_URL: ${{ secrets.CELO_RPC_URL }}
       NEXT_PUBLIC_CELO_RPC_URL: ${{ secrets.NEXT_PUBLIC_CELO_RPC_URL }}
       CELO_CHAIN_ID: "42220"
@@ -52,13 +57,45 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
-      - name: Checkout locked main branch
-        uses: actions/checkout@v4
+      - name: Validate tested commit input
+        shell: bash
+        env:
+          TESTED_COMMIT: ${{ inputs.tested_commit }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TESTED_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "tested_commit must be a full 40-character Git commit SHA"
+            exit 1
+          fi
 
-      - name: Use Node 20
+      - name: Checkout exact Sepolia-tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tested_commit }}
+          fetch-depth: 0
+
+      - name: Verify tested commit is in main history
+        shell: bash
+        env:
+          TESTED_COMMIT: ${{ inputs.tested_commit }}
+        run: |
+          set -euo pipefail
+          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+          if [[ "$ACTUAL_COMMIT" != "$TESTED_COMMIT" ]]; then
+            echo "Checked out $ACTUAL_COMMIT instead of requested $TESTED_COMMIT"
+            exit 1
+          fi
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$TESTED_COMMIT" origin/main; then
+            echo "The tested commit is not part of main history. Merge/promote it first."
+            exit 1
+          fi
+          echo "Deploying exact Sepolia-tested commit: $ACTUAL_COMMIT"
+
+      - name: Use Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install exact dependencies
@@ -100,6 +137,22 @@ jobs:
           for attempt in {1..20}; do
             if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health" > /tmp/murk-health.json; then
               cat /tmp/murk-health.json
+              node -e '
+                const fs = require("fs");
+                const health = JSON.parse(fs.readFileSync("/tmp/murk-health.json", "utf8"));
+                if (health?.components?.celoRpc?.chainId !== 42220) {
+                  console.error("Expected Celo mainnet chainId 42220, got", health?.components?.celoRpc?.chainId);
+                  process.exit(1);
+                }
+                if (health?.components?.celoRpc?.status !== "healthy") {
+                  console.error("Celo mainnet RPC health is not healthy");
+                  process.exit(1);
+                }
+                if (health?.components?.rateProvider?.status !== "healthy") {
+                  console.error("Rate provider health is not healthy");
+                  process.exit(1);
+                }
+              '
               exit 0
             fi
             sleep 3
