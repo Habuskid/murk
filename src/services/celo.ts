@@ -8,11 +8,9 @@ import {
   hexToBigInt,
   http,
   parseAbi,
-  formatUnits,
   type Address,
 } from "viem"
 import { celo } from "viem/chains"
-import { privateKeyToAccount } from "viem/accounts"
 import { CandidateAsset } from "../core/types"
 
 export const CELO_CHAIN_ID = 42220
@@ -98,19 +96,6 @@ export async function getAgentPortfolio(
 
   return portfolio
 }
-
-/**
- * Resolves the server-side agent execution signer.
- * Enforces security boundary: signing material stays strictly on the server.
- */
-export function getAgentSigner(privateKeyOverride?: `0x${string}`) {
-  const secretKey = privateKeyOverride || (process.env.AGENT_WALLET_PRIVATE_KEY as `0x${string}`)
-  if (!secretKey || !secretKey.startsWith("0x")) {
-    throw new Error("AGENT_WALLET_PRIVATE_KEY is missing or invalid in server environment")
-  }
-  return privateKeyToAccount(secretKey)
-}
-
 
 /**
  * Celo's eth_gasPrice accepts an optional fee-currency address.
