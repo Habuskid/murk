@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const agentId = searchParams.get("agentId") || undefined
 
-    const activity = repository.listActivityByOwner(owner.userId, agentId)
+    const activity = await repository.listActivityByOwner(owner.userId, agentId)
 
     return NextResponse.json({
       activity: activity.map((act) => ({
