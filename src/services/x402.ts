@@ -8,7 +8,6 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { MerchantRequirementOption } from "../core/types"
 import { CELO_CAIP2, CELO_CHAIN_ID } from "../config/celo-network"
-import { CELO_CAIP2_NETWORK, CELO_CHAIN_ID } from "./celo"
 
 export type ResourceRequestResult =
   | {
@@ -78,7 +77,7 @@ export async function requestResource(
   )
 
   const requirements: MerchantRequirementOption[] = paymentRequired.accepts
-    .filter((item) => item.network === CELO_CAIP2_NETWORK)
+    .filter((item) => item.network === CELO_CAIP2)
     .map((item) => ({
       scheme: item.scheme,
       network: item.network,
