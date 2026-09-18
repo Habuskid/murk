@@ -216,35 +216,39 @@ function MurkWalletApp() {
       )}
 
       {activeTab === "home" && (
-        <main className="space-y-4 animate-in fade-in duration-150">
-          <HeroMandate
-            currency={agent.accountingCurrency}
-            dailyLimitMinor={dailyLimitMinor}
-            spentTodayMinor={spentTodayMinor}
-            agentStatus={agentStatus}
-            agentName={agent.name}
-            onEditLimits={() => setActiveTab("settings")}
-            onTogglePause={handleTogglePause}
-            onOpenVault={() => {
-              const el = document.getElementById("execution-vault")
-              if (el) el.scrollIntoView({ behavior: "smooth" })
-            }}
-          />
+        <main className="mx-auto w-full max-w-[760px] space-y-4 animate-in fade-in duration-150">
+          <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+            <div className="space-y-4">
+              <HeroMandate
+                currency={agent.accountingCurrency}
+                dailyLimitMinor={dailyLimitMinor}
+                spentTodayMinor={spentTodayMinor}
+                agentStatus={agentStatus}
+                agentName={agent.name}
+                onEditLimits={() => setActiveTab("settings")}
+                onTogglePause={handleTogglePause}
+                onOpenVault={() => {
+                  const el = document.getElementById("execution-vault")
+                  if (el) el.scrollIntoView({ behavior: "smooth" })
+                }}
+              />
 
-          <PurchaseRunner
-            agentId={agent.id}
-            accountingCurrency={agent.accountingCurrency}
-            perPurchaseLimitFormatted={formatMoneyMinor(perPurchaseLimitMinor, 2)}
-            onPurchaseComplete={handlePurchaseComplete}
-          />
+              <PurchaseRunner
+                agentId={agent.id}
+                accountingCurrency={agent.accountingCurrency}
+                perPurchaseLimitFormatted={formatMoneyMinor(perPurchaseLimitMinor, 2)}
+                onPurchaseComplete={handlePurchaseComplete}
+              />
+            </div>
 
-          <div id="execution-vault">
-            <AgentFunds
-              agentId={agent.id}
-              walletAddress={agent.walletAddress}
-              balances={balances}
-              onBalancesChanged={refreshAgentState}
-            />
+            <div id="execution-vault">
+              <AgentFunds
+                agentId={agent.id}
+                walletAddress={agent.walletAddress}
+                balances={balances}
+                onBalancesChanged={refreshAgentState}
+              />
+            </div>
           </div>
 
           <ActivityList items={activity.slice(0, 5)} />
