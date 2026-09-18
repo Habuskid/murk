@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (liveAddress.toLowerCase() !== agent.walletAddress.toLowerCase()) {
       agent.walletAddress = liveAddress
       agent.updatedAt = new Date()
-      repository.saveAgent(agent)
+      await repository.saveAgent(agent)
     }
 
     const portfolio = await getAgentPortfolio(
