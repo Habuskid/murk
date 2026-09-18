@@ -18,6 +18,25 @@ function requireValue(name) {
   return v
 }
 
+function rejectPlaceholder(name, raw) {
+  if (!raw) return
+
+  const normalized = raw.toLowerCase()
+  const forbiddenFragments = [
+    "placeholder",
+    "ui-sandbox",
+    "example.com",
+    "changeme",
+    "replace-me",
+    "replace_me",
+    "test-secret",
+  ]
+
+  if (forbiddenFragments.some((fragment) => normalized.includes(fragment))) {
+    errors.push(`${name} contains a test/example placeholder`)
+  }
+}
+
 function requireHttpsUrl(name, options = {}) {
   const raw = requireValue(name)
   if (!raw) return null
@@ -61,24 +80,46 @@ if (databaseUrl) {
   }
 }
 
-requireValue("PORTAL_AUTH_ENVIRONMENT_ID")
-requireValue("PORTAL_AUTH_FROM_EMAIL")
-requireValue("PORTAL_AUTH_TEMPLATE_ID")
-requireValue("PORTAL_CUSTODIAN_API_KEY")
+const portalEnvironmentId = requireValue("PORTAL_AUTH_ENVIRONMENT_ID")
+const portalFromEmail = requireValue("PORTAL_AUTH_FROM_EMAIL")
+const portalTemplateId = requireValue("PORTAL_AUTH_TEMPLATE_ID")
+const portalCustodianKey = requireValue("PORTAL_CUSTODIAN_API_KEY")
+
+rejectPlaceholder("PORTAL_AUTH_ENVIRONMENT_ID", portalEnvironmentId)
+rejectPlaceholder("PORTAL_AUTH_FROM_EMAIL", portalFromEmail)
+rejectPlaceholder("PORTAL_AUTH_TEMPLATE_ID", portalTemplateId)
+rejectPlaceholder("PORTAL_CUSTODIAN_API_KEY", portalCustodianKey)
 
 const sessionSecret = requireValue("MURK_SESSION_SECRET")
 if (sessionSecret && sessionSecret.length < 32) {
   errors.push("MURK_SESSION_SECRET must be at least 32 characters")
 }
+rejectPlaceholder("MURK_SESSION_SECRET", sessionSecret)
 
 const masterSecret = requireValue("AGENT_WALLET_MASTER_SECRET")
 if (masterSecret && !/^(?:0x)?[a-fA-F0-9]{64}$/.test(masterSecret)) {
   errors.push("AGENT_WALLET_MASTER_SECRET must be exactly 32 random bytes encoded as hex")
 }
 
+if (masterSecret) {
+  const normalizedMaster = masterSecret.replace(/^0x/, "").toLowerCase()
+
+  if (/^(.)\1{63}$/.test(normalizedMaster)) {
+    errors.push("AGENT_WALLET_MASTER_SECRET must not use a repeated-character test key")
+  }
+
+  if (
+    normalizedMaster ===
+    "1111111111111111111111111111111111111111111111111111111111111111"
+  ) {
+    errors.push("AGENT_WALLET_MASTER_SECRET must not use the UI sandbox key")
+  }
+}
+
 const appOrigin = requireHttpsUrl("PUBLIC_APP_ORIGIN", {
   disallowLocalhost: true,
 })
+rejectPlaceholder("PUBLIC_APP_ORIGIN", value("PUBLIC_APP_ORIGIN"))
 
 const liveResource = requireHttpsUrl("NEXT_PUBLIC_X402_RESOURCE_URL", {
   disallowLocalhost: true,
