@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next"
-import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
 import { MurkPortalProvider } from "@/components/MurkPortalProvider"
 
@@ -22,16 +21,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className="flex min-h-[100dvh] flex-col items-center justify-start antialiased">
-          <MurkPortalProvider>
-            <div className="flex min-h-[100dvh] w-full max-w-md flex-col px-4 py-6 md:max-w-lg">
-              {children}
-            </div>
-          </MurkPortalProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className="flex min-h-[100dvh] flex-col items-center justify-start antialiased">
+        <MurkPortalProvider>
+          <div className="flex min-h-[100dvh] w-full max-w-md flex-col px-4 py-6 md:max-w-lg">
+            {children}
+          </div>
+        </MurkPortalProvider>
+      </body>
+    </html>
   )
 }
