@@ -58,7 +58,7 @@ export async function POST(
     const userWallet = await repository.findUserWallet(owner.userId)
     if (!userWallet || !owner.walletAddress) {
       return NextResponse.json(
-        { error: "PORTAL_WALLET_NOT_READY" },
+        { error: "PRIVY_WALLET_NOT_READY" },
         { status: 409 }
       )
     }
