@@ -140,6 +140,7 @@ export async function selectStableFeeCurrency(input: {
   to: Address
   data: Hex
   preferredSymbols?: readonly (keyof typeof CELO_TOKENS)[]
+  spendRawBySymbol?: Partial<Record<keyof typeof CELO_TOKENS, bigint>>
 }): Promise<Address | null> {
   const client = getCeloClient()
   const symbols = input.preferredSymbols ?? (["USDC", "USDT"] as const)
@@ -155,7 +156,8 @@ export async function selectStableFeeCurrency(input: {
         args: [input.account],
       })
 
-      if (balance <= 0n) continue
+      const spendRaw = input.spendRawBySymbol?.[symbol] ?? 0n
+      if (balance <= spendRaw) continue
 
       const [estimatedGas, gasPrice] = await Promise.all([
         client.estimateGas({
@@ -168,7 +170,7 @@ export async function selectStableFeeCurrency(input: {
       ])
 
       const availableFeeUnits = tokenRawToFeeUnits(
-        balance,
+        balance - spendRaw,
         token.decimals
       )
       const estimatedFee = estimatedGas * gasPrice
