@@ -685,7 +685,15 @@ class PersistentRepository {
         blockNumber: input.blockNumber || null,
         errorCode: input.errorCode || null,
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: [schema.transactions.chainId, schema.transactions.txHash],
+        set: {
+          status: input.status,
+          confirmedAt: input.confirmedAt || null,
+          blockNumber: input.blockNumber || null,
+          errorCode: input.errorCode || null,
+        },
+      })
   }
 
   async claimIdempotencyKey(input: {
