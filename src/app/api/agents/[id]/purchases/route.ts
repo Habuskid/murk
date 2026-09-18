@@ -8,6 +8,7 @@ import { executeApprovedX402Payment } from "@/services/x402-payment"
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
 import { CELO_TOKENS, getCeloClient } from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
+import { assertAllowedX402Purchase } from "@/lib/resource-policy"
 
 export const dynamic = "force-dynamic"
 
@@ -60,10 +61,15 @@ export async function POST(
     const body = await req.json()
     const validated = CreatePurchaseSchema.parse(body)
 
+    const approvedResource = assertAllowedX402Purchase({
+      merchantUrl: approvedResource.merchantOrigin,
+      resourceUrl: approvedResource.resourceUrl,
+    })
+
     const requestHash = purchaseRequestHash({
       agentId: agent.id,
-      merchantUrl: validated.merchantUrl,
-      resourceUrl: validated.resourceUrl,
+      merchantUrl: approvedResource.merchantOrigin,
+      resourceUrl: approvedResource.resourceUrl,
     })
 
     const purchaseId = `pur_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`
@@ -98,8 +104,8 @@ export async function POST(
       id: purchaseId,
       agentId: agent.id,
       mandateId: mandate.id,
-      merchantUrl: validated.merchantUrl,
-      resourceUrl: validated.resourceUrl,
+      merchantUrl: approvedResource.merchantOrigin,
+      resourceUrl: approvedResource.resourceUrl,
       state: "CREATED",
       accountingCurrency: agent.accountingCurrency,
       createdAt: now,
@@ -128,8 +134,8 @@ export async function POST(
       agentStatus: agent.status,
       mandate: spendingMandate,
       allowedAssetSymbols: agent.allowedAssets,
-      merchantUrl: validated.merchantUrl,
-      resourceUrl: validated.resourceUrl,
+      merchantUrl: approvedResource.merchantOrigin,
+      resourceUrl: approvedResource.resourceUrl,
       reserveSpend: ({ purchaseId: reservedPurchaseId, amountMinor }) =>
         repository.reserveSpend({
           purchaseId: reservedPurchaseId,
