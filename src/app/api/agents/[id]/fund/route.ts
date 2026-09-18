@@ -65,29 +65,12 @@ export async function POST(
       txHash: validated.txHash,
     })
 
-    const claim = await repository.claimIdempotencyKey({
-      key: validated.idempotencyKey,
-      operation: "FUND_AGENT",
-      resourceId: agent.id,
-      requestHash: hash,
-      resultReference: validated.txHash,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    })
-
-    if (claim.status === "REPLAY") {
-      return NextResponse.json(claim.result)
-    }
-    if (claim.status === "CONFLICT") {
-      return NextResponse.json(
-        { error: "IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST" },
-        { status: 409 }
-      )
-    }
-    if (claim.status === "IN_PROGRESS") {
-      return NextResponse.json(
-        { error: "IDEMPOTENCY_REQUEST_IN_PROGRESS" },
-        { status: 409 }
-      )
+    const existing = await repository.getIdempotencyResult(
+      validated.idempotencyKey,
+      hash
+    )
+    if (existing) {
+      return NextResponse.json(existing)
     }
 
     const client = getCeloClient()
