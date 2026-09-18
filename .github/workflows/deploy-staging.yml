@@ -7,8 +7,6 @@ on:
         description: 'Type DEPLOY_MURK_SEPOLIA to deploy the staging build'
         required: true
         type: string
-  push:
-    branches: [staging/celo-sepolia]
 
 concurrency:
   group: murk-sepolia-staging
@@ -16,7 +14,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'push' || inputs.confirmation == 'DEPLOY_MURK_SEPOLIA' }}
+    if: ${{ inputs.confirmation == 'DEPLOY_MURK_SEPOLIA' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: staging
