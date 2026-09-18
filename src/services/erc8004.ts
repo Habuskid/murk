@@ -48,6 +48,23 @@ export function buildRegisterTransaction(agentURI: string): {
   }
 }
 
+export function assertRegisteredAgentMatches(input: {
+  actualOwner: Address
+  actualAgentURI: string
+  expectedOwner: Address
+  expectedAgentURI: string
+}): void {
+  if (
+    input.actualOwner.toLowerCase() !== input.expectedOwner.toLowerCase()
+  ) {
+    throw new Error("ERC8004_REGISTRATION_OWNER_MISMATCH")
+  }
+
+  if (input.actualAgentURI !== input.expectedAgentURI) {
+    throw new Error("ERC8004_REGISTRATION_URI_MISMATCH")
+  }
+}
+
 export async function parseRegisteredAgent(input: {
   txHash: Hex
   expectedOwner: Address
@@ -95,13 +112,12 @@ export async function parseRegisteredAgent(input: {
       if (decoded.eventName !== "Registered") continue
 
       const owner = decoded.args.owner
-      if (owner.toLowerCase() !== input.expectedOwner.toLowerCase()) {
-        throw new Error("ERC8004_REGISTRATION_OWNER_MISMATCH")
-      }
-
-      if (decoded.args.agentURI !== input.expectedAgentURI) {
-        throw new Error("ERC8004_REGISTRATION_URI_MISMATCH")
-      }
+      assertRegisteredAgentMatches({
+        actualOwner: owner,
+        actualAgentURI: decoded.args.agentURI,
+        expectedOwner: input.expectedOwner,
+        expectedAgentURI: input.expectedAgentURI,
+      })
 
       return {
         agentId: decoded.args.agentId,
