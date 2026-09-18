@@ -43,7 +43,12 @@ export function createMurkSessionToken(input: {
 }
 
 export function verifyMurkSessionToken(token: string): MurkSession {
-  const [payload, signature] = token.split(".")
+  const parts = token.split(".")
+  if (parts.length !== 2) {
+    throw new Error("INVALID_SESSION")
+  }
+
+  const [payload, signature] = parts
   if (!payload || !signature) {
     throw new Error("INVALID_SESSION")
   }
@@ -68,11 +73,16 @@ export function verifyMurkSessionToken(token: string): MurkSession {
     throw new Error("INVALID_SESSION")
   }
 
+  const now = Math.floor(Date.now() / 1000)
+
   if (
     !session.endUserId ||
     !session.clientId ||
+    !Number.isInteger(session.issuedAt) ||
     !Number.isInteger(session.expiresAt) ||
-    session.expiresAt <= Math.floor(Date.now() / 1000)
+    session.issuedAt > now + 60 ||
+    session.expiresAt <= session.issuedAt ||
+    session.expiresAt <= now
   ) {
     throw new Error("INVALID_OR_EXPIRED_SESSION")
   }
