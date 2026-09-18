@@ -1,7 +1,7 @@
 const mode = process.argv[2] || "deploy"
 
-if (!["deploy", "demo"].includes(mode)) {
-  console.error('Usage: node scripts/preflight.mjs <deploy|demo>')
+if (!["deploy", "staging", "demo"].includes(mode)) {
+  console.error('Usage: node scripts/preflight.mjs <deploy|staging|demo>')
   process.exit(2)
 }
 
@@ -56,13 +56,42 @@ function requireHttpsUrl(name, options = {}) {
   }
 }
 
+const expectedChainId = mode === "staging" ? "11142220" : "42220"
 const chainId = requireValue("CELO_CHAIN_ID")
-if (chainId && chainId !== "42220") {
-  errors.push("CELO_CHAIN_ID must be 42220 for the locked mainnet build")
+if (chainId && chainId !== expectedChainId) {
+  errors.push(
+    `CELO_CHAIN_ID must be ${expectedChainId} for Murk ${mode}`
+  )
 }
 
-requireHttpsUrl("CELO_RPC_URL", { disallowLocalhost: true })
-requireHttpsUrl("NEXT_PUBLIC_CELO_RPC_URL", { disallowLocalhost: true })
+const publicChainId = requireValue("NEXT_PUBLIC_CELO_CHAIN_ID")
+if (publicChainId && publicChainId !== expectedChainId) {
+  errors.push(
+    `NEXT_PUBLIC_CELO_CHAIN_ID must be ${expectedChainId} for Murk ${mode}`
+  )
+}
+
+if (chainId && publicChainId && chainId !== publicChainId) {
+  errors.push("CELO_CHAIN_ID and NEXT_PUBLIC_CELO_CHAIN_ID must match")
+}
+
+const rpcUrl = requireHttpsUrl("CELO_RPC_URL", { disallowLocalhost: true })
+const publicRpcUrl = requireHttpsUrl("NEXT_PUBLIC_CELO_RPC_URL", {
+  disallowLocalhost: true,
+})
+
+if (mode === "staging") {
+  for (const [name, url] of [
+    ["CELO_RPC_URL", rpcUrl],
+    ["NEXT_PUBLIC_CELO_RPC_URL", publicRpcUrl],
+  ]) {
+    if (url && !url.hostname.includes("sepolia")) {
+      warnings.push(
+        `${name} does not contain "sepolia"; verify it really targets Celo Sepolia`
+      )
+    }
+  }
+}
 requireHttpsUrl("EXCHANGE_RATE_API_URL", { disallowLocalhost: true })
 
 const databaseUrl = requireValue("DATABASE_URL")
