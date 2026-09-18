@@ -200,6 +200,23 @@ describe("CORE: Policy Engine", () => {
     expect(decision.reasonCodes).toContain(REASON_CODES.DAILY_MANDATE_EXCEEDED)
   })
 
+  it("blocks draft and disabled agents without mislabeling them as paused", () => {
+    for (const agentStatus of ["DRAFT", "DISABLED"] as const) {
+      const decision = evaluatePolicy({
+        agentStatus,
+        mandate: baseMandate,
+        purchaseValueMinor: 50000n,
+        isAssetAllowed: true,
+        isRateValid: true,
+        isRateExpired: false,
+      })
+
+      expect(decision.decision).toBe("BLOCKED")
+      expect(decision.reasonCodes).toContain(REASON_CODES.AGENT_NOT_ACTIVE)
+      expect(decision.reasonCodes).not.toContain(REASON_CODES.AGENT_PAUSED)
+    }
+  })
+
   it("blocks when agent is paused", () => {
     const decision = evaluatePolicy({
       agentStatus: "PAUSED",
