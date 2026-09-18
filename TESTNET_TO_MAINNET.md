@@ -62,7 +62,8 @@ Required secrets:
 
 ```text
 STAGING_DATABASE_URL
-STAGING_MURK_SESSION_SECRET
+STAGING_PRIVY_APP_ID
+STAGING_PRIVY_APP_SECRET
 STAGING_AGENT_WALLET_MASTER_SECRET
 STAGING_PUBLIC_APP_ORIGIN
 # Optional, only for independent external merchant evidence:
@@ -73,10 +74,6 @@ STAGING_X402_PROBE_RESOURCE_URL
 STAGING_X402_API_KEY
 STAGING_X402_SELLER_ADDRESS
 
-PORTAL_AUTH_ENVIRONMENT_ID
-PORTAL_AUTH_FROM_EMAIL
-PORTAL_AUTH_TEMPLATE_ID
-PORTAL_CUSTODIAN_API_KEY
 CELO_ATTRIBUTION_CODE
 
 VERCEL_TOKEN
@@ -115,7 +112,7 @@ components.rateProvider.status = healthy
 
 Use test funds only.
 
-Portal human wallet needs:
+Privy human wallet needs:
 
 - Celo Sepolia USDC for funding the Murk agent;
 - a small amount of Sepolia CELO for direct registration, binding and ERC-20 funding gas when no verified testnet fee adapter is configured.
@@ -131,10 +128,10 @@ Do not use production USDC while validating Sepolia.
 
 Run the test in this order.
 
-### 1. Authentication and Portal wallet
+### 1. Authentication and Privy wallet
 
-- sign in by real email magic link;
-- create or reuse the Portal MPC wallet;
+- complete a real Privy email or wallet login;
+- create or reuse the Privy embedded EVM wallet;
 - confirm the address survives reload;
 - confirm Murk persists the wallet with chain ID `11142220`.
 
@@ -162,13 +159,13 @@ Verify:
 
 ### 4. ERC-8004
 
-Use the Portal human wallet as identity owner.
+Use the Privy human wallet as identity owner.
 
 Verify:
 
 - registration uses the Sepolia IdentityRegistry;
 - the returned agent ID exists on Celo Sepolia;
-- the owner is the Portal wallet;
+- the owner is the Privy human wallet;
 - the derived Murk EOA signs the wallet-binding consent;
 - the registry reports the derived EOA as the bound agent wallet;
 - registration and binding transaction evidence persist.
@@ -230,7 +227,7 @@ reservation count = 0
 
 ### 8. Withdrawal
 
-Return a small amount of test USDC from the agent to the Portal wallet.
+Return a small amount of test USDC from the agent to the Privy wallet.
 
 Verify the exact transfer and persisted transaction.
 
@@ -301,7 +298,7 @@ Before the demo, run one deliberately small real mainnet path.
 Required order:
 
 ```text
-Portal login
+Privy login
 -> mainnet wallet verification
 -> agent creation
 -> minimal funding
