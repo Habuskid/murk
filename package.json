@@ -15,7 +15,9 @@
     "spike:d": "tsx spikes/spike-d-multi-asset.ts",
     "spike:e": "tsx spikes/spike-e-rate-provider.ts",
     "spikes": "tsx spikes/run-all-spikes.ts",
-    "ui:capture": "node scripts/capture-ui.mjs"
+    "ui:capture": "node scripts/capture-ui.mjs",
+    "preflight:deploy": "node scripts/preflight.mjs deploy",
+    "preflight:demo": "node scripts/preflight.mjs demo"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
