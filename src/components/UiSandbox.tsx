@@ -1,7 +1,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { ActivityList } from "@/components/ActivityList"
+import { AgentIdentity } from "@/components/AgentIdentity"
 import { AgentFunds } from "@/components/AgentFunds"
 import { AgentSettings } from "@/components/AgentSettings"
 import { HeroMandate } from "@/components/HeroMandate"
@@ -58,12 +60,14 @@ const balances = [
 ]
 
 export function UiSandbox() {
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabKey>("home")
   const [paused, setPaused] = useState(false)
+  const emptyActivity = searchParams.get("activity") === "empty"
 
   const body = useMemo(() => {
     if (activeTab === "activity") {
-      return <ActivityList items={activityFixture} />
+      return <ActivityList items={emptyActivity ? [] : activityFixture} />
     }
 
     if (activeTab === "settings") {
@@ -118,6 +122,11 @@ export function UiSandbox() {
               </div>
             </div>
           </div>
+
+          <AgentIdentity
+            agentId="sandbox_agent"
+            erc8004AgentId={undefined}
+          />
         </div>
       )
     }
@@ -152,10 +161,10 @@ export function UiSandbox() {
           </div>
         </div>
 
-        <ActivityList items={activityFixture} />
+        <ActivityList items={emptyActivity ? [] : activityFixture} />
       </>
     )
-  }, [activeTab, paused])
+  }, [activeTab, paused, emptyActivity])
 
   return (
     <div className="flex w-full flex-1 flex-col">
