@@ -128,13 +128,16 @@ describe("onchain integrity", () => {
     expect(decoded && "codes" in decoded ? decoded.codes : []).toContain("murk")
   })
 
-  it("uses Celo fee adapters and normalizes 6-decimal stablecoins for gas accounting", () => {
-    expect(CELO_TOKENS.USDC.feeCurrencyAddress).not.toBe(
-      CELO_TOKENS.USDC.address
-    )
-    expect(CELO_TOKENS.USDT.feeCurrencyAddress).not.toBe(
-      CELO_TOKENS.USDT.address
-    )
+  it("uses verified mainnet fee adapters and normalizes 6-decimal stablecoins", () => {
+    const usdc = CELO_TOKENS.USDC
+    const usdt = CELO_TOKENS.USDT
+
+    expect(usdc).not.toBeNull()
+    expect(usdt).not.toBeNull()
+    if (!usdc || !usdt) throw new Error("MAINNET_TOKEN_CONFIG_MISSING")
+
+    expect(usdc.feeCurrencyAddress).not.toBe(usdc.address)
+    expect(usdt.feeCurrencyAddress).not.toBe(usdt.address)
 
     expect(tokenRawToFeeUnits(1_000_000n, 6)).toBe(
       1_000_000_000_000_000_000n
