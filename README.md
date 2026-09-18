@@ -45,7 +45,7 @@ An LLM does not control the financial boundary.
 
 ## Current Status
 
-The deterministic core, Neon-backed runtime repository, Portal integration code, responsive product UI, funding/withdrawal code, and external x402 challenge discovery are implemented.
+The deterministic core, Neon-backed runtime repository, Privy integration code, responsive product UI, funding/withdrawal code, and external x402 challenge discovery are implemented.
 
 The full live golden path is **not complete yet**.
 
@@ -75,13 +75,13 @@ The full live golden path is **not complete yet**.
 
 ### Still requires live verification
 
-- real Portal email magic-link round trip;
-- real Portal MPC wallet creation/reuse on Celo;
-- real Portal-wallet funding transaction;
+- real Privy authentication round trip;
+- real Privy embedded-wallet creation/reuse on Celo;
+- real Privy-wallet funding transaction;
 - real paid Sepolia x402 settlement through Murk's guarded engineering harness;
 - independent paid x402 settlement for final demo evidence;
 - delivered paid resource;
-- real agent withdrawal to the bound Portal wallet;
+- real agent withdrawal to the bound Privy human wallet;
 - production Neon provisioning/migration/restart verification;
 - live ERC-8004 registration and execution-wallet binding;
 - final program-assigned ERC-8021 attribution proof;
@@ -127,32 +127,32 @@ Murk must not claim that a merchant accepts multiple assets unless the real merc
 
 ## Human Authentication and Wallet
 
-Murk uses Portal for both human authentication and the embedded human wallet.
+Murk uses Privy for human authentication and the embedded human-owned EVM wallet.
 
 ```text
-Email
+Email or wallet login
   |
   v
-Portal magic link
+Privy authenticated user
   |
   v
-Portal end-user/client
+Privy access token
   |
   v
-Signed Murk HttpOnly session
+Server-side token verification
   |
   v
-Portal Web MPC wallet
+Privy embedded EVM wallet
   |
   v
 Celo address
 ```
 
-Murk does not require MetaMask, Rabby, WalletConnect, Coinbase Wallet, or another external wallet for normal onboarding.
+Protected Murk API requests carry the Privy access token and the server verifies it before resolving ownership in Neon.
 
-The Portal Custodian API key remains server-only.
+The Privy app secret remains server-only. Murk does not expose it through a `NEXT_PUBLIC_*` variable.
 
-Portal backup/recovery and Eject still require live verification before Murk claims verified wallet portability.
+For the hackathon path, human-signed Privy transactions use native CELO for gas. Murk does not assume Privy forwards Celo's CIP-64 `feeCurrency` extension. The separate Murk execution wallet keeps its existing Celo fee-currency logic.
 
 ## Agent Execution Wallet
 
@@ -173,7 +173,7 @@ The current hackathon app still limits each user to one user-created execution a
 The intended live funding path is:
 
 ```text
-Portal human wallet
+Privy human wallet
         |
         v
 ERC-20 transfer on Celo
@@ -261,7 +261,7 @@ Money-moving idempotency keys are also atomically claimed before execution.
 
 ## Withdrawal / Recovery
 
-Agent funds may only be returned to the authenticated user's bound Portal wallet.
+Agent funds may only be returned to the authenticated user's bound Privy wallet.
 
 The browser cannot choose an arbitrary destination address.
 
@@ -273,7 +273,7 @@ Live Celo verification of this path is still pending.
 
 The locked ownership model is:
 
-- human Portal wallet owns the identity NFT;
+- human Privy wallet owns the identity NFT;
 - separate Murk execution EOA is bound as the verified agent wallet.
 
 Implemented in code:
@@ -308,8 +308,8 @@ The hosted x402 facilitator owns the final EIP-3009 settlement transaction, so M
 The target real demo is:
 
 ```text
-Portal email sign-in
--> Portal human wallet
+Privy sign-in
+-> Privy human wallet
 -> create Research Agent
 -> choose accounting currency
 -> set daily/per-purchase authority
@@ -375,7 +375,7 @@ Sandbox fixture state is only for UI/browser QA. It is never transaction or hack
 - React 19
 - TypeScript
 - Tailwind CSS
-- Portal Web SDK
+- Privy React Auth SDK
 - viem
 - x402 v2
 - Neon Postgres
@@ -404,11 +404,8 @@ CELO_ATTRIBUTION_CODE=
 
 DATABASE_URL=
 
-PORTAL_AUTH_ENVIRONMENT_ID=
-PORTAL_AUTH_FROM_EMAIL=
-PORTAL_AUTH_TEMPLATE_ID=
-PORTAL_CUSTODIAN_API_KEY=
-MURK_SESSION_SECRET=
+NEXT_PUBLIC_PRIVY_APP_ID=
+PRIVY_APP_SECRET=
 
 AGENT_WALLET_MASTER_SECRET=
 
