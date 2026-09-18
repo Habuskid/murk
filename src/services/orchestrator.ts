@@ -241,8 +241,17 @@ export async function executePurchaseWorkflow(
         chainId: 42220,
         txHash: null,
         resourceDeliveryStatus: "DELIVERED",
-        remainingMandateMinor: remainingAfterFailure.toString(),
-        remainingMandateFormatted: formatMoneyMinor(remainingAfterFailure, 2),
+        remainingMandateMinor: (
+          params.mandate.dailyLimitMinor -
+          params.mandate.spentTodayMinor -
+          params.mandate.reservedTodayMinor
+        ).toString(),
+        remainingMandateFormatted: formatMoneyMinor(
+          params.mandate.dailyLimitMinor -
+            params.mandate.spentTodayMinor -
+            params.mandate.reservedTodayMinor,
+          2
+        ),
         createdAt: new Date().toISOString(),
       }
       return {
