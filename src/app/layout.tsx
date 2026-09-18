@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next"
+import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
-import { MurkCDPProvider } from "@/components/MurkCDPProvider"
+import { MurkPortalProvider } from "@/components/MurkPortalProvider"
 
 export const metadata: Metadata = {
   title: "Murk | Spending Authority for Autonomous Agents",
-  description: "Define financial authority in your local accounting currency. Let agents safely spend stablecoins inside that authority.",
+  description:
+    "Define financial authority in your local accounting currency. Let agents safely spend stablecoins inside that authority.",
 }
 
 export const viewport: Viewport = {
@@ -20,14 +22,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="flex min-h-[100dvh] flex-col items-center justify-start antialiased">
-        <MurkCDPProvider>
-          <div className="w-full max-w-md md:max-w-lg min-h-[100dvh] flex flex-col px-4 py-6">
-            {children}
-          </div>
-        </MurkCDPProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className="flex min-h-[100dvh] flex-col items-center justify-start antialiased">
+          <MurkPortalProvider>
+            <div className="flex min-h-[100dvh] w-full max-w-md flex-col px-4 py-6 md:max-w-lg">
+              {children}
+            </div>
+          </MurkPortalProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
