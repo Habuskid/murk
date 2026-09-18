@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { Navigation, TabKey } from "@/components/Navigation"
 import { AuthGate } from "@/components/AuthGate"
+import { AgentOnboarding } from "@/components/AgentOnboarding"
 import { HeroMandate } from "@/components/HeroMandate"
 import { AgentFunds } from "@/components/AgentFunds"
 import { PurchaseRunner } from "@/components/PurchaseRunner"
@@ -11,6 +12,7 @@ import { AgentSettings } from "@/components/AgentSettings"
 import { ActivityItem } from "@/db/repository"
 import { OrchestratorReceipt } from "@/services/orchestrator"
 import { formatMoneyMinor } from "@/core/money"
+import { authedFetch } from "@/lib/authed-fetch"
 import {
   BotIcon,
   ShieldCheckIcon,
@@ -42,11 +44,10 @@ type BalanceApiItem = {
   formattedBalance: string
 }
 
-const DEMO_AGENT_ID = "agent_demo_01"
-
 function MurkWalletApp() {
   const [activeTab, setActiveTab] = useState<TabKey>("home")
   const [agent, setAgent] = useState<AgentApiState | null>(null)
+  const [hasNoAgents, setHasNoAgents] = useState(false)
   const [balances, setBalances] = useState<BalanceApiItem[]>([])
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -55,10 +56,32 @@ function MurkWalletApp() {
   const refreshAgentState = useCallback(async () => {
     try {
       setLoadError(null)
+
+      const agentsRes = await authedFetch("/api/agents", { cache: "no-store" })
+      const agentsData = await agentsRes.json()
+
+      if (!agentsRes.ok) {
+        throw new Error(agentsData.error || "Could not load agents.")
+      }
+
+      const firstAgent = Array.isArray(agentsData.agents) ? agentsData.agents[0] : null
+      if (!firstAgent) {
+        setAgent(null)
+        setBalances([])
+        setActivity([])
+        setHasNoAgents(true)
+        return
+      }
+
+      setHasNoAgents(false)
+      const agentId = firstAgent.id as string
+
       const [agentRes, balanceRes, activityRes] = await Promise.all([
-        fetch(`/api/agents/${DEMO_AGENT_ID}`, { cache: "no-store" }),
-        fetch(`/api/agents/${DEMO_AGENT_ID}/balances`, { cache: "no-store" }),
-        fetch(`/api/activity?agentId=${DEMO_AGENT_ID}`, { cache: "no-store" }),
+        authedFetch(`/api/agents/${agentId}`, { cache: "no-store" }),
+        authedFetch(`/api/agents/${agentId}/balances`, { cache: "no-store" }),
+        authedFetch(`/api/activity?agentId=${encodeURIComponent(agentId)}`, {
+          cache: "no-store",
+        }),
       ])
 
       if (!agentRes.ok) {
@@ -79,6 +102,8 @@ function MurkWalletApp() {
       if (activityRes.ok) {
         const activityData = await activityRes.json()
         setActivity(Array.isArray(activityData.activity) ? activityData.activity : [])
+      } else {
+        setActivity([])
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Could not load Murk.")
@@ -94,7 +119,9 @@ function MurkWalletApp() {
   const handleTogglePause = async () => {
     if (!agent) return
     const action = agent.status === "PAUSED" ? "resume" : "pause"
-    const res = await fetch(`/api/agents/${agent.id}/${action}`, { method: "POST" })
+    const res = await authedFetch(`/api/agents/${agent.id}/${action}`, {
+      method: "POST",
+    })
     if (res.ok) {
       await refreshAgentState()
     }
@@ -116,6 +143,10 @@ function MurkWalletApp() {
         </div>
       </div>
     )
+  }
+
+  if (hasNoAgents) {
+    return <AgentOnboarding onCreated={refreshAgentState} />
   }
 
   if (!agent || !agent.mandate) {
@@ -157,7 +188,9 @@ function MurkWalletApp() {
                 x402
               </span>
             </div>
-            <div className="mt-1 text-xs font-medium text-[#767676]">Autonomous Spending Authority</div>
+            <div className="mt-1 text-xs font-medium text-[#767676]">
+              Autonomous Spending Authority
+            </div>
           </div>
         </div>
 
@@ -222,7 +255,9 @@ function MurkWalletApp() {
             <div className="mb-4 flex items-center justify-between border-b border-[#EAEAE7] pb-4">
               <div>
                 <h2 className="text-sm font-bold text-[#111111]">{agent.name}</h2>
-                <p className="mt-0.5 text-xs text-[#767676]">Controlled autonomous execution on Celo</p>
+                <p className="mt-0.5 text-xs text-[#767676]">
+                  Controlled autonomous execution on Celo
+                </p>
               </div>
               <span className="rounded-full border border-[#EAEAE7] bg-[#F7F7F5] px-2.5 py-1 text-xs font-semibold text-[#767676]">
                 {agentStatus}
@@ -290,7 +325,6 @@ function MurkWalletApp() {
     </div>
   )
 }
-
 
 export default function MurkApp() {
   return (
