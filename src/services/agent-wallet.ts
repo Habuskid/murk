@@ -40,12 +40,16 @@ function deriveAgentPrivateKey(agentId: string): `0x${string}` {
   return `0x${digest}` as `0x${string}`
 }
 
+export function resolveAgentViemAccount(agentId: string) {
+  return privateKeyToAccount(deriveAgentPrivateKey(agentId))
+}
+
 export async function resolveAgentExecutionWallet(agentId: string): Promise<{
   address: `0x${string}`
   provider: "VIEM_DERIVED_AGENT_EOA"
   x402Signer: ClientEvmSigner
 }> {
-  const account = privateKeyToAccount(deriveAgentPrivateKey(agentId))
+  const account = resolveAgentViemAccount(agentId)
 
   return {
     address: account.address,
