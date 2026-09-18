@@ -159,17 +159,12 @@ export async function getErc8004Status(input: {
         registeredWallet.toLowerCase() ===
         input.expectedAgentWallet.toLowerCase(),
     }
-  } catch {
-    return {
-      registered: false,
-      agentId: input.agentId.toString(),
-      owner: null,
-      registeredWallet: null,
-      expectedOwner: input.expectedOwner,
-      expectedAgentWallet: input.expectedAgentWallet,
-      ownerMatches: false,
-      walletBound: false,
-    }
+  } catch (error) {
+    throw new Error(
+      `ERC8004_STATUS_UNAVAILABLE:${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
   }
 }
 
