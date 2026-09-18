@@ -124,6 +124,8 @@ export function translateReasonCode(code: string): string {
       return "Per-purchase limit exceeded"
     case REASON_CODES.AGENT_PAUSED:
       return "Agent is paused"
+    case REASON_CODES.AGENT_NOT_ACTIVE:
+      return "Agent is not active"
     case REASON_CODES.MANDATE_INACTIVE:
       return "Spending mandate is inactive"
     case REASON_CODES.INSUFFICIENT_BALANCE:
