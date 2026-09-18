@@ -54,6 +54,41 @@ jobs:
         run: |
           npx tsx -e 'import { CELO_CAIP2_NETWORK, CELO_CHAIN_ID, CELO_TOKENS } from "./src/services/celo.ts"; if (CELO_CHAIN_ID !== 11142220 || CELO_CAIP2_NETWORK !== "eip155:11142220" || CELO_TOKENS.USDC?.address.toLowerCase() !== "0x01c5c0122039549ad1493b8220cabedd739bc44e" || CELO_TOKENS.USDT !== null) process.exit(1)'
 
+      - name: Validate Sepolia staging preflight
+        if: github.ref == 'refs/heads/staging/celo-sepolia'
+        shell: bash
+        run: |
+          export DATABASE_URL="postgresql://ci:ci@db.murk.invalid/murk"
+          export PORTAL_AUTH_ENVIRONMENT_ID="ci-env"
+          export PORTAL_AUTH_FROM_EMAIL="ci@murk.invalid"
+          export PORTAL_AUTH_TEMPLATE_ID="ci-template"
+          export PORTAL_CUSTODIAN_API_KEY="ci-runtime-value"
+          export MURK_SESSION_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
+          export AGENT_WALLET_MASTER_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
+          export PUBLIC_APP_ORIGIN="https://staging.murk.invalid"
+          export CELO_CHAIN_ID="11142220"
+          export NEXT_PUBLIC_CELO_CHAIN_ID="11142220"
+          export CELO_RPC_URL="https://forno.celo-sepolia.celo-testnet.org"
+          export NEXT_PUBLIC_CELO_RPC_URL="https://forno.celo-sepolia.celo-testnet.org"
+          export EXCHANGE_RATE_API_URL="https://open.er-api.com/v6/latest/USD"
+          export X402_FACILITATOR_URL="https://api.x402.sepolia.celo.org"
+          export ENABLE_LOCAL_X402_FIXTURE="false"
+          export UI_SANDBOX_MODE="false"
+          unset NEXT_PUBLIC_X402_RESOURCE_URL
+          unset X402_PROBE_RESOURCE_URL
+          npm run preflight:staging
+
+      - name: Build Sepolia staging variant
+        if: github.ref == 'refs/heads/staging/celo-sepolia'
+        env:
+          CELO_CHAIN_ID: "11142220"
+          NEXT_PUBLIC_CELO_CHAIN_ID: "11142220"
+          CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
+          NEXT_PUBLIC_CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
+        run: |
+          rm -rf .next
+          npm run build
+
       - name: Check Celo Sepolia x402 facilitator support
         run: |
           curl --fail --silent --show-error https://api.x402.sepolia.celo.org/supported > /tmp/x402-sepolia.json
