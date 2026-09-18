@@ -1,25 +1,30 @@
 /**
- * Spike A: Email to Embedded Wallet to Celo Verification
+ * Spike A: Embedded user wallet verification.
  *
- * Verifies:
- * - CDP Embedded Wallet interface and requirements
- * - EOA address derivation
- * - Celo Mainnet (Chain ID 42220) transaction construction and signing
- * - Export mechanism requirements (private key isolation from app JS / backend)
+ * This spike cannot truthfully prove an email OTP browser flow from a headless
+ * Node process. It therefore validates only recorded evidence captured from the
+ * real Murk browser flow and fails closed when that evidence is absent.
+ *
+ * Required manual evidence:
+ * - successful CDP email OTP sign-in in Murk
+ * - embedded EVM EOA created by CDP
+ * - address captured from the authenticated session
+ * - a Celo message/transaction signature initiated through the embedded wallet
+ * - wallet export/recovery flow verified to stay inside the provider-isolated UI
+ *
+ * Record the verified address and evidence reference in environment variables
+ * only after completing the real browser flow.
  */
 
-import { parseEther, parseGwei } from "viem"
-import { celo } from "viem/chains"
-import { privateKeyToAccount, generatePrivateKey } from "viem/accounts"
+import { isAddress } from "viem"
 import { getCeloPublicClient, CELO_CHAIN_ID } from "./spike-b-agent-wallet"
 
 export type UserWalletSpikeResult = {
-  configuredProvider: "CDP_EMBEDDED_WALLET" | "LOCAL_TEST_EOA"
+  provider: "CDP_EMBEDDED_WALLET"
   eoaAddress: `0x${string}`
-  canSignCeloTx: boolean
-  signedTxSample?: `0x${string}`
-  exportSecurityRulePassed: boolean
-  notes: string
+  chainId: number
+  evidenceReference: string
+  exportSecurityVerified: true
 }
 
 export async function runSpikeA(): Promise<{
@@ -27,63 +32,60 @@ export async function runSpikeA(): Promise<{
   result?: UserWalletSpikeResult
   error?: string
 }> {
-  console.log("=== SPIKE A: Email to Embedded Wallet to Celo Verification ===")
+  console.log("=== SPIKE A: Embedded User Wallet Verification ===")
+
   try {
-    const publicClient = getCeloPublicClient()
-    const chainId = await publicClient.getChainId()
+    const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID
+    const verifiedAddress = process.env.CDP_USER_WALLET_VERIFIED_ADDRESS
+    const evidenceReference = process.env.CDP_USER_WALLET_EVIDENCE_REFERENCE
+    const exportVerified = process.env.CDP_USER_WALLET_EXPORT_VERIFIED === "true"
 
-    // 1. Check CDP credentials in environment
-    const cdpProjectId = process.env.CDP_PROJECT_ID
-    const hasCdp = Boolean(cdpProjectId)
-
-    console.log(`CDP Configuration Status: ${hasCdp ? "CONFIGURED" : "PENDING_CREDENTIALS"}`)
-
-    // 2. Validate EOA on Celo
-    // For headless spike verification, verify signing a real Celo transaction
-    const testPrivateKey = generatePrivateKey()
-    const account = privateKeyToAccount(testPrivateKey)
-
-    console.log(`User Embedded EOA Generated: ${account.address}`)
-
-    // 3. Construct and sign a sample Celo transaction
-    const tx = await account.signTransaction({
-      chainId: CELO_CHAIN_ID,
-      to: "0x0000000000000000000000000000000000000000",
-      value: 0n,
-      nonce: 0,
-      gas: 21000n,
-      maxFeePerGas: parseGwei("10"),
-      maxPriorityFeePerGas: parseGwei("1"),
-    })
-
-    console.log(` - Transaction successfully serialized & signed: ${tx.slice(0, 42)}...`)
-
-    // 4. Verify Export Security Boundary per LOCKED_DECISIONS.md
-    // Rule: Application JavaScript and backend must NOT receive the exported private key.
-    // Must be isolated via CDP's built-in export frame/iframe.
-    const exportSecurityRulePassed = true
-    console.log(` - Export security boundary verified: Provider iframe isolation enforced.`)
-
-    const result: UserWalletSpikeResult = {
-      configuredProvider: hasCdp ? "CDP_EMBEDDED_WALLET" : "LOCAL_TEST_EOA",
-      eoaAddress: account.address,
-      canSignCeloTx: Boolean(tx),
-      signedTxSample: tx,
-      exportSecurityRulePassed,
-      notes: hasCdp
-        ? "CDP credentials detected; embedded wallet ready for OTP flow."
-        : "Headless EOA verified on Celo; live OTP requires CDP_PROJECT_ID in .env.local.",
+    if (!projectId) {
+      throw new Error("NEXT_PUBLIC_CDP_PROJECT_ID is not configured")
     }
 
+    if (!verifiedAddress || !isAddress(verifiedAddress)) {
+      throw new Error(
+        "CDP_USER_WALLET_VERIFIED_ADDRESS is missing. Complete the real email OTP browser flow first."
+      )
+    }
+
+    if (!evidenceReference) {
+      throw new Error(
+        "CDP_USER_WALLET_EVIDENCE_REFERENCE is missing. Record the real browser signing evidence."
+      )
+    }
+
+    if (!exportVerified) {
+      throw new Error(
+        "CDP_USER_WALLET_EXPORT_VERIFIED must only be set to true after manually verifying the provider-isolated export/recovery flow."
+      )
+    }
+
+    const publicClient = getCeloPublicClient()
+    const chainId = await publicClient.getChainId()
+    if (chainId !== CELO_CHAIN_ID) {
+      throw new Error(`Chain ID mismatch: expected ${CELO_CHAIN_ID}, got ${chainId}`)
+    }
+
+    const result: UserWalletSpikeResult = {
+      provider: "CDP_EMBEDDED_WALLET",
+      eoaAddress: verifiedAddress as `0x${string}`,
+      chainId,
+      evidenceReference,
+      exportSecurityVerified: true,
+    }
+
+    console.log(`Verified embedded wallet evidence for ${verifiedAddress}`)
     console.log("SPIKE A RESULT: PASSED\n")
     return { success: true, result }
-  } catch (err: any) {
-    console.error("SPIKE A RESULT: FAILED -", err.message)
-    return { success: false, error: err.message }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error("SPIKE A RESULT: FAILED -", message)
+    return { success: false, error: message }
   }
 }
 
-// Allow direct execution
 if (process.argv[1]?.includes("spike-a-user-wallet")) {
   runSpikeA().catch(console.error)
 }
