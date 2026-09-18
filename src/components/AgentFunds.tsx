@@ -393,7 +393,7 @@ export function AgentFunds({
                 ? "Confirming on Celo…"
                 : fundingState === "CONFIRMED"
                   ? "Funds added"
-                  : "Add funds"}
+                  : "Confirm add funds"}
           </button>
 
           {(portalError || fundingError) && (
@@ -462,7 +462,7 @@ export function AgentFunds({
               ? "Returning on Celo…"
               : withdrawalState === "CONFIRMED"
                 ? "Funds returned"
-                : "Return funds"}
+                : "Confirm return"}
           </button>
 
           {withdrawalError && (
