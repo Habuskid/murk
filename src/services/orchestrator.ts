@@ -241,8 +241,8 @@ export async function executePurchaseWorkflow(
         chainId: 42220,
         txHash: null,
         resourceDeliveryStatus: "DELIVERED",
-        remainingMandateMinor: params.mandate.dailyLimitMinor.toString(),
-        remainingMandateFormatted: formatMoneyMinor(params.mandate.dailyLimitMinor),
+        remainingMandateMinor: remainingAfterFailure.toString(),
+        remainingMandateFormatted: formatMoneyMinor(remainingAfterFailure, 2),
         createdAt: new Date().toISOString(),
       }
       return {
@@ -591,6 +591,27 @@ export async function executePurchaseWorkflow(
       }
     }
     const failureState: OrchestrationState = failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
+
+    const remainingAfterFailure =
+      failedAfterSettlement
+        ? (
+            reservationRemainingMinor ??
+            policyDecision?.remainingAfterMinor ??
+            (
+              policyDecision
+                ? policyDecision.remainingBeforeMinor - accountingValueMinor
+                : params.mandate.dailyLimitMinor -
+                  params.mandate.spentTodayMinor -
+                  params.mandate.reservedTodayMinor
+            )
+          )
+        : (
+            policyDecision?.remainingBeforeMinor ??
+            params.mandate.dailyLimitMinor -
+              params.mandate.spentTodayMinor -
+              params.mandate.reservedTodayMinor
+          )
+
     logStep(failureState, `Orchestrator error: ${err.message}`)
     return {
       purchaseId,
