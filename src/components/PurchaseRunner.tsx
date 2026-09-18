@@ -20,7 +20,8 @@ interface PurchaseRunnerProps {
 }
 
 const APPROVED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_RESOURCE_URL || ""
-const BLOCKED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL || ""
+const BLOCKED_RESOURCE_URL =
+  process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL || APPROVED_RESOURCE_URL
 
 const FLOW = ["Challenge", "Policy", "Settlement", "Resource"]
 
