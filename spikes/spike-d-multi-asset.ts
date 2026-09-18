@@ -1,20 +1,18 @@
 /**
- * Spike D: Multi-Asset Reality Check
+ * Spike D: Live multi-asset reality check.
  *
- * Investigates whether live Celo x402 facilitators and merchants expose multiple
- * settlement assets (e.g. USDC, USDT) or single asset (USDC).
- * Enforces the locked decision: Never fabricate accepted assets.
- * If only USDC is returned by the merchant, Murk must strictly respect that reality.
+ * Multi-asset support is a merchant property, not something Murk may infer from
+ * a token registry or facilitator availability. This spike inspects the real
+ * external merchant configured in X402_PROBE_RESOURCE_URL.
  */
 
-import { X402_FACILITATOR_URL } from "./spike-c-x402-purchase"
-import { CELO_TOKENS } from "./spike-b-agent-wallet"
+import { requestResource } from "../src/services/x402"
 
 export type MultiAssetAssessment = {
-  facilitatorUrl: string
-  supportedAssetsOnCelo: string[]
+  resourceUrl: string
+  acceptedAssetAddresses: string[]
+  requirementCount: number
   supportsMultiAssetSelection: boolean
-  merchantReality: "SINGLE_ASSET_USDC" | "MULTI_ASSET_USDC_USDT"
   conclusion: string
 }
 
@@ -23,53 +21,48 @@ export async function runSpikeD(): Promise<{
   assessment?: MultiAssetAssessment
   error?: string
 }> {
-  console.log("=== SPIKE D: Multi-Asset Reality Check ===")
+  console.log("=== SPIKE D: Live multi-asset reality check ===")
+
   try {
-    const supportedRes = await fetch(`${X402_FACILITATOR_URL}/supported`)
-    const supportedData = await supportedRes.json()
+    const probeUrl = process.env.X402_PROBE_RESOURCE_URL
+    if (!probeUrl) {
+      throw new Error(
+        "X402_PROBE_RESOURCE_URL is required before multi-asset support can be assessed"
+      )
+    }
 
-    // Analyze Celo facilitator support
-    const kinds = supportedData.kinds || []
-    console.log(`Facilitator kinds registered: ${kinds.length}`)
+    const result = await requestResource(probeUrl)
+    if (result.type !== "PAYMENT_REQUIRED") {
+      throw new Error("Configured probe resource did not return HTTP 402")
+    }
 
-    // Check token support on Celo
-    const supportedAssets = Object.keys(CELO_TOKENS)
-    console.log(`Verified Tokens on Celo: ${supportedAssets.join(", ")}`)
+    const addresses = Array.from(
+      new Set(result.requirements.map((item) => item.assetAddress.toLowerCase()))
+    )
+    const supportsMultiAsset = addresses.length > 1
 
-    // In current Celo x402 facilitator and x402 v1/v2 specs:
-    // Facilitators like api.x402.celo.org primarily accept native USDC (0xcebA9300f2b948710d2653dD7B07f33A8B32118C)
-    // with EIP-2612 / EIP-3009 gas sponsoring extensions.
-    const supportsMultiAsset = false
-    const merchantReality = "SINGLE_ASSET_USDC" as const
-
-    const conclusion =
-      "Current Celo x402 facilitator defaults to native USDC with gas sponsoring. " +
-      "Per LOCKED_DECISIONS.md, Murk will NOT fabricate simulated USDT accepted options in the demo. " +
-      "The product preserves the local-currency mandate over actual supported settlement assets."
-
-    console.log(`Assessment Result:`)
-    console.log(` - Facilitator: ${X402_FACILITATOR_URL}`)
-    console.log(` - Merchant Reality: ${merchantReality}`)
-    console.log(` - Multi-Asset Selection: ${supportsMultiAsset}`)
-    console.log(` - Conclusion: ${conclusion}`)
+    const conclusion = supportsMultiAsset
+      ? "The configured external merchant exposes multiple Celo settlement assets. Murk may demonstrate deterministic selection among only these real options."
+      : "The configured external merchant exposes one Celo settlement asset. Murk must not claim multi-asset selection for this merchant."
 
     const assessment: MultiAssetAssessment = {
-      facilitatorUrl: X402_FACILITATOR_URL,
-      supportedAssetsOnCelo: supportedAssets,
+      resourceUrl: probeUrl,
+      acceptedAssetAddresses: addresses,
+      requirementCount: result.requirements.length,
       supportsMultiAssetSelection: supportsMultiAsset,
-      merchantReality,
       conclusion,
     }
 
-    console.log("SPIKE D RESULT: PASSED (Reality Verified)\n")
+    console.log(JSON.stringify(assessment, null, 2))
+    console.log("SPIKE D RESULT: PASSED (merchant reality observed)\n")
     return { success: true, assessment }
-  } catch (err: any) {
-    console.error("SPIKE D RESULT: FAILED -", err.message)
-    return { success: false, error: err.message }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error("SPIKE D RESULT: FAILED -", message)
+    return { success: false, error: message }
   }
 }
 
-// Allow direct execution
 if (process.argv[1]?.includes("spike-d-multi-asset")) {
   runSpikeD().catch(console.error)
 }
