@@ -16,7 +16,8 @@
  */
 
 import { isAddress } from "viem"
-import { getCeloPublicClient, CELO_CHAIN_ID } from "./spike-b-agent-wallet"
+import { getCeloPublicClient } from "./spike-b-agent-wallet"
+import { CELO_CHAIN_ID } from "../src/config/celo-network"
 
 export type UserWalletSpikeResult = {
   provider: "PORTAL_MPC"
