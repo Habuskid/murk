@@ -176,6 +176,10 @@ export type ExecutePurchaseParams = {
     txHash: `0x${string}`
     paymentHeaders?: Record<string, string>
     deliveredResource?: unknown
+    resourceFailure?: {
+      status: number
+      contentType: string
+    }
   }>
 }
 
@@ -515,8 +519,18 @@ export async function executePurchaseWorkflow(
       spendCommitted = true
     }
 
-    // 8. Re-request the paid resource. Never fabricate delivery.
-    if (paymentResult.deliveredResource !== undefined) {
+    // 8. Handle resource delivery only after settlement has been verified and
+    // spend has been committed. Resource failure must never cause repayment.
+    if (paymentResult.resourceFailure) {
+      evidence.resource = {
+        status: paymentResult.resourceFailure.status,
+        contentType: paymentResult.resourceFailure.contentType,
+        delivered: false,
+      }
+      throw new Error(
+        `RESOURCE_REQUEST_FAILED_AFTER_PAYMENT_${paymentResult.resourceFailure.status}`
+      )
+    } else if (paymentResult.deliveredResource !== undefined) {
       deliveredResource = paymentResult.deliveredResource
       evidence.resource = {
         status: 200,
