@@ -67,7 +67,9 @@ export async function requestResource(
     }
   }
 
-  const httpClient = new x402HTTPClient(new x402Client({ spendControls: false }))
+  const httpClient = new x402HTTPClient(
+    x402Client.fromConfig({ schemes: [], spendControls: false })
+  )
   const paymentRequired = httpClient.getPaymentRequiredResponse(
     (name) => response.headers.get(name),
     body
