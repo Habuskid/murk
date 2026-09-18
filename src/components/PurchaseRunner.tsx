@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { OrchestratorReceipt } from "@/services/orchestrator"
+import { authedFetch } from "@/lib/authed-fetch"
 import {
   BoltIcon,
   ShieldAlertIcon,
@@ -74,7 +75,7 @@ export function PurchaseRunner({
         idempotencyKey: `run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       }
 
-      const res = await fetch(`/api/agents/${agentId}/purchases`, {
+      const res = await authedFetch(`/api/agents/${agentId}/purchases`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -148,10 +149,10 @@ export function PurchaseRunner({
           >
             <div className="flex items-center gap-1.5 text-xs font-bold">
               <BoltIcon className="w-3.5 h-3.5 text-accent" />
-              <span>Approved (1 USDC)</span>
+              <span>Live purchase</span>
             </div>
             <span className="text-xs text-text-secondary block mt-1">
-              Within {accountingCurrency} {perPurchaseLimitFormatted}
+              Evaluated against {accountingCurrency} {perPurchaseLimitFormatted} per-purchase cap
             </span>
           </button>
 
@@ -171,10 +172,10 @@ export function PurchaseRunner({
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-danger">
               <ShieldAlertIcon className="w-3.5 h-3.5 text-danger" />
-              <span>Blocked (2 USDC)</span>
+              <span>Policy-block test</span>
             </div>
             <span className="text-xs text-text-secondary block mt-1">
-              Exceeds {accountingCurrency} {perPurchaseLimitFormatted}
+              Uses the configured external block-test resource
             </span>
           </button>
         </div>
@@ -310,10 +311,10 @@ export function PurchaseRunner({
               <span className="text-xs font-bold text-text-primary block tabular-nums">
                 {activeReceipt.policyDecision === "APPROVED"
                   ? `${activeReceipt.settlementAmountFormatted} ${activeReceipt.settlementAsset}`
-                  : "0 Gas / 0 USDC"}
+                  : "0 funds moved"}
               </span>
               <span className="text-xs text-text-secondary">
-                {activeReceipt.policyDecision === "APPROVED" ? "Gas Sponsored" : "Protected"}
+                {activeReceipt.policyDecision === "APPROVED" ? "Settlement confirmed" : "Blocked before payment"}
               </span>
             </div>
           </div>
