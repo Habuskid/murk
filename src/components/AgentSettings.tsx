@@ -34,7 +34,16 @@ export function AgentSettings({
   const [newDaily, setNewDaily] = useState(dailyLimitFormatted.replace(/,/g, ""))
   const [newPerPurchase, setNewPerPurchase] = useState(perPurchaseLimitFormatted.replace(/,/g, ""))
   const [isSaving, setIsSaving] = useState(false)
-  const [withdrawSuccess, setWithdrawSuccess] = useState(false)
+
+  const decimalToMinorUnits = (value: string): string => {
+    const normalized = value.trim()
+    if (!/^\d+(\.\d{0,2})?$/.test(normalized)) {
+      throw new Error("Enter a valid amount with up to 2 decimal places")
+    }
+    const [whole, fraction = ""] = normalized.split(".")
+    const paddedFraction = (fraction + "00").slice(0, 2)
+    return (BigInt(whole) * 100n + BigInt(paddedFraction)).toString()
+  }
 
   const togglePause = async () => {
     const action = isPaused ? "resume" : "pause"
@@ -53,9 +62,8 @@ export function AgentSettings({
   const handleSaveLimits = async () => {
     setIsSaving(true)
     try {
-      // Multiply by 100 for minor units (2 decimals)
-      const dailyMinor = (parseFloat(newDaily) * 100).toFixed(0)
-      const perPurchaseMinor = (parseFloat(newPerPurchase) * 100).toFixed(0)
+      const dailyMinor = decimalToMinorUnits(newDaily)
+      const perPurchaseMinor = decimalToMinorUnits(newPerPurchase)
 
       const res = await fetch(`/api/agents/${agentId}`, {
         method: "PATCH",
@@ -77,26 +85,7 @@ export function AgentSettings({
     }
   }
 
-  const handleWithdraw = async () => {
-    try {
-      const res = await fetch(`/api/agents/${agentId}/withdraw`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assetSymbol: "USDC",
-          amountRaw: "1000000",
-          destinationAddress: "0x9e7e2eB7a59B4f91C12Cb3bbBcD929825A4B2b8D",
-          idempotencyKey: `wd_${Date.now()}`,
-        }),
-      })
-      if (res.ok) {
-        setWithdrawSuccess(true)
-        setTimeout(() => setWithdrawSuccess(false), 3000)
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
+
 
   return (
     <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-border card-elevation mt-4 space-y-6">
@@ -235,20 +224,13 @@ export function AgentSettings({
           </button>
 
           <button
-            onClick={handleWithdraw}
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-surface-inset border border-border hover:bg-surface-hover text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
+            type="button"
+            disabled
+            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-surface-inset border border-border text-text-secondary flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
+            title="Enabled after the authenticated user wallet is wired"
           >
-            {withdrawSuccess ? (
-              <>
-                <CheckIcon className="w-3.5 h-3.5 text-success" />
-                <span className="text-success">Swept to EOA!</span>
-              </>
-            ) : (
-              <>
-                <ArrowDownLeftIcon className="w-3.5 h-3.5 text-text-secondary" />
-                <span>Withdraw All Funds</span>
-              </>
-            )}
+            <ArrowDownLeftIcon className="w-3.5 h-3.5 text-text-secondary" />
+            <span>Withdraw Funds</span>
           </button>
         </div>
       </div>
@@ -257,13 +239,10 @@ export function AgentSettings({
       <div className="p-4 bg-surface-inset rounded-2xl border border-border text-xs space-y-1.5">
         <div className="flex items-center gap-2 font-bold text-text-primary">
           <ShieldCheckIcon className="w-4 h-4 text-accent" />
-          <span>Isolated Key Architecture</span>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface border border-border text-text-secondary">
-            ERC-8004
-          </span>
+          <span>Isolated Execution Wallet</span>
         </div>
         <p className="text-xs text-text-secondary leading-relaxed">
-          Agent execution private keys never touch browser memory or client-side JavaScript. Human wallet export is physically restricted behind secure provider iframe frames.
+          Agent signing material stays server-side. User-wallet recovery is only enabled after the real embedded-wallet export flow is integrated and verified.
         </p>
       </div>
     </div>
