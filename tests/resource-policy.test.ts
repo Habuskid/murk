@@ -5,6 +5,8 @@ const original = {
   approved: process.env.NEXT_PUBLIC_X402_RESOURCE_URL,
   blocked: process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL,
   fixture: process.env.ENABLE_LOCAL_X402_FIXTURE,
+  network: process.env.NEXT_PUBLIC_MURK_NETWORK,
+  testnetMerchant: process.env.ENABLE_TESTNET_X402_MERCHANT,
 }
 
 beforeEach(() => {
@@ -12,6 +14,8 @@ beforeEach(() => {
     "https://merchant.example/api/paid?q=celo"
   delete process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL
   process.env.ENABLE_LOCAL_X402_FIXTURE = "false"
+  process.env.NEXT_PUBLIC_MURK_NETWORK = "testnet"
+  process.env.ENABLE_TESTNET_X402_MERCHANT = "false"
 })
 
 afterEach(() => {
@@ -31,6 +35,18 @@ afterEach(() => {
     delete process.env.ENABLE_LOCAL_X402_FIXTURE
   } else {
     process.env.ENABLE_LOCAL_X402_FIXTURE = original.fixture
+  }
+
+  if (original.network === undefined) {
+    delete process.env.NEXT_PUBLIC_MURK_NETWORK
+  } else {
+    process.env.NEXT_PUBLIC_MURK_NETWORK = original.network
+  }
+
+  if (original.testnetMerchant === undefined) {
+    delete process.env.ENABLE_TESTNET_X402_MERCHANT
+  } else {
+    process.env.ENABLE_TESTNET_X402_MERCHANT = original.testnetMerchant
   }
 })
 
@@ -87,6 +103,43 @@ describe("x402 resource policy", () => {
         resourceUrl: "http://merchant.example/api/paid",
       })
     ).toThrow("X402_RESOURCE_HTTPS_REQUIRED")
+  })
+
+  it("allows only the exact guarded same-origin Sepolia settlement harness", () => {
+    delete process.env.NEXT_PUBLIC_X402_RESOURCE_URL
+    delete process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL
+    process.env.ENABLE_TESTNET_X402_MERCHANT = "true"
+
+    expect(
+      assertAllowedX402Purchase({
+        merchantUrl: "https://murk-staging.example",
+        resourceUrl: "https://murk-staging.example/api/testnet/x402-resource",
+      })
+    ).toEqual({
+      merchantOrigin: "https://murk-staging.example",
+      resourceUrl: "https://murk-staging.example/api/testnet/x402-resource",
+    })
+
+    expect(() =>
+      assertAllowedX402Purchase({
+        merchantUrl: "https://murk-staging.example",
+        resourceUrl: "https://murk-staging.example/api/testnet/other",
+      })
+    ).toThrow("X402_RESOURCE_NOT_CONFIGURED")
+  })
+
+  it("rejects the Sepolia settlement harness in mainnet mode", () => {
+    delete process.env.NEXT_PUBLIC_X402_RESOURCE_URL
+    delete process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL
+    process.env.NEXT_PUBLIC_MURK_NETWORK = "mainnet"
+    process.env.ENABLE_TESTNET_X402_MERCHANT = "true"
+
+    expect(() =>
+      assertAllowedX402Purchase({
+        merchantUrl: "https://murk.example",
+        resourceUrl: "https://murk.example/api/testnet/x402-resource",
+      })
+    ).toThrow("X402_RESOURCE_NOT_CONFIGURED")
   })
 
   it("fails closed when no resource is configured", () => {
