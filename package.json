@@ -17,7 +17,7 @@
     "spikes": "tsx spikes/run-all-spikes.ts",
     "ui:capture": "node scripts/capture-ui.mjs",
     "preflight:deploy": "node scripts/preflight.mjs deploy",
-    "preflight:demo": "node scripts/preflight.mjs demo",
+    "preflight:demo": "node scripts/preflight.mjs demo && npm run e2e:verify",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "db:migrate": "drizzle-kit migrate",
