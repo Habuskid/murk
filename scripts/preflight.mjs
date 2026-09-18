@@ -176,6 +176,7 @@ if (mode === "demo") {
 
   requireValue("PORTAL_USER_WALLET_VERIFIED_ADDRESS")
   requireValue("PORTAL_USER_WALLET_EVIDENCE_REFERENCE")
+  requireValue("LIVE_AGENT_ID")
 
   if (value("PORTAL_USER_WALLET_BACKUP_VERIFIED") !== "true") {
     errors.push("PORTAL_USER_WALLET_BACKUP_VERIFIED must be true before demo lock")
