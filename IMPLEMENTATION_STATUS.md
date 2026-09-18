@@ -54,16 +54,19 @@ The UI sandbox is test-only and is not demo evidence.
 
 ### Celo RPC and token reads
 
-Status: CODED, BUILD-VERIFIED, LIVE APP VERIFICATION STILL REQUIRED
+Status: SEPOLIA INFRASTRUCTURE VERIFIED IN CI, LIVE FUNDED APP VERIFICATION STILL REQUIRED
 
-- Celo chain ID 42220 configured.
-- Celo RPC client exists.
-- Celo USDC and USDT token metadata/balance reads exist.
-- Live funded-wallet verification remains part of final E2E.
+- testnet-first network profile selects Celo Sepolia chain ID 11142220;
+- mainnet must be selected explicitly at deployment;
+- CI verifies the live Sepolia RPC chain ID;
+- CI verifies deployed USDC/USDT contracts and 6-decimal metadata;
+- CI verifies the configured stablecoin fee-currency adapter contracts;
+- CI verifies the Sepolia ERC-8004 Identity Registry contract;
+- live funded-wallet verification remains part of final E2E.
 
-### External x402 challenge
+### External x402 challenge and Sepolia facilitator
 
-Status: PASSED
+Status: CHALLENGE PARSING PASSED; SEPOLIA FACILITATOR INFRASTRUCTURE PASSED; PAID LIVE SETTLEMENT PENDING
 
 CI verifies a real independent Celo x402 challenge from:
 
@@ -76,7 +79,9 @@ Verified:
 - Celo network `eip155:42220`;
 - real merchant payment requirement.
 
-This proves challenge discovery/parsing only. It does **not** prove paid settlement.
+This proves independent challenge discovery/parsing only. In addition, CI verifies Celo Sepolia facilitator health/support and the configured testnet payment contracts. It still does **not** prove a paid settlement.
+
+Murk now includes a guarded Sepolia x402 engineering resource built with the official x402 server packages. Once staging credentials are configured, the normal Murk buyer path can use that route to prove a real signed Sepolia settlement. Because Murk hosts that engineering resource, it must not be presented as independent-merchant evidence.
 
 ### Multi-asset merchant support
 
@@ -274,7 +279,7 @@ Current flow:
 
 ## ERC-8004
 
-Status: IMPLEMENTED IN CODE, LIVE MAINNET VERIFICATION PENDING
+Status: IMPLEMENTED IN CODE, SEPOLIA LIVE VERIFICATION NEXT
 
 Implemented:
 
@@ -297,9 +302,10 @@ Ownership model remains:
 Still required:
 
 - deployed public metadata origin;
-- live Portal-signed Celo registration;
-- live binding transaction;
-- explorer evidence.
+- live Portal-signed Sepolia registration;
+- live Sepolia binding transaction;
+- explorer evidence;
+- final mainnet repetition before claiming mainnet completion.
 
 ## ERC-8021
 
@@ -398,9 +404,9 @@ Status: CODED, LIVE PROOF PENDING
 
 The blocked demo no longer depends on finding a second high-value merchant. Murk can reuse the same verified external x402 resource after the user lowers the per-purchase authority below that resource's live accounting value. This produces a genuine external 402 while proving the deterministic policy blocks before signing.
 
-## DEMO LOCK
+## DEPLOYMENT / DEMO LOCK
 
-Status: NOT READY
+Status: CODE GATE PASSING; HOSTED SEPOLIA E2E NOT YET RUN
 
 Do not lock or record the final demo until all of these are real:
 
