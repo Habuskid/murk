@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { WalletIcon, CopyIcon, CheckIcon } from "@/components/Icons"
 
 interface TokenBalance {
   symbol: string
@@ -15,7 +16,7 @@ interface AgentFundsProps {
   onRefresh?: () => void
 }
 
-export function AgentFunds({ walletAddress, balances, onRefresh }: AgentFundsProps) {
+export function AgentFunds({ walletAddress, balances }: AgentFundsProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
@@ -27,18 +28,25 @@ export function AgentFunds({ walletAddress, balances, onRefresh }: AgentFundsPro
   const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
 
   return (
-    <div className="w-full bg-surface rounded-3xl p-5 shadow-sm border border-border mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-          Agent Execution Wallet
-        </span>
+    <div className="w-full bg-surface rounded-3xl p-6 shadow-sm border border-border mt-4">
+      <div className="flex items-center justify-between mb-3.5">
+        <div className="flex items-center gap-2">
+          <WalletIcon className="w-4 h-4 text-text-secondary" />
+          <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+            Agent Execution Wallet
+          </span>
+        </div>
         <button
           onClick={handleCopy}
-          className="text-xs font-mono text-text-secondary hover:text-text-primary bg-background px-2.5 py-1 rounded-full border border-border transition-colors flex items-center gap-1.5"
+          className="text-xs font-mono text-text-secondary hover:text-text-primary bg-background px-3 py-1.5 rounded-full border border-border hover:border-text-secondary/40 transition-all flex items-center gap-1.5 active:scale-95"
           title="Click to copy address"
         >
           <span>{shortAddress}</span>
-          <span className="text-[10px] text-accent font-sans">{copied ? "Copied!" : "Copy"}</span>
+          {copied ? (
+            <CheckIcon className="w-3.5 h-3.5 text-success" />
+          ) : (
+            <CopyIcon className="w-3.5 h-3.5 text-text-secondary" />
+          )}
         </button>
       </div>
 
@@ -46,13 +54,18 @@ export function AgentFunds({ walletAddress, balances, onRefresh }: AgentFundsPro
         {balances.map((token) => (
           <div
             key={token.symbol}
-            className="p-3 bg-background rounded-2xl border border-border/60 flex flex-col justify-between"
+            className="p-3.5 bg-background rounded-2xl border border-border/60 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-secondary">{token.symbol}</span>
-              <span className="text-[10px] text-text-secondary">Celo</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-accent" />
+                <span className="text-xs font-bold text-text-primary">{token.symbol}</span>
+              </div>
+              <span className="text-[10px] font-medium px-2 py-0.5 bg-surface rounded-full border border-border/60 text-text-secondary">
+                Celo
+              </span>
             </div>
-            <div className="text-lg font-semibold text-text-primary tabular-nums mt-1">
+            <div className="text-xl font-bold text-text-primary tabular-nums mt-2">
               {token.formattedBalance}
             </div>
           </div>

@@ -10,10 +10,11 @@ import { AgentSettings } from "@/components/AgentSettings"
 import { ActivityItem } from "@/db/repository"
 import { OrchestratorReceipt } from "@/services/orchestrator"
 import { formatMoneyMinor } from "@/core/money"
+import { BotIcon, CheckIcon, ShieldCheckIcon } from "@/components/Icons"
 
 export default function MurkApp() {
   const [activeTab, setActiveTab] = useState<TabKey>("home")
-  const [currency, setCurrency] = useState("NGN")
+  const [currency] = useState("NGN")
   const [agentStatus, setAgentStatus] = useState<"ACTIVE" | "PAUSED">("ACTIVE")
   const [dailyLimitMinor, setDailyLimitMinor] = useState<bigint>(500000n) // NGN 5,000.00
   const [perPurchaseLimitMinor, setPerPurchaseLimitMinor] = useState<bigint>(200000n) // NGN 2,000.00
@@ -82,26 +83,32 @@ export default function MurkApp() {
   return (
     <div className="flex flex-col flex-1 w-full pb-28">
       {/* Top Header */}
-      <header className="flex items-center justify-between py-3 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#111111] text-white flex items-center justify-center font-bold text-xs tracking-wider">
+      <header className="flex items-center justify-between py-3.5 mb-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-2xl bg-[#111111] text-white flex items-center justify-center font-bold text-sm tracking-wider shadow-sm border border-neutral-800">
             M
           </div>
           <div>
-            <div className="text-xs font-semibold text-text-primary">Research Agent</div>
-            <div className="text-[10px] text-text-secondary">demo@murk.finance</div>
+            <div className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <span>Research Agent</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            </div>
+            <div className="text-[10px] text-text-secondary font-mono">0xfb53...BCE5</div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Celo Mainnet Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface rounded-full border border-border text-[11px] font-medium text-text-secondary">
-            <div className="w-1.5 h-1.5 rounded-full bg-success" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface rounded-full border border-border text-[11px] font-medium text-text-secondary shadow-xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+            </span>
             <span>Celo Mainnet</span>
           </div>
 
           {/* Currency Pill */}
-          <div className="px-2.5 py-1 bg-surface rounded-full border border-border text-[11px] font-bold text-accent">
+          <div className="px-3 py-1.5 bg-surface rounded-full border border-border text-[11px] font-bold text-accent shadow-xs">
             {currency}
           </div>
         </div>
@@ -138,28 +145,44 @@ export default function MurkApp() {
         <main className="space-y-4 animate-in fade-in duration-150">
           <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-text-primary">Your Autonomous Agents</h2>
-              <span className="text-xs px-2.5 py-0.5 bg-background rounded-full text-text-secondary font-medium">
-                1 Active
+              <div>
+                <h2 className="text-sm font-bold text-text-primary">Autonomous Agents</h2>
+                <p className="text-xs text-text-secondary mt-0.5">Configured agents with spending authority</p>
+              </div>
+              <span className="text-[11px] px-2.5 py-0.5 bg-background rounded-full text-text-secondary font-medium border border-border/60">
+                1 Registered
               </span>
             </div>
 
-            <div className="p-4 bg-background rounded-2xl border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-text-primary">Research Agent</div>
-                  <div className="text-xs text-text-secondary">ERC-8004 ID: 8004_murk_research_01</div>
+            <div className="p-4 bg-background rounded-2xl border border-border/80 space-y-3.5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-surface border border-border flex items-center justify-center text-text-primary">
+                    <BotIcon className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-text-primary">Research Agent</div>
+                    <div className="text-[10px] text-text-secondary font-mono">ERC-8004: 8004_murk_research_01</div>
+                  </div>
                 </div>
-                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
-                  agentStatus === "ACTIVE" ? "bg-success-soft text-success" : "bg-danger-soft text-danger"
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  agentStatus === "ACTIVE"
+                    ? "bg-success-soft text-success border-success/30"
+                    : "bg-danger-soft text-danger border-danger/30"
                 }`}>
                   {agentStatus}
                 </span>
               </div>
 
-              <div className="pt-2 border-t border-border/50 text-xs flex justify-between text-text-secondary">
-                <span>Daily Mandate: <strong className="text-text-primary font-mono">{currency} {formatMoneyMinor(dailyLimitMinor, 2)}</strong></span>
-                <span>Per Purchase: <strong className="text-text-primary font-mono">{currency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}</strong></span>
+              <div className="pt-3 border-t border-border/60 text-xs grid grid-cols-2 gap-2 text-text-secondary">
+                <div>
+                  <span className="text-[10px] block text-text-secondary">Daily Authority</span>
+                  <strong className="text-text-primary font-mono text-xs">{currency} {formatMoneyMinor(dailyLimitMinor, 2)}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] block text-text-secondary">Per-Purchase Limit</span>
+                  <strong className="text-text-primary font-mono text-xs">{currency} {formatMoneyMinor(perPurchaseLimitMinor, 2)}</strong>
+                </div>
               </div>
             </div>
           </div>
@@ -169,7 +192,7 @@ export default function MurkApp() {
       {activeTab === "activity" && (
         <main className="space-y-4 animate-in fade-in duration-150">
           <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm">
-            <h2 className="text-base font-bold text-text-primary mb-1">Audit Ledger & Activity</h2>
+            <h2 className="text-sm font-bold text-text-primary mb-0.5">Audit Ledger & Activity</h2>
             <p className="text-xs text-text-secondary mb-4">
               Deterministic records of all approved, blocked, and settled agent operations.
             </p>

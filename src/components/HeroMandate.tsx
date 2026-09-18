@@ -2,6 +2,7 @@
 
 import React from "react"
 import { formatMoneyMinor } from "@/core/money"
+import { CheckIcon, PauseIcon } from "@/components/Icons"
 
 interface HeroMandateProps {
   currency: string
@@ -36,20 +37,28 @@ export function HeroMandate({
       {/* Top Meta Bar */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-accent" />
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+          </span>
           <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
             Daily Spending Authority
           </span>
         </div>
-        <span
-          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
+        <div
+          className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
             isPaused
-              ? "bg-danger-soft text-danger"
-              : "bg-success-soft text-success"
+              ? "bg-danger-soft text-danger border-danger/30"
+              : "bg-success-soft text-success border-success/30"
           }`}
         >
-          {isPaused ? "Paused" : "Active"}
-        </span>
+          {isPaused ? (
+            <PauseIcon className="w-2.5 h-2.5" />
+          ) : (
+            <CheckIcon className="w-2.5 h-2.5" />
+          )}
+          <span>{isPaused ? "Paused" : "Active"}</span>
+        </div>
       </div>
 
       {/* Hero Limit */}
@@ -65,14 +74,14 @@ export function HeroMandate({
       {/* Spent vs Remaining Columns */}
       <div className="grid grid-cols-2 gap-4 pb-4 border-b border-border/60">
         <div>
-          <span className="text-xs text-text-secondary block mb-0.5">Spent Today</span>
-          <span className="text-base font-semibold text-text-primary tabular-nums">
+          <span className="text-xs text-text-secondary block mb-0.5 font-medium">Spent Today</span>
+          <span className="text-base font-bold text-text-primary tabular-nums">
             {currency} {spentFormatted}
           </span>
         </div>
         <div>
-          <span className="text-xs text-text-secondary block mb-0.5">Remaining Authority</span>
-          <span className="text-base font-semibold text-text-primary tabular-nums">
+          <span className="text-xs text-text-secondary block mb-0.5 font-medium">Remaining Authority</span>
+          <span className="text-base font-bold text-text-primary tabular-nums">
             {currency} {remainingFormatted}
           </span>
         </div>
@@ -88,9 +97,9 @@ export function HeroMandate({
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <div className="flex justify-between items-center mt-2 text-[11px] text-text-secondary">
+        <div className="flex justify-between items-center mt-2 text-[11px] text-text-secondary font-medium">
           <span>{percentage}% authority utilized</span>
-          <span>Resets at midnight UTC</span>
+          <span>Resets at 00:00 UTC</span>
         </div>
       </div>
     </div>

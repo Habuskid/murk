@@ -1,6 +1,13 @@
 "use client"
 
 import React, { useState } from "react"
+import {
+  PlayIcon,
+  PauseIcon,
+  ArrowDownLeftIcon,
+  ShieldCheckIcon,
+  CheckIcon,
+} from "@/components/Icons"
 
 interface AgentSettingsProps {
   agentId: string
@@ -92,9 +99,14 @@ export function AgentSettings({
 
   return (
     <div className="w-full bg-surface rounded-3xl p-6 shadow-sm border border-border mt-4 space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-border">
-        <h3 className="text-sm font-semibold text-text-primary">Agent Spending Authority Controls</h3>
-        <span className="text-xs text-text-secondary">Owner Policy</span>
+      <div className="flex items-center justify-between pb-3.5 border-b border-border">
+        <div>
+          <h3 className="text-sm font-semibold text-text-primary">Agent Spending Authority Controls</h3>
+          <p className="text-xs text-text-secondary mt-0.5">Policy limits and autonomous key management</p>
+        </div>
+        <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-background rounded-full text-text-secondary border border-border/70">
+          Owner Policy
+        </span>
       </div>
 
       {/* Financial Limits Section */}
@@ -106,7 +118,7 @@ export function AgentSettings({
           {!editMode ? (
             <button
               onClick={() => setEditMode(true)}
-              className="text-xs font-semibold text-accent hover:underline"
+              className="text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
             >
               Edit Limits
             </button>
@@ -114,46 +126,55 @@ export function AgentSettings({
             <button
               onClick={handleSaveLimits}
               disabled={isSaving}
-              className="text-xs font-semibold text-success hover:underline"
+              className="text-xs font-semibold text-success hover:text-success/80 transition-colors flex items-center gap-1"
             >
-              {isSaving ? "Saving..." : "Save New Version"}
+              {isSaving ? "Saving..." : (
+                <>
+                  <CheckIcon className="w-3.5 h-3.5" />
+                  <span>Save New Version</span>
+                </>
+              )}
             </button>
           )}
         </div>
 
         {!editMode ? (
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-background rounded-2xl border border-border/50">
-              <span className="text-[11px] text-text-secondary block">Daily Authority</span>
-              <span className="text-sm font-bold text-text-primary tabular-nums">
+            <div className="p-3.5 bg-background rounded-2xl border border-border/60">
+              <span className="text-[11px] text-text-secondary block font-medium">Daily Authority</span>
+              <span className="text-base font-bold text-text-primary tabular-nums mt-0.5 block">
                 {currency} {dailyLimitFormatted}
               </span>
             </div>
-            <div className="p-3 bg-background rounded-2xl border border-border/50">
-              <span className="text-[11px] text-text-secondary block">Per-Purchase Limit</span>
-              <span className="text-sm font-bold text-text-primary tabular-nums">
+            <div className="p-3.5 bg-background rounded-2xl border border-border/60">
+              <span className="text-[11px] text-text-secondary block font-medium">Per-Purchase Limit</span>
+              <span className="text-base font-bold text-text-primary tabular-nums mt-0.5 block">
                 {currency} {perPurchaseLimitFormatted}
               </span>
             </div>
           </div>
         ) : (
-          <div className="space-y-2 p-3 bg-background rounded-2xl border border-border">
+          <div className="space-y-3 p-4 bg-background rounded-2xl border border-border animate-in fade-in duration-150">
             <div>
-              <label className="text-[11px] text-text-secondary block mb-1">New Daily Limit</label>
+              <label className="text-[11px] text-text-secondary font-medium block mb-1">
+                New Daily Limit ({currency})
+              </label>
               <input
                 type="number"
                 value={newDaily}
                 onChange={(e) => setNewDaily(e.target.value)}
-                className="w-full p-2 text-xs bg-surface border border-border rounded-xl text-text-primary font-mono focus:outline-none focus:border-accent"
+                className="w-full p-2.5 text-xs bg-surface border border-border rounded-xl text-text-primary font-mono focus:outline-none focus:border-accent transition-colors"
               />
             </div>
             <div>
-              <label className="text-[11px] text-text-secondary block mb-1">New Per-Purchase Limit</label>
+              <label className="text-[11px] text-text-secondary font-medium block mb-1">
+                New Per-Purchase Limit ({currency})
+              </label>
               <input
                 type="number"
                 value={newPerPurchase}
                 onChange={(e) => setNewPerPurchase(e.target.value)}
-                className="w-full p-2 text-xs bg-surface border border-border rounded-xl text-text-primary font-mono focus:outline-none focus:border-accent"
+                className="w-full p-2.5 text-xs bg-surface border border-border rounded-xl text-text-primary font-mono focus:outline-none focus:border-accent transition-colors"
               />
             </div>
           </div>
@@ -161,38 +182,61 @@ export function AgentSettings({
       </div>
 
       {/* Emergency Controls */}
-      <div className="pt-2 border-t border-border space-y-3">
+      <div className="pt-3 border-t border-border space-y-3">
         <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider block">
           Emergency Authority Controls
         </span>
 
-        <div className="flex gap-2.5">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <button
             onClick={togglePause}
-            className={`flex-1 py-2.5 px-3 rounded-2xl text-xs font-semibold border transition-all ${
+            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-semibold border flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] ${
               isPaused
                 ? "bg-success-soft text-success border-success/30 hover:bg-success/15"
                 : "bg-danger-soft text-danger border-danger/30 hover:bg-danger/15"
             }`}
           >
-            {isPaused ? "▶ Resume Agent Authority" : "⏸ Emergency Pause Agent"}
+            {isPaused ? (
+              <>
+                <PlayIcon className="w-3.5 h-3.5" />
+                <span>Resume Agent Authority</span>
+              </>
+            ) : (
+              <>
+                <PauseIcon className="w-3.5 h-3.5" />
+                <span>Emergency Pause Agent</span>
+              </>
+            )}
           </button>
 
           <button
             onClick={handleWithdraw}
-            className="flex-1 py-2.5 px-3 rounded-2xl text-xs font-semibold bg-background border border-border hover:bg-neutral-100 text-text-primary transition-all"
+            className="flex-1 py-3 px-4 rounded-2xl text-xs font-semibold bg-background border border-border hover:bg-neutral-100 text-text-primary flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99]"
           >
-            {withdrawSuccess ? "Withdrawn to EOA!" : "↩ Withdraw All Funds"}
+            {withdrawSuccess ? (
+              <>
+                <CheckIcon className="w-3.5 h-3.5 text-success" />
+                <span className="text-success">Withdrawn to EOA!</span>
+              </>
+            ) : (
+              <>
+                <ArrowDownLeftIcon className="w-3.5 h-3.5 text-text-secondary" />
+                <span>Withdraw All Funds</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
       {/* Security Notice */}
-      <div className="p-3 bg-background rounded-2xl border border-border/50 text-[11px] text-text-secondary space-y-1">
-        <div className="font-semibold text-text-primary">🛡️ Isolated Key Security</div>
-        <div>
-          Agent execution keys never reach browser JavaScript. Human wallet export is isolated via provider frames.
+      <div className="p-3.5 bg-background rounded-2xl border border-border/60 text-[11px] text-text-secondary space-y-1">
+        <div className="flex items-center gap-1.5 font-semibold text-text-primary">
+          <ShieldCheckIcon className="w-4 h-4 text-accent" />
+          <span>Isolated Key Security</span>
         </div>
+        <p className="leading-relaxed">
+          Agent execution keys never reach browser JavaScript. Human wallet export is isolated via provider frames.
+        </p>
       </div>
     </div>
   )
