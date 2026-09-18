@@ -15,9 +15,9 @@ import { formatMoneyMinor } from "@/core/money"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
   BotIcon,
+  MurkLogoIcon,
   ShieldCheckIcon,
-  HeadsetIcon,
-  AvatarIcon,
+  SlidersIcon,
 } from "@/components/Icons"
 
 type AgentApiState = {
@@ -138,8 +138,8 @@ function MurkWalletApp() {
   if (isLoading) {
     return (
       <div className="flex min-h-[70dvh] items-center justify-center">
-        <div className="rounded-2xl border border-[#EAEAE7] bg-white px-5 py-4 text-sm text-[#767676]">
-          Loading wallet state...
+        <div className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
+          Loading Murk...
         </div>
       </div>
     )
@@ -152,9 +152,9 @@ function MurkWalletApp() {
   if (!agent || !agent.mandate) {
     return (
       <div className="flex min-h-[70dvh] items-center justify-center">
-        <div className="max-w-sm rounded-[28px] border border-[#EAEAE7] bg-white p-6 text-center">
-          <div className="text-sm font-bold text-[#111111]">Murk is not ready</div>
-          <p className="mt-2 text-xs leading-relaxed text-[#767676]">
+        <div className="max-w-sm rounded-[22px] border border-border bg-surface p-6 text-center">
+          <div className="text-sm font-semibold text-text-primary">Murk is not ready</div>
+          <p className="mt-2 text-xs leading-relaxed text-text-secondary">
             {loadError || "The agent or spending mandate could not be loaded."}
           </p>
           <button
@@ -175,39 +175,36 @@ function MurkWalletApp() {
 
   return (
     <div className="flex w-full flex-1 flex-col pb-28">
-      <header className="relative mb-2 flex items-center justify-between py-4">
+      <header className="mb-5 flex items-center justify-between border-b border-border pb-4 pt-2">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <AvatarIcon className="h-10 w-10 rounded-full ring-2 ring-white shadow-xs" />
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-white" />
-          </div>
+          <MurkLogoIcon className="h-9 w-9" />
           <div>
-            <div className="flex items-center gap-1.5 leading-none">
-              <span className="text-sm font-extrabold tracking-tight text-[#111111]">MURK</span>
-              <span className="rounded-md bg-[#EAEAE7] px-1.5 py-0.5 text-[10px] font-semibold text-[#111111]">
-                x402
-              </span>
+            <div className="text-[13px] font-bold tracking-[0.08em] text-text-primary">
+              MURK
             </div>
-            <div className="mt-1 text-xs font-medium text-[#767676]">
-              Autonomous Spending Authority
+            <div className="mt-0.5 text-[11px] text-text-secondary">
+              Spending authority
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full border border-[#EAEAE7] bg-surface px-3 py-1.5 text-xs font-medium text-[#767676] shadow-xs sm:flex">
-            <span className="h-2 w-2 rounded-full bg-success" />
-            <span>Celo mainnet</span>
+          <div className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold text-text-secondary sm:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            Celo
           </div>
-          <div className="rounded-full border border-[#EAEAE7] bg-surface px-3 py-1.5 text-xs font-bold text-accent shadow-xs">
+
+          <div className="rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-semibold text-accent">
             {agent.accountingCurrency}
           </div>
+
           <button
+            type="button"
             onClick={() => setActiveTab("settings")}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#EAEAE7] bg-surface text-[#111111] shadow-xs transition-all active:scale-95"
-            title="Agent policies"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-text-secondary transition hover:text-text-primary active:scale-[0.98]"
+            aria-label="Open policy settings"
           >
-            <HeadsetIcon className="h-4 w-4" />
+            <SlidersIcon className="h-4 w-4" strokeWidth={1.9} />
           </button>
         </div>
       </header>
