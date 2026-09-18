@@ -42,8 +42,10 @@ export function evaluatePolicy(input: PolicyEvaluationInput): PolicyDecision {
   const remainingBefore = dailyLimit > totalCommittedBefore ? dailyLimit - totalCommittedBefore : 0n
 
   // 1. Agent Active Check
-  if (agentStatus !== "ACTIVE") {
+  if (agentStatus === "PAUSED") {
     reasonCodes.push(REASON_CODES.AGENT_PAUSED)
+  } else if (agentStatus !== "ACTIVE") {
+    reasonCodes.push(REASON_CODES.AGENT_NOT_ACTIVE)
   }
 
   // 2. Mandate Active Check
