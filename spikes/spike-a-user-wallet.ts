@@ -1,18 +1,14 @@
 /**
- * Spike A: Portal embedded user wallet verification.
+ * Spike A: Privy human-wallet verification.
  *
- * This spike deliberately fails unless the real browser flow has been completed.
- * A headless Node process cannot prove Portal's browser MPC key-share lifecycle,
- * backup UX, or Eject UX.
+ * This spike deliberately requires manual evidence from the real browser flow.
+ * A headless Node process cannot prove the embedded-wallet login/signing UX.
  *
  * Required manual evidence:
- * - Clerk email OTP sign-in completed in Murk
- * - Portal Web OTP session issued by Murk backend
- * - Portal MPC wallet created/reused in the browser
- * - EVM address registered in Murk
- * - Celo mainnet signing/transaction verified
- * - Portal backup/recovery verified
- * - Portal Eject/private-key portability verified
+ * - Privy login completed in Murk
+ * - Privy embedded EVM wallet created/reused
+ * - wallet address persisted by Murk
+ * - one real Celo signing/transaction flow verified
  */
 
 import { isAddress } from "viem"
@@ -20,12 +16,10 @@ import { getCeloPublicClient } from "./spike-b-agent-wallet"
 import { CELO_CHAIN_ID } from "../src/config/celo-network"
 
 export type UserWalletSpikeResult = {
-  provider: "PORTAL_MPC"
+  provider: "PRIVY_EMBEDDED"
   eoaAddress: `0x${string}`
   chainId: number
   evidenceReference: string
-  backupVerified: true
-  ejectVerified: true
 }
 
 export async function runSpikeA(): Promise<{
@@ -33,43 +27,29 @@ export async function runSpikeA(): Promise<{
   result?: UserWalletSpikeResult
   error?: string
 }> {
-  console.log("=== SPIKE A: Portal Embedded Wallet Verification ===")
+  console.log("=== SPIKE A: Privy Human Wallet Verification ===")
 
   try {
-    const verifiedAddress = process.env.PORTAL_USER_WALLET_VERIFIED_ADDRESS
-    const evidenceReference = process.env.PORTAL_USER_WALLET_EVIDENCE_REFERENCE
-    const backupVerified = process.env.PORTAL_USER_WALLET_BACKUP_VERIFIED === "true"
-    const ejectVerified = process.env.PORTAL_USER_WALLET_EJECT_VERIFIED === "true"
+    const verifiedAddress = process.env.USER_WALLET_VERIFIED_ADDRESS
+    const evidenceReference = process.env.USER_WALLET_EVIDENCE_REFERENCE
 
-    if (!process.env.PORTAL_CUSTODIAN_API_KEY) {
-      throw new Error("PORTAL_CUSTODIAN_API_KEY is not configured")
+    if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+      throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is not configured")
     }
 
-    if (!process.env.PORTAL_DEMO_CLIENT_ID) {
-      throw new Error("PORTAL_DEMO_CLIENT_ID is not configured")
+    if (!process.env.PRIVY_APP_SECRET) {
+      throw new Error("PRIVY_APP_SECRET is not configured")
     }
 
     if (!verifiedAddress || !isAddress(verifiedAddress)) {
       throw new Error(
-        "PORTAL_USER_WALLET_VERIFIED_ADDRESS is missing. Complete the real Portal browser flow first."
+        "USER_WALLET_VERIFIED_ADDRESS is missing. Complete the real Privy browser flow first."
       )
     }
 
     if (!evidenceReference) {
       throw new Error(
-        "PORTAL_USER_WALLET_EVIDENCE_REFERENCE is missing. Record the real Celo signing evidence."
-      )
-    }
-
-    if (!backupVerified) {
-      throw new Error(
-        "PORTAL_USER_WALLET_BACKUP_VERIFIED must only be true after real backup/recovery verification."
-      )
-    }
-
-    if (!ejectVerified) {
-      throw new Error(
-        "PORTAL_USER_WALLET_EJECT_VERIFIED must only be true after verifying Portal Eject/private-key portability."
+        "USER_WALLET_EVIDENCE_REFERENCE is missing. Record the real Celo signing evidence."
       )
     }
 
@@ -81,15 +61,13 @@ export async function runSpikeA(): Promise<{
     }
 
     const result: UserWalletSpikeResult = {
-      provider: "PORTAL_MPC",
+      provider: "PRIVY_EMBEDDED",
       eoaAddress: verifiedAddress as `0x${string}`,
       chainId,
       evidenceReference,
-      backupVerified: true,
-      ejectVerified: true,
     }
 
-    console.log(`Verified Portal wallet evidence for ${verifiedAddress}`)
+    console.log(`Verified Privy wallet evidence for ${verifiedAddress}`)
     console.log("SPIKE A RESULT: PASSED\n")
 
     return { success: true, result }
