@@ -2,48 +2,52 @@ import { NextRequest, NextResponse } from "next/server"
 import { CreateAgentSchema } from "@/lib/validation"
 import { repository, AgentRecord, MandateRecord, WalletRecord } from "@/db/repository"
 import { resolveAgentExecutionWallet } from "@/services/agent-wallet"
+import { authErrorResponse, requireAuthenticatedOwner } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
+function serializeAgent(a: AgentRecord) {
+  const mandate = repository.getLatestMandate(a.id)
+  return {
+    id: a.id,
+    name: a.name,
+    status: a.status,
+    accountingCurrency: a.accountingCurrency,
+    timezone: a.timezone,
+    walletAddress: a.walletAddress,
+    erc8004AgentId: a.erc8004AgentId,
+    allowedAssets: a.allowedAssets,
+    mandate: mandate
+      ? {
+          version: mandate.version,
+          dailyLimitMinor: mandate.dailyLimitMinor.toString(),
+          perPurchaseLimitMinor: mandate.perPurchaseLimitMinor.toString(),
+          spentTodayMinor: mandate.spentTodayMinor.toString(),
+          reservedTodayMinor: mandate.reservedTodayMinor.toString(),
+          status: mandate.status,
+        }
+      : null,
+  }
+}
+
 export async function GET(req: NextRequest) {
-  const ownerId = repository.getDemoUserId()
-  const agents = repository.listAgentsByOwner(ownerId)
-
-  const items = agents.map((a) => {
-    const mandate = repository.getLatestMandate(a.id)
-    return {
-      id: a.id,
-      name: a.name,
-      status: a.status,
-      accountingCurrency: a.accountingCurrency,
-      timezone: a.timezone,
-      walletAddress: a.walletAddress,
-      erc8004AgentId: a.erc8004AgentId,
-      allowedAssets: a.allowedAssets,
-      mandate: mandate
-        ? {
-            version: mandate.version,
-            dailyLimitMinor: mandate.dailyLimitMinor.toString(),
-            perPurchaseLimitMinor: mandate.perPurchaseLimitMinor.toString(),
-            spentTodayMinor: mandate.spentTodayMinor.toString(),
-            reservedTodayMinor: mandate.reservedTodayMinor.toString(),
-            status: mandate.status,
-          }
-        : null,
-    }
-  })
-
-  return NextResponse.json({ agents: items })
+  try {
+    const owner = await requireAuthenticatedOwner(req)
+    const agents = repository.listAgentsByOwner(owner.userId)
+    return NextResponse.json({ agents: agents.map(serializeAgent) })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    return NextResponse.json(mapped.body, { status: mapped.status })
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const owner = await requireAuthenticatedOwner(req)
     const body = await req.json()
     const validated = CreateAgentSchema.parse(body)
 
-    const ownerId = repository.getDemoUserId()
-    const agentId = `agent_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
-
+    const agentId = `agent_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`
     const executionWallet = await resolveAgentExecutionWallet(agentId)
 
     const wallet: WalletRecord = {
@@ -59,9 +63,9 @@ export async function POST(req: NextRequest) {
 
     const agent: AgentRecord = {
       id: agentId,
-      ownerUserId: ownerId,
+      ownerUserId: owner.userId,
       name: validated.name,
-      status: "DRAFT", // New agent starts as DRAFT per E2E.md
+      status: "DRAFT",
       accountingCurrency: validated.accountingCurrency,
       timezone: validated.timezone,
       walletId: wallet.id,
@@ -90,22 +94,16 @@ export async function POST(req: NextRequest) {
     }
     repository.createMandate(mandate)
 
+    return NextResponse.json(serializeAgent(agent), { status: 201 })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    if (mapped.status !== 500) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
+
     return NextResponse.json(
-      {
-        id: agent.id,
-        name: agent.name,
-        status: agent.status,
-        accountingCurrency: agent.accountingCurrency,
-        walletAddress: agent.walletAddress,
-        mandate: {
-          version: mandate.version,
-          dailyLimitMinor: mandate.dailyLimitMinor.toString(),
-          perPurchaseLimitMinor: mandate.perPurchaseLimitMinor.toString(),
-        },
-      },
-      { status: 201 }
+      { error: error instanceof Error ? error.message : "Invalid request" },
+      { status: 400 }
     )
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Invalid request" }, { status: 400 })
   }
 }
