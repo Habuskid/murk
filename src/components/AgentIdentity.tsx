@@ -27,7 +27,7 @@ type IdentityStatus = {
 }
 
 type PreparedTransaction = {
-  chainId: typeof CELO_CAIP2 | "eip155:11142220"
+  chainId: typeof CELO_CAIP2
   transaction: {
     from: `0x${string}`
     to: `0x${string}`
@@ -274,7 +274,7 @@ export function AgentIdentity({
           </div>
 
           <a
-            href="${CELO_EXPLORER_URL}/address/${CELO_ERC8004_IDENTITY_REGISTRY}"
+            href={`${CELO_EXPLORER_URL}/address/${CELO_ERC8004_IDENTITY_REGISTRY}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent"
