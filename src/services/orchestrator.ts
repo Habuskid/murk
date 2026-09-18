@@ -117,6 +117,7 @@ export type ExecutePurchaseParams = {
   overrideRateQuote?: RateQuote
   // Custom executor for signing & broadcasting payment
   paymentExecutor?: (params: {
+    agentId: string
     selectedAsset: string
     assetAddress: string
     amountRaw: bigint
@@ -326,6 +327,7 @@ export async function executePurchaseWorkflow(
 
     logStep("PAYMENT_SUBMITTED", `Executing payment on Celo for ${settlementAmountRaw} raw units`)
     const paymentResult = await params.paymentExecutor({
+      agentId: params.agentId,
       selectedAsset,
       assetAddress: selectedAssetAddress,
       amountRaw: settlementAmountRaw,
