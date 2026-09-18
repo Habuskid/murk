@@ -3,6 +3,7 @@ import { CreatePurchaseSchema } from "@/lib/validation"
 import { repository, PurchaseRecord } from "@/db/repository"
 import { executePurchaseWorkflow } from "@/services/orchestrator"
 import { SpendingMandate } from "@/core/types"
+import { executeApprovedX402Payment } from "@/services/x402-payment"
 
 export const dynamic = "force-dynamic"
 
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       allowedAssetSymbols: agent.allowedAssets,
       merchantUrl: validated.merchantUrl,
       resourceUrl: validated.resourceUrl,
+      paymentExecutor: executeApprovedX402Payment,
     })
 
     // Update purchase record with final outcome
