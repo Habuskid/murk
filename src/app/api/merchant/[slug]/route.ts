@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { CELO_CAIP2_NETWORK, CELO_TOKENS } from "@/services/celo"
 
 export const dynamic = "force-dynamic"
 
@@ -42,13 +43,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   const isExpensive = slug === "expensive-report"
   const amountRaw = isExpensive ? "2000000" : "1000000" // 2 USDC or 1 USDC
 
+  const usdc = CELO_TOKENS.USDC
+  if (!usdc) {
+    return NextResponse.json(
+      { error: "USDC is not configured for the active Celo network" },
+      { status: 503 }
+    )
+  }
+
   const paymentRequirement = {
     x402Version: 2,
     accepts: [
       {
         scheme: "exact",
-        network: "eip155:42220",
-        asset: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // Celo Native USDC
+        network: CELO_CAIP2_NETWORK,
+        asset: usdc.address,
         amount: amountRaw,
         payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
       },
@@ -59,7 +68,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     status: 402,
     headers: {
       "Content-Type": "application/json",
-      "WWW-Authenticate": `x402 token="USDC", network="eip155:42220", amount="${amountRaw}"`,
+      "WWW-Authenticate": `x402 token="USDC", network="${CELO_CAIP2_NETWORK}", amount="${amountRaw}"`,
     },
   })
 }
