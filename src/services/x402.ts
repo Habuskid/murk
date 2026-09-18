@@ -1,19 +1,19 @@
 /**
- * x402 Protocol Client & Settlement Integration
- * Handles 402 challenges, requirement extraction, settlement via facilitator, and resource retrieval.
+ * x402 protocol transport.
+ *
+ * Detects both x402 v2 PAYMENT-REQUIRED headers and legacy body-formatted
+ * challenges, then normalizes only the facts Murk needs for policy evaluation.
  */
 
+import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { MerchantRequirementOption } from "../core/types"
-import { parseX402Response, X402PaymentRequirement } from "../../spikes/spike-c-x402-purchase"
-
-export const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || "https://api.x402.celo.org"
 
 export type ResourceRequestResult =
   | {
       type: "DELIVERED"
       status: number
       contentType: string
-      data: any
+      data: unknown
     }
   | {
       type: "PAYMENT_REQUIRED"
@@ -23,56 +23,77 @@ export type ResourceRequestResult =
       rawPayload: unknown
     }
 
-export async function requestResource(url: string, headers: Record<string, string> = {}): Promise<ResourceRequestResult> {
-  const res = await fetch(url, {
+function toRawHeaders(headers: Headers): Record<string, string> {
+  const result: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    result[key.toLowerCase()] = value
+  })
+  return result
+}
+
+async function readResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+export async function requestResource(
+  url: string,
+  headers: Record<string, string> = {}
+): Promise<ResourceRequestResult> {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       Accept: "application/json",
       ...headers,
     },
+    redirect: "follow",
   })
 
-  if (res.status === 402) {
-    let body: any = null
-    try {
-      body = await res.json()
-    } catch {
-      body = {}
-    }
+  const contentType = response.headers.get("content-type") || "application/octet-stream"
+  const body = await readResponseBody(response)
 
-    const parsed = parseX402Response(402, res.headers, body)
-
-    const options: MerchantRequirementOption[] = parsed.requirements.map((r) => ({
-      scheme: r.scheme,
-      network: r.network,
-      chainId: r.chainId,
-      assetAddress: r.assetAddress,
-      amountRaw: r.amountRaw,
-      payTo: r.payTo,
-      extra: r.extra,
-    }))
-
+  if (response.status !== 402) {
     return {
-      type: "PAYMENT_REQUIRED",
-      status: 402,
-      requirements: options,
-      rawHeaders: parsed.rawHeaders,
-      rawPayload: body,
+      type: "DELIVERED",
+      status: response.status,
+      contentType,
+      data: body,
     }
   }
 
-  const contentType = res.headers.get("content-type") || "application/json"
-  let data: any
-  try {
-    data = await res.json()
-  } catch {
-    data = await res.text()
+  const httpClient = new x402HTTPClient(new x402Client({ spendControls: false }))
+  const paymentRequired = httpClient.getPaymentRequiredResponse(
+    (name) => response.headers.get(name),
+    body
+  )
+
+  const requirements: MerchantRequirementOption[] = paymentRequired.accepts
+    .filter((item) => item.network === "eip155:42220")
+    .map((item) => ({
+      scheme: item.scheme,
+      network: item.network,
+      chainId: 42220,
+      assetAddress: item.asset as `0x${string}`,
+      amountRaw: BigInt(item.amount),
+      payTo: item.payTo as `0x${string}`,
+      extra: item.extra,
+    }))
+
+  if (requirements.length === 0) {
+    throw new Error("NO_SUPPORTED_CELO_X402_REQUIREMENTS")
   }
 
   return {
-    type: "DELIVERED",
-    status: res.status,
-    contentType,
-    data,
+    type: "PAYMENT_REQUIRED",
+    status: 402,
+    requirements,
+    rawHeaders: toRawHeaders(response.headers),
+    rawPayload: body,
   }
 }
