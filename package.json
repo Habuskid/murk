@@ -22,7 +22,8 @@
     "db:check": "drizzle-kit check",
     "db:migrate": "drizzle-kit migrate",
     "askbots:prepare": "node scripts/prepare-askbots.mjs",
-    "askbots:dry-run": "npm run askbots:prepare && npx askbots submit --file .generated/askbots/submission.json"
+    "askbots:dry-run": "npm run askbots:prepare && npx askbots submit --file .generated/askbots/submission.json",
+    "e2e:verify": "tsx scripts/verify-live-e2e.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
