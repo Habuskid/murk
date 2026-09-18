@@ -6,10 +6,15 @@
  * persisted in Neon Postgres through Drizzle.
  */
 
+import { createHash } from "node:crypto"
 import { and, desc, eq, isNull, sql } from "drizzle-orm"
 import { getDb, schema } from "./index"
 import { CELO_TOKENS } from "../services/celo"
-import type { OrchestratorReceipt, OrchestrationState } from "../services/orchestrator"
+import type {
+  OrchestratorReceipt,
+  OrchestrationEvidence,
+  OrchestrationState,
+} from "../services/orchestrator"
 
 export type UserRecord = {
   id: string
@@ -645,6 +650,152 @@ class PersistentRepository {
         reasonDescription: receipt?.humanReadableReasons?.join("; ") || undefined,
       }
     })
+  }
+
+  async savePurchaseEvidence(input: {
+    purchase: PurchaseRecord
+    mandate: MandateRecord
+    evidence?: OrchestrationEvidence
+    deliveredResource?: unknown
+  }): Promise<void> {
+    const { purchase, mandate, evidence } = input
+    if (!evidence) return
+
+    const db = getDb()
+    const statements: any[] = []
+
+    if (evidence.paymentRequired) {
+      evidence.paymentRequired.requirements.forEach((requirement, index) => {
+        const requirementId = `preq_${purchase.id}_${index + 1}`
+        const asset = Object.values(CELO_TOKENS).find(
+          (token) =>
+            token.address.toLowerCase() === requirement.assetAddress.toLowerCase()
+        )
+
+        statements.push(
+          db.insert(schema.paymentRequirements).values({
+            id: requirementId,
+            purchaseId: purchase.id,
+            protocolVersion: 2,
+            network: requirement.network,
+            payTo: requirement.payTo,
+            rawPayloadJson: {
+              headers: evidence.paymentRequired?.rawHeaders || {},
+              payload: evidence.paymentRequired?.rawPayload ?? null,
+            },
+            receivedAt: new Date(),
+          }).onConflictDoNothing()
+        )
+
+        statements.push(
+          db.insert(schema.paymentRequirementAssets).values({
+            id: `preqa_${purchase.id}_${index + 1}`,
+            paymentRequirementId: requirementId,
+            assetSymbol: asset?.symbol || "UNKNOWN",
+            assetAddress: requirement.assetAddress,
+            amountRaw: BigInt(requirement.amountRaw),
+            network: requirement.network,
+          }).onConflictDoNothing()
+        )
+      })
+    }
+
+    if (evidence.rateQuote) {
+      statements.push(
+        db.insert(schema.rateQuotes).values({
+          id: `rate_${purchase.id}`,
+          purchaseId: purchase.id,
+          baseAsset: evidence.rateQuote.baseAsset,
+          quoteCurrency: evidence.rateQuote.quoteCurrency,
+          rateNumerator: BigInt(evidence.rateQuote.rateNumerator),
+          rateDenominator: BigInt(evidence.rateQuote.rateDenominator),
+          rateKind: evidence.rateQuote.kind,
+          provider: evidence.rateQuote.source,
+          providerReference: null,
+          quotedAt: new Date(evidence.rateQuote.timestamp),
+          expiresAt: new Date(evidence.rateQuote.expiresAt),
+          rawResponseHash: null,
+        }).onConflictDoNothing()
+      )
+    }
+
+    if (evidence.policyDecision) {
+      statements.push(
+        db.insert(schema.policyDecisions).values({
+          id: `policy_${purchase.id}`,
+          purchaseId: purchase.id,
+          decision: evidence.policyDecision.decision,
+          reasonCodesJson: evidence.policyDecision.reasonCodes,
+          dailyLimitMinor: mandate.dailyLimitMinor,
+          perPurchaseLimitMinor: mandate.perPurchaseLimitMinor,
+          spentBeforeMinor: BigInt(evidence.policyDecision.spentBeforeMinor),
+          reservedBeforeMinor: BigInt(evidence.policyDecision.reservedBeforeMinor),
+          purchaseValueMinor: BigInt(evidence.policyDecision.purchaseValueMinor),
+          remainingBeforeMinor: BigInt(
+            evidence.policyDecision.remainingBeforeMinor
+          ),
+          remainingAfterMinor:
+            evidence.policyDecision.remainingAfterMinor !== undefined
+              ? BigInt(evidence.policyDecision.remainingAfterMinor)
+              : null,
+          createdAt: new Date(),
+        }).onConflictDoNothing()
+      )
+    }
+
+    if (evidence.resource) {
+      let serialized = ""
+      try {
+        serialized =
+          typeof input.deliveredResource === "string"
+            ? input.deliveredResource
+            : JSON.stringify(input.deliveredResource ?? null)
+      } catch {
+        serialized = "[unserializable]"
+      }
+
+      const contentHash = createHash("sha256")
+        .update(serialized)
+        .digest("hex")
+
+      let safePreview = `resource length=${serialized.length}`
+      if (
+        input.deliveredResource &&
+        typeof input.deliveredResource === "object" &&
+        !Array.isArray(input.deliveredResource)
+      ) {
+        const keys = Object.keys(input.deliveredResource as Record<string, unknown>)
+          .slice(0, 12)
+          .join(", ")
+        safePreview = `json keys: ${keys || "(none)"}`
+      }
+
+      statements.push(
+        db.insert(schema.resources).values({
+          id: `resource_${purchase.id}`,
+          purchaseId: purchase.id,
+          httpStatus: evidence.resource.status,
+          contentType: evidence.resource.contentType,
+          resourceIdentifier: purchase.resourceUrl,
+          contentHash,
+          safePreview,
+          receivedAt: new Date(),
+        }).onConflictDoUpdate({
+          target: schema.resources.purchaseId,
+          set: {
+            httpStatus: evidence.resource.status,
+            contentType: evidence.resource.contentType,
+            contentHash,
+            safePreview,
+            receivedAt: new Date(),
+          },
+        })
+      )
+    }
+
+    if (statements.length > 0) {
+      await db.batch(statements as any)
+    }
   }
 
   async saveTransaction(input: {
