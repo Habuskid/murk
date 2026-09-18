@@ -251,6 +251,15 @@ Only promote after Sepolia evidence is green, or after a documented external Sep
 
 Promotion means changing environment configuration, not transaction logic.
 
+The production workflow requires two manual inputs:
+
+```text
+confirmation = DEPLOY_MURK_MAINNET
+tested_commit = <full 40-character SHA that passed the Sepolia live E2E gate>
+```
+
+The workflow checks out that exact commit before building. Do not substitute a newer `main` head simply because it contains similar code.
+
 Production must use:
 
 ```text
