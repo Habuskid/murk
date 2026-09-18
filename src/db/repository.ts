@@ -647,7 +647,10 @@ class PersistentRepository {
     })
   }
 
-  async getIdempotencyResult(key: string): Promise<unknown | null> {
+  async getIdempotencyResult(
+    key: string,
+    requestHash?: string
+  ): Promise<unknown | null> {
     const db = getDb()
 
     const [row] = await db
@@ -657,6 +660,10 @@ class PersistentRepository {
       .limit(1)
 
     if (!row) return null
+
+    if (requestHash && row.requestHash !== requestHash) {
+      throw new Error("IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST")
+    }
 
     if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) {
       return null
