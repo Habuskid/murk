@@ -8,13 +8,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   try {
     const owner = await requireAuthenticatedOwner(req)
-    const purchase = repository.getPurchaseById(id)
+    const purchase = await repository.getPurchaseById(id)
 
     if (!purchase) {
       return NextResponse.json({ error: "Purchase not found" }, { status: 404 })
     }
 
-    const agent = repository.findAgentById(purchase.agentId, owner.userId)
+    const agent = await repository.findAgentById(purchase.agentId, owner.userId)
     if (!agent) {
       return NextResponse.json({ error: "Purchase not found" }, { status: 404 })
     }
