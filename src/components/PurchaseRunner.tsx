@@ -4,6 +4,11 @@ import { useMemo, useState } from "react"
 import type { OrchestratorReceipt } from "@/services/orchestrator"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
+  CELO_EXPLORER_URL,
+  CELO_NETWORK_LABEL,
+  IS_CELO_TESTNET,
+} from "@/config/celo-network"
+import {
   BoltIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -23,11 +28,7 @@ interface PurchaseRunnerProps {
 const APPROVED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_RESOURCE_URL || ""
 const BLOCKED_RESOURCE_URL =
   process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL || APPROVED_RESOURCE_URL
-const IS_TESTNET = process.env.NEXT_PUBLIC_MURK_NETWORK !== "mainnet"
 const TESTNET_HARNESS_PATH = "/api/testnet/x402-resource"
-const EXPLORER_TX_BASE = IS_TESTNET
-  ? "https://celo-sepolia.blockscout.com/tx/"
-  : "https://celoscan.io/tx/"
 
 const FLOW = ["Challenge", "Policy", "Settlement", "Resource"]
 
@@ -48,7 +49,7 @@ export function PurchaseRunner({
   const isBlocked = selectedScenario === "blocked"
   const canRunPurchase = agentStatus === "ACTIVE"
   const configuredResourceUrl = isBlocked ? BLOCKED_RESOURCE_URL : APPROVED_RESOURCE_URL
-  const useTestnetHarness = IS_TESTNET && !configuredResourceUrl
+  const useTestnetHarness = IS_CELO_TESTNET && !configuredResourceUrl
   const isConfigured = Boolean(configuredResourceUrl) || useTestnetHarness
 
   const merchantName = useMemo(() => {
@@ -329,9 +330,7 @@ export function PurchaseRunner({
               </div>
               <div className="mt-1 text-[11px] text-text-secondary">
                 {activeReceipt.policyDecision === "APPROVED"
-                  ? IS_TESTNET
-                    ? "Celo Sepolia"
-                    : "Celo mainnet"
+                  ? CELO_NETWORK_LABEL
                   : activeReceipt.humanReadableReasons?.[0] || "Policy rejected"}
               </div>
             </div>
@@ -375,7 +374,7 @@ export function PurchaseRunner({
                 <dd>
                   {activeReceipt.txHash ? (
                     <a
-                      href={`${EXPLORER_TX_BASE}${activeReceipt.txHash}`}
+                      href={`${CELO_EXPLORER_URL}/tx/${activeReceipt.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 font-mono text-accent"
