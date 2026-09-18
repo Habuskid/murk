@@ -5,8 +5,6 @@
 :root {
   --background: #F5F5F3;
   --surface: #FFFFFF;
-  --surface-inset: #F7F7F5;
-  --surface-hover: #F2F2EF;
   --text-primary: #111111;
   --text-secondary: #767676;
   --border: #EAEAE7;
@@ -16,32 +14,7 @@
   --success-soft: #EDF8F2;
   --danger: #D64545;
   --danger-soft: #FCEEEE;
-  --nav: #141414;
-  --nav-border: rgba(255, 255, 255, 0.1);
-  --nav-capsule: #FFFFFF;
-  --nav-capsule-text: #111111;
-  --nav-inactive: #8E8E93;
-}
-
-.dark {
-  --background: #0C0C0D;
-  --surface: #161618;
-  --surface-inset: #1E1E22;
-  --surface-hover: #26262B;
-  --text-primary: #F5F5F7;
-  --text-secondary: #909096;
-  --border: #26262B;
-  --accent: #38A6F6;
-  --accent-soft: rgba(56, 166, 246, 0.15);
-  --success: #34D399;
-  --success-soft: rgba(52, 211, 153, 0.15);
-  --danger: #F87171;
-  --danger-soft: rgba(248, 113, 113, 0.15);
-  --nav: #1C1C20;
-  --nav-border: rgba(255, 255, 255, 0.12);
-  --nav-capsule: #F5F5F7;
-  --nav-capsule-text: #0C0C0D;
-  --nav-inactive: #8A8A92;
+  --nav: #171717;
 }
 
 body {
@@ -52,43 +25,35 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.dark body {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Micro-elevations */
+/* Bespoke micro-elevation classes */
 .card-elevation {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 6px 20px -2px rgba(0, 0, 0, 0.03);
-}
-
-.dark .card-elevation {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 8px 24px -4px rgba(0, 0, 0, 0.45);
 }
 
 .hero-elevation {
   box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.03), 0 10px 24px -4px rgba(0, 0, 0, 0.04);
 }
 
-.dark .hero-elevation {
-  box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.4), 0 12px 28px -4px rgba(0, 0, 0, 0.5);
-}
-
 .dock-elevation {
   box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.32), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
 }
 
-.dark .dock-elevation {
-  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+/* Reference image hatched progress bar */
+.hatched-bar {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #CFE7FA,
+    #CFE7FA 2.5px,
+    transparent 2.5px,
+    transparent 7px
+  );
 }
-
-
 
 
 
