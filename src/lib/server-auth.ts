@@ -1,49 +1,44 @@
-import { auth, currentUser } from "@clerk/nextjs/server"
 import { NextRequest } from "next/server"
 import { repository, AgentRecord, UserRecord } from "@/db/repository"
+import {
+  MURK_SESSION_COOKIE,
+  verifyMurkSessionToken,
+} from "@/lib/murk-session"
 
 export type AuthenticatedOwner = {
   userId: string
   providerUserId: string
-  email?: string
   walletAddress?: `0x${string}`
+  portalClientId: string
 }
 
 export async function requireAuthenticatedOwner(
-  _req?: NextRequest
+  req: NextRequest
 ): Promise<AuthenticatedOwner> {
-  let clerkUserId: string | null = null
+  const token = req.cookies.get(MURK_SESSION_COOKIE)?.value
+  if (!token) {
+    throw new Error("AUTHORIZATION_REQUIRED")
+  }
 
+  let session
   try {
-    const session = await auth()
-    clerkUserId = session.userId
+    session = verifyMurkSessionToken(token)
   } catch {
     throw new Error("AUTHORIZATION_REQUIRED")
   }
 
-  if (!clerkUserId) {
-    throw new Error("AUTHORIZATION_REQUIRED")
-  }
-
-  const clerkUser = await currentUser().catch(() => null)
-  const email =
-    clerkUser?.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || undefined
-
-  let user = repository.findUserByProviderId(clerkUserId)
+  const providerUserId = `portal_${session.endUserId}`
+  let user = repository.findUserByProviderId(providerUserId)
 
   if (!user) {
     const now = new Date()
     user = {
-      id: `usr_${clerkUserId}`,
-      providerUserId: clerkUserId,
-      email: email || "",
+      id: `usr_${session.endUserId}`,
+      providerUserId,
+      email: "",
       createdAt: now,
       updatedAt: now,
     } satisfies UserRecord
-    repository.saveUser(user)
-  } else if (email && user.email !== email) {
-    user.email = email
-    user.updatedAt = new Date()
     repository.saveUser(user)
   }
 
@@ -51,9 +46,9 @@ export async function requireAuthenticatedOwner(
 
   return {
     userId: user.id,
-    providerUserId: clerkUserId,
-    email,
+    providerUserId,
     walletAddress: wallet?.address,
+    portalClientId: session.clientId,
   }
 }
 
@@ -61,7 +56,8 @@ export function authErrorResponse(error: unknown): {
   status: number
   body: { error: string }
 } {
-  const message = error instanceof Error ? error.message : "AUTHENTICATION_FAILED"
+  const message =
+    error instanceof Error ? error.message : "AUTHENTICATION_FAILED"
 
   if (message === "AUTHORIZATION_REQUIRED") {
     return { status: 401, body: { error: message } }
@@ -73,6 +69,10 @@ export function authErrorResponse(error: unknown): {
 
   if (message === "PORTAL_WALLET_NOT_READY") {
     return { status: 409, body: { error: message } }
+  }
+
+  if (message === "MURK_SESSION_SECRET_NOT_CONFIGURED") {
+    return { status: 503, body: { error: message } }
   }
 
   return { status: 500, body: { error: message } }
