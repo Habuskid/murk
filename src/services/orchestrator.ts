@@ -117,6 +117,12 @@ export type ExecutePurchaseParams = {
   overridePortfolio?: CandidateAsset[]
   overrideRateQuote?: RateQuote
   // Custom executor for signing & broadcasting payment
+  reserveSpend?: (params: {
+    purchaseId: string
+    amountMinor: bigint
+  }) => Promise<{ remainingAfterMinor: bigint }>
+  commitSpend?: (purchaseId: string) => Promise<void>
+  releaseSpend?: (purchaseId: string) => Promise<void>
   paymentExecutor?: (params: {
     agentId: string
     selectedAsset: string
@@ -154,6 +160,9 @@ export async function executePurchaseWorkflow(
   let policyDecision: PolicyDecision | null = null
   let txHash: string | null = null
   let deliveredResource: any = null
+  let spendReserved = false
+  let spendCommitted = false
+  let reservationRemainingMinor: bigint | null = null
 
   try {
     // 1. Request Resource (or simulate 402)
@@ -318,7 +327,62 @@ export async function executePurchaseWorkflow(
 
     logStep("POLICY_APPROVED", `Policy approved purchase for ${params.mandate.accountingCurrency} ${formatMoneyMinor(accountingValueMinor, 2)}`)
 
-    // 6. Spend Reserved
+    // 6. Atomically reserve spend before any signing.
+    if (params.reserveSpend) {
+      try {
+        const reservation = await params.reserveSpend({
+          purchaseId,
+          amountMinor: accountingValueMinor,
+        })
+        spendReserved = true
+        reservationRemainingMinor = reservation.remainingAfterMinor
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        logStep("POLICY_BLOCKED", `Atomic spend reservation rejected: ${message}`)
+
+        const remainingBefore =
+          params.mandate.dailyLimitMinor -
+          params.mandate.spentTodayMinor -
+          params.mandate.reservedTodayMinor
+
+        const receipt: OrchestratorReceipt = {
+          purchaseId,
+          agentName: params.agentName,
+          merchantUrl: params.merchantUrl,
+          resourceUrl: params.resourceUrl,
+          settlementAsset: selectedAsset,
+          settlementAmountRaw: settlementAmountRaw.toString(),
+          settlementAmountFormatted: (Number(settlementAmountRaw) / 10 ** selectedDecimals).toString(),
+          accountingCurrency: params.mandate.accountingCurrency,
+          accountingValueMinor: accountingValueMinor.toString(),
+          accountingValueFormatted: formatMoneyMinor(accountingValueMinor, 2),
+          rateSource: rateQuote.source,
+          rateTimestamp: rateQuote.timestamp.toISOString(),
+          rateNumerator: rateQuote.rateNumerator.toString(),
+          rateDenominator: rateQuote.rateDenominator.toString(),
+          policyDecision: "BLOCKED",
+          reasonCodes: [REASON_CODES.DAILY_MANDATE_EXCEEDED],
+          humanReadableReasons: [
+            "Available daily authority changed before payment could be reserved",
+          ],
+          network: "Celo Mainnet (42220)",
+          chainId: 42220,
+          txHash: null,
+          resourceDeliveryStatus: "NOT_REQUESTED",
+          remainingMandateMinor: remainingBefore.toString(),
+          remainingMandateFormatted: formatMoneyMinor(remainingBefore, 2),
+          createdAt: new Date().toISOString(),
+        }
+
+        return {
+          purchaseId,
+          finalState: "POLICY_BLOCKED",
+          steps,
+          receipt,
+        }
+      }
+    }
+
     logStep("SPEND_RESERVED", `Reserved ${accountingValueMinor} minor units against mandate`)
 
     // 7. Execute Payment
@@ -339,6 +403,13 @@ export async function executePurchaseWorkflow(
 
     logStep("PAYMENT_SETTLED", `Payment settled on Celo with txHash: ${txHash}`)
 
+    // Funds moved once settlement exists, so commit the accounting reservation
+    // before attempting resource delivery.
+    if (params.commitSpend && spendReserved) {
+      await params.commitSpend(purchaseId)
+      spendCommitted = true
+    }
+
     // 8. Re-request the paid resource. Never fabricate delivery.
     if (paymentResult.deliveredResource !== undefined) {
       deliveredResource = paymentResult.deliveredResource
@@ -357,7 +428,10 @@ export async function executePurchaseWorkflow(
     // 9. Complete & Finalize
     logStep("COMPLETED", "Workflow completed successfully; spend reservation committed")
 
-    const finalRemaining = policyDecision.remainingAfterMinor ?? policyDecision.remainingBeforeMinor - accountingValueMinor
+    const finalRemaining =
+      reservationRemainingMinor ??
+      policyDecision.remainingAfterMinor ??
+      policyDecision.remainingBeforeMinor - accountingValueMinor
 
     const receipt: OrchestratorReceipt = {
       purchaseId,
@@ -395,6 +469,20 @@ export async function executePurchaseWorkflow(
     }
   } catch (err: any) {
     const failedAfterSettlement = Boolean(txHash)
+
+    if (!failedAfterSettlement && spendReserved && !spendCommitted && params.releaseSpend) {
+      try {
+        await params.releaseSpend(purchaseId)
+        spendReserved = false
+      } catch (releaseError) {
+        logStep(
+          "PAYMENT_FAILED",
+          `Spend reservation release failed: ${
+            releaseError instanceof Error ? releaseError.message : String(releaseError)
+          }`
+        )
+      }
+    }
     const failureState: OrchestrationState = failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
     logStep(failureState, `Orchestrator error: ${err.message}`)
     return {
