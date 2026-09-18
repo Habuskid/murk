@@ -10,6 +10,7 @@
  */
 
 import { requestResource } from "../src/services/x402"
+import { CELO_CAIP2_NETWORK, IS_CELO_SEPOLIA } from "../src/services/celo"
 
 
 export type X402PaymentRequirement = {
@@ -104,7 +105,10 @@ export function parseX402Response(
 }
 
 export const X402_FACILITATOR_URL =
-  process.env.X402_FACILITATOR_URL || "https://api.x402.celo.org"
+  process.env.X402_FACILITATOR_URL ||
+  (IS_CELO_SEPOLIA
+    ? "https://api.x402.sepolia.celo.org"
+    : "https://api.x402.celo.org")
 
 export async function runSpikeC(): Promise<{
   success: boolean
@@ -137,10 +141,10 @@ export async function runSpikeC(): Promise<{
     const kinds = Array.isArray(supportedData?.kinds) ? supportedData.kinds : []
 
     const hasCelo = kinds.some(
-      (kind: { network?: string }) => kind.network === "eip155:42220"
+      (kind: { network?: string }) => kind.network === CELO_CAIP2_NETWORK
     )
     if (!hasCelo) {
-      throw new Error("Configured facilitator does not declare eip155:42220 support")
+      throw new Error(`Configured facilitator does not declare ${CELO_CAIP2_NETWORK} support`)
     }
 
     const merchant = await requestResource(probeUrl)
