@@ -6,6 +6,7 @@ import { executePurchaseWorkflow } from "@/services/orchestrator"
 import type { SpendingMandate } from "@/core/types"
 import { executeApprovedX402Payment } from "@/services/x402-payment"
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
+import { CELO_TOKENS, getCeloClient } from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
@@ -160,12 +161,76 @@ export async function POST(
 
     await repository.savePurchase(purchaseRecord)
 
+    let auditEvidenceStatus: "PERSISTED" | "PARTIAL" = "PERSISTED"
+
+    try {
+      await repository.savePurchaseEvidence({
+        purchase: purchaseRecord,
+        mandate,
+        evidence: result.evidence,
+        deliveredResource: result.deliveredResource,
+      })
+
+      const settlementTxHash = result.evidence?.settlementTxHash
+      if (settlementTxHash) {
+        const celoClient = getCeloClient()
+        const [transaction, transactionReceipt] = await Promise.all([
+          celoClient.getTransaction({
+            hash: settlementTxHash as `0x${string}`,
+          }),
+          celoClient.getTransactionReceipt({
+            hash: settlementTxHash as `0x${string}`,
+          }),
+        ])
+
+        const selectedToken = Object.values(CELO_TOKENS).find(
+          (token) => token.symbol === result.receipt.settlementAsset
+        )
+
+        await repository.saveTransaction({
+          id: `tx_x402_${settlementTxHash.slice(2, 18)}`,
+          purchaseId,
+          walletId: agent.walletId,
+          purpose: "X402_PURCHASE",
+          chainId: 42220,
+          txHash: settlementTxHash,
+          assetAddress: selectedToken?.address,
+          amountRaw:
+            purchaseRecord.settlementAmountRaw &&
+            purchaseRecord.settlementAmountRaw > 0n
+              ? purchaseRecord.settlementAmountRaw
+              : undefined,
+          fromAddress: transaction.from,
+          toAddress: transaction.to || undefined,
+          status:
+            transactionReceipt.status === "success" ? "CONFIRMED" : "REVERTED",
+          submittedAt: new Date(),
+          confirmedAt: new Date(),
+          blockNumber: transactionReceipt.blockNumber,
+          errorCode:
+            transactionReceipt.status === "success"
+              ? undefined
+              : "X402_SETTLEMENT_REVERTED",
+        })
+      }
+    } catch (auditError) {
+      auditEvidenceStatus = "PARTIAL"
+      console.error("Purchase audit evidence persistence failed", {
+        purchaseId,
+        error:
+          auditError instanceof Error
+            ? auditError.message
+            : String(auditError),
+      })
+    }
+
     const responsePayload = {
       purchaseId: result.purchaseId,
       state: result.finalState,
       receipt: result.receipt,
       deliveredResource: result.deliveredResource,
       steps: result.steps,
+      auditEvidenceStatus,
     }
 
     await repository.saveIdempotencyResult({
