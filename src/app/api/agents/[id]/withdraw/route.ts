@@ -9,7 +9,13 @@ import { celo } from "viem/chains"
 import { NextRequest, NextResponse } from "next/server"
 import { WithdrawAgentSchema } from "@/lib/validation"
 import { repository } from "@/db/repository"
-import { CELO_RPC_URL, CELO_TOKENS, getCeloClient } from "@/services/celo"
+import {
+  CELO_RPC_URL,
+  CELO_TOKENS,
+  getCeloClient,
+  getFeeCurrencyGasPrice,
+  tokenRawToFeeUnits,
+} from "@/services/celo"
 import { resolveAgentViemAccount } from "@/services/agent-wallet"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 import {
@@ -146,11 +152,40 @@ export async function POST(
       functionName: "transfer",
       args: [owner.walletAddress, amountRaw],
     })
+    const attributedData = appendMurkAttribution(transferData)
+
+    const [estimatedGas, gasPrice] = await Promise.all([
+      publicClient.estimateGas({
+        account,
+        to: token.address,
+        data: attributedData,
+        feeCurrency: token.feeCurrencyAddress,
+      }),
+      getFeeCurrencyGasPrice(token.feeCurrencyAddress),
+    ])
+
+    const estimatedFeeIn18Decimals = estimatedGas * gasPrice
+    const remainingRaw = balance - amountRaw
+    const remainingFeeUnits = tokenRawToFeeUnits(
+      remainingRaw,
+      token.decimals
+    )
+
+    if (remainingFeeUnits <= estimatedFeeIn18Decimals) {
+      return NextResponse.json(
+        {
+          error: "WITHDRAWAL_INSUFFICIENT_FEE_BALANCE",
+          message:
+            "Reduce the withdrawal amount so the agent wallet retains enough of the selected stablecoin to pay Celo gas.",
+        },
+        { status: 400 }
+      )
+    }
 
     const txHash = await walletClient.sendTransaction({
       to: token.address,
-      data: appendMurkAttribution(transferData),
-      feeCurrency: token.address,
+      data: attributedData,
+      feeCurrency: token.feeCurrencyAddress,
     })
 
     const transactionId = `tx_withdraw_${txHash.slice(2, 18)}`
