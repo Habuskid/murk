@@ -42,19 +42,21 @@ Live support for all eight currencies still needs one verification run.
 
 ### Embedded user wallet
 
-Status: PORTAL INTEGRATION SCAFFOLDED, LIVE VERIFICATION PENDING
+Status: PORTAL-ONLY AUTH + WALLET CODED, LIVE VERIFICATION PENDING
 
 Implemented in code:
 
-- Clerk email OTP custom UI;
-- Clerk server session authorization;
-- Portal Web SDK provider;
+- Portal-managed email magic-link authentication;
+- server-side exchange of the single-use Portal callback token;
+- Portal Client Session Token validation against Portal client details;
+- signed HttpOnly Murk application session;
+- Portal Web SDK provider using a server `authUrl`;
 - server-issued Portal Web OTP route;
 - Portal MPC wallet create/reuse flow;
 - Portal Celo address registration;
 - Portal backup/Eject verification gates.
 
-Still requires real Portal/Clerk credentials and browser verification.
+Still requires real Portal authentication configuration, Custodian credentials, and browser verification.
 
 ## CORE
 
@@ -103,7 +105,7 @@ Status: NOT PASSED
 
 A full real path from:
 
-`Clerk email OTP -> Portal user wallet -> fund agent -> real external 402 -> Murk policy -> live x402 settlement -> resource -> persisted receipt`
+`Portal email magic link -> Portal user wallet -> fund agent -> real external 402 -> Murk policy -> live x402 settlement -> resource -> persisted receipt`
 
 has not yet been demonstrated.
 
@@ -146,7 +148,7 @@ Recent corrections:
 
 Remaining:
 
-- email OTP onboarding;
+- live Portal magic-link onboarding verification;
 - create-agent onboarding;
 - real user-wallet surface;
 - real funding flow;
