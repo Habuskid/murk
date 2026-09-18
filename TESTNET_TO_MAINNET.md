@@ -65,8 +65,11 @@ STAGING_DATABASE_URL
 STAGING_MURK_SESSION_SECRET
 STAGING_AGENT_WALLET_MASTER_SECRET
 STAGING_PUBLIC_APP_ORIGIN
+# Optional, only for independent external merchant evidence:
 STAGING_X402_RESOURCE_URL
 STAGING_X402_PROBE_RESOURCE_URL
+
+# Required for the real Sepolia settlement harness:
 STAGING_X402_API_KEY
 STAGING_X402_SELLER_ADDRESS
 
@@ -78,10 +81,12 @@ CELO_ATTRIBUTION_CODE
 
 VERCEL_TOKEN
 VERCEL_ORG_ID
-VERCEL_PROJECT_ID
+STAGING_VERCEL_PROJECT_ID
 ```
 
 The staging database must not be the production database. Prefer a dedicated Neon branch or dedicated Neon project.
+
+Use a dedicated Vercel project for Sepolia, for example `murk-staging`. `STAGING_VERCEL_PROJECT_ID` must refer to that project. The staging workflow deploys it as that project's production deployment so `STAGING_PUBLIC_APP_ORIGIN` can be a stable HTTPS origin. Do not point this secret at the future Murk mainnet Vercel project.
 
 The staging agent-wallet master secret must not equal the production secret.
 
