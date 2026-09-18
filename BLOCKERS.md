@@ -6,28 +6,29 @@ Coding agents must not hide, bypass, simulate, or silently replace these blocker
 
 ## B1. Independent external Celo x402 resource
 
-Status: BLOCKING LIVE SPIKE AND GOLDEN DEMO
+Status: LIVE 402 CHALLENGE VERIFIED, PAID EXECUTION STILL REQUIRED
 
-Murk requires an independent external x402-protected resource on Celo mainnet.
+CI now verifies an independent external x402 resource:
 
-Required evidence:
+`https://agent402.tools/api/answer?q=what%20is%20celo`
+
+Verified:
 
 - real HTTP 402 response;
 - payment requirements parse successfully;
-- eip155:42220;
-- real accepted asset contract(s);
-- real payTo address;
-- real amount;
+- `eip155:42220`;
+- one live Celo payment requirement.
+
+Still required before golden-demo lock:
+
+- fund the real Murk execution wallet;
 - successful paid retry;
 - real settlement response with transaction hash;
 - real resource returned.
 
-Configuration:
+The live merchant currently exposes one Celo requirement, so Murk must not claim multi-asset selection against this specific merchant unless that changes and Spike D proves it.
 
-`X402_PROBE_RESOURCE_URL`
-`NEXT_PUBLIC_X402_RESOURCE_URL`
-
-The local `/api/merchant/*` route is a development fixture only. It is not valid hackathon evidence.
+The local `/api/merchant/*` route remains a development fixture only. It is not valid hackathon evidence.
 
 ## B2. Live x402 v2 execution has not been runtime-verified
 
@@ -48,7 +49,7 @@ The executor:
 
 This is not considered passed until `npm install`, `npm run build`, and a real live purchase succeed.
 
-## B3. Package lock is stale after x402 v2 migration
+## B3. Package lock is stale after dependency migrations
 
 Status: BLOCKING CLEAN INSTALL WITH npm ci
 
