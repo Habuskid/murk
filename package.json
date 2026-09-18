@@ -31,9 +31,7 @@
     "@coinbase/cdp-core": "^0.0.124",
     "@coinbase/cdp-hooks": "^0.0.124",
     "@coinbase/cdp-react": "^0.0.124",
-    "@coinbase/cdp-sdk": "^1.56.0",
-    "@x402/extensions": "^2.26.0",
-    "@x402/svm": "^2.26.0"
+    "@coinbase/cdp-sdk": "^1.56.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
