@@ -8,13 +8,17 @@ await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch()
 
 const cases = [
-  { name: "mobile-narrow-home", width: 320, height: 740, path: "/ui-sandbox" },
-  { name: "mobile-home", width: 390, height: 844, path: "/ui-sandbox" },
-  { name: "mobile-agent", width: 390, height: 844, path: "/ui-sandbox" },
-  { name: "mobile-activity", width: 390, height: 844, path: "/ui-sandbox" },
-  { name: "mobile-policy", width: 390, height: 844, path: "/ui-sandbox" },
-  { name: "tablet-home", width: 768, height: 1024, path: "/ui-sandbox" },
-  { name: "desktop-home", width: 1280, height: 900, path: "/ui-sandbox" },
+  { name: "mobile-narrow-home", width: 320, height: 740, path: "/ui-sandbox", kind: "app" },
+  { name: "mobile-home", width: 390, height: 844, path: "/ui-sandbox", kind: "app" },
+  { name: "mobile-agent", width: 390, height: 844, path: "/ui-sandbox", kind: "app" },
+  { name: "mobile-activity", width: 390, height: 844, path: "/ui-sandbox", kind: "app" },
+  { name: "mobile-policy", width: 390, height: 844, path: "/ui-sandbox", kind: "app" },
+  { name: "tablet-home", width: 768, height: 1024, path: "/ui-sandbox", kind: "app" },
+  { name: "desktop-home", width: 1280, height: 900, path: "/ui-sandbox", kind: "app" },
+  { name: "auth-mobile", width: 320, height: 740, path: "/ui-sandbox/auth", kind: "auth-flow" },
+  { name: "auth-desktop", width: 1280, height: 900, path: "/ui-sandbox/auth", kind: "auth-static" },
+  { name: "onboarding-mobile", width: 320, height: 740, path: "/ui-sandbox/onboarding", kind: "onboarding" },
+  { name: "onboarding-desktop", width: 1280, height: 900, path: "/ui-sandbox/onboarding", kind: "onboarding" },
 ]
 
 async function assertNoHorizontalOverflow(page, name) {
@@ -50,26 +54,24 @@ async function exerciseHomeControls(page, name) {
 
   await page.getByRole("button", { name: "Add funds", exact: true }).click()
   await expect(page.getByText("Add from Portal wallet", { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Confirm add funds", exact: true })
+  ).toBeVisible()
   await assertNoHorizontalOverflow(page, `${name}:fund-panel`)
 
   await page.getByRole("button", { name: "Return funds", exact: true }).click()
   await expect(
     page.getByText("Return to your Portal wallet", { exact: true })
   ).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "Confirm return", exact: true })
+  ).toBeVisible()
   await assertNoHorizontalOverflow(page, `${name}:return-panel`)
 
   await page.getByRole("button", { name: "Return funds", exact: true }).click()
 }
 
-for (const testCase of cases) {
-  const context = await browser.newContext({
-    viewport: { width: testCase.width, height: testCase.height },
-    deviceScaleFactor: 1,
-  })
-
-  const page = await context.newPage()
-  await page.goto(baseUrl + testCase.path, { waitUntil: "networkidle" })
-
+async function exerciseApp(page, testCase) {
   const nav = page.getByRole("navigation", { name: "Primary navigation" })
   await expect(nav).toBeVisible()
 
@@ -92,8 +94,6 @@ for (const testCase of cases) {
     await exerciseHomeControls(page, testCase.name)
   }
 
-  await assertNoHorizontalOverflow(page, testCase.name)
-
   if (testCase.width >= 768) {
     const position = await nav.evaluate(
       (element) => window.getComputedStyle(element).position
@@ -111,6 +111,69 @@ for (const testCase of cases) {
       throw new Error("Mobile navigation must remain fixed to the viewport")
     }
   }
+}
+
+async function exerciseAuth(page, kind) {
+  await expect(
+    page.getByRole("heading", { name: "Control how your agent spends.", exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Murk", exact: true })
+  ).toBeVisible()
+
+  if (kind === "auth-flow") {
+    const input = page.getByLabel("Email address")
+    await input.fill("builder@example.com")
+
+    const submit = page.getByRole("button", {
+      name: "Send sign-in link",
+      exact: true,
+    })
+    await expect(submit).toBeEnabled()
+    await submit.click()
+
+    await expect(
+      page.getByRole("heading", { name: "Check your inbox", exact: true })
+    ).toBeVisible()
+    await expect(page.getByText("builder@example.com", { exact: true })).toBeVisible()
+  }
+}
+
+async function exerciseOnboarding(page) {
+  await expect(
+    page.getByRole("heading", { name: "Set the spending boundary", exact: true })
+  ).toBeVisible()
+
+  const name = page.getByLabel("Agent name")
+  await name.fill("Ops Agent")
+
+  await page.getByLabel("Accounting currency").selectOption("AED")
+  await page.getByLabel("Daily authority").fill("200")
+  await page.getByLabel("Per purchase").fill("50")
+
+  await expect(page.getByText("Ops Agent", { exact: true })).toBeVisible()
+  await expect(page.getByText("AED 200.00", { exact: true })).toBeVisible()
+  await expect(page.getByText("AED 50.00", { exact: true })).toBeVisible()
+}
+
+for (const testCase of cases) {
+  const context = await browser.newContext({
+    viewport: { width: testCase.width, height: testCase.height },
+    deviceScaleFactor: 1,
+  })
+
+  const page = await context.newPage()
+  await page.goto(baseUrl + testCase.path, { waitUntil: "networkidle" })
+
+  if (testCase.kind === "app") {
+    await exerciseApp(page, testCase)
+  } else if (testCase.kind === "auth-flow" || testCase.kind === "auth-static") {
+    await exerciseAuth(page, testCase.kind)
+  } else if (testCase.kind === "onboarding") {
+    await exerciseOnboarding(page)
+  }
+
+  await assertNoHorizontalOverflow(page, testCase.name)
 
   await page.screenshot({
     path: `${outputDir}/${testCase.name}.png`,
