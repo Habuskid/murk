@@ -565,4 +565,58 @@ export function UserIcon({ className = "w-4 h-4", ...props }: IconProps) {
   )
 }
 
+export function AvatarIcon({ className = "w-10 h-10", ...props }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <circle cx="20" cy="20" r="20" fill="#EAE8E3" />
+      <circle cx="20" cy="20" r="19" fill="url(#avatar-grad)" />
+      <path
+        d="M8.5 37.5C9.5 30.5 14.5 27 20 27C25.5 27 30.5 30.5 31.5 37.5"
+        fill="#829578"
+      />
+      <path
+        d="M17 23.5V26.5C17 28.2 18.3 29.5 20 29.5C21.7 29.5 23 28.2 23 26.5V23.5"
+        fill="#F4C7A8"
+      />
+      <circle cx="20" cy="18.5" r="7.5" fill="#FED8B9" />
+      <path
+        d="M13.5 16.5C13 13 15.5 10 20 10C24.5 10 27 13 26.5 16.5C26 13.5 24 11.5 20 11.5C16 11.5 14 13.5 13.5 16.5Z"
+        fill="#8C5835"
+      />
+      <path
+        d="M15 12C16.5 9.5 20 9 22 9.5C24.5 10 26 12 26 12C26.5 10.5 25.5 8.5 23 8C20 7.5 16.5 9 15 12Z"
+        fill="#754728"
+      />
+      <circle cx="17.8" cy="18" r="1" fill="#3D291D" />
+      <circle cx="22.2" cy="18" r="1" fill="#3D291D" />
+      <path
+        d="M19 21C19.5 21.6 20.5 21.6 21 21"
+        stroke="#D99B77"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <defs>
+        <radialGradient
+          id="avatar-grad"
+          cx="0"
+          cy="0"
+          r="1"
+          gradientUnits="userSpaceOnUse"
+          gradientTransform="translate(20 12) rotate(90) scale(28)"
+        >
+          <stop stopColor="#F9F8F5" />
+          <stop offset="1" stopColor="#E5E3DC" />
+        </radialGradient>
+      </defs>
+    </svg>
+  )
+}
+
+
 

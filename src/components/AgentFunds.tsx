@@ -42,18 +42,18 @@ export function AgentFunds({
   const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
 
   return (
-    <div className="w-full bg-surface rounded-[28px] p-6 border border-[#E8E8E5] card-elevation mt-4 transition-all">
+    <div className="w-full bg-surface rounded-[28px] p-6 border border-[#EAEAE7] card-elevation mt-4 transition-all">
       {/* Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#F0F0EE]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EAEAE7]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#F8F8F6] border border-[#E8E8E5] flex items-center justify-center text-text-primary">
+          <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#EAEAE7] flex items-center justify-center text-[#111111]">
             <WalletIcon className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-[0.1em] font-bold text-text-primary">
+            <h3 className="text-sm font-bold text-[#111111]">
               Execution Vault
             </h3>
-            <span className="text-[10px] text-text-secondary">Isolated agent private key on Celo</span>
+            <span className="text-xs text-[#767676]">Isolated agent private key on Celo</span>
           </div>
         </div>
 
@@ -61,14 +61,14 @@ export function AgentFunds({
         <div className="flex items-center gap-1.5 self-start sm:self-auto">
           <button
             onClick={handleCopy}
-            className="text-[11px] font-mono text-text-secondary hover:text-text-primary bg-[#F8F8F6] px-3 py-1.5 rounded-full border border-border hover:border-text-secondary/50 transition-all flex items-center gap-1.5 active:scale-95"
+            className="text-xs font-mono text-[#767676] hover:text-[#111111] bg-[#F7F7F5] px-3 py-1.5 rounded-full border border-[#EAEAE7] hover:border-[#111111]/20 transition-all flex items-center gap-1.5 active:scale-95"
             title="Click to copy EOA address"
           >
             <span>{shortAddress}</span>
             {copied ? (
-              <CheckIcon className="w-3 h-3 text-success" />
+              <CheckIcon className="w-3.5 h-3.5 text-success" />
             ) : (
-              <CopyIcon className="w-3 h-3 text-text-secondary" />
+              <CopyIcon className="w-3.5 h-3.5 text-[#767676]" />
             )}
           </button>
 
@@ -76,10 +76,10 @@ export function AgentFunds({
             href={`https://celoscan.io/address/${walletAddress}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-7 h-7 rounded-full bg-[#F8F8F6] border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-text-secondary/50 transition-all"
+            className="w-8 h-8 rounded-full bg-[#F7F7F5] border border-[#EAEAE7] flex items-center justify-center text-[#767676] hover:text-[#111111] hover:border-[#111111]/20 transition-all"
             title="View on CeloScan Explorer"
           >
-            <ExternalLinkIcon className="w-3 h-3" />
+            <ExternalLinkIcon className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>
@@ -97,28 +97,28 @@ export function AgentFunds({
           return (
             <div
               key={token.symbol}
-              className="p-4 bg-[#F8F8F6] rounded-2xl border border-[#E8E8E5] hover:border-border transition-all flex flex-col justify-between"
+              className="p-4 bg-[#F7F7F5] rounded-2xl border border-[#EAEAE7] hover:border-[#111111]/20 transition-all flex flex-col justify-between"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {isUsdc ? <UsdcIcon className="w-5 h-5" /> : <UsdtIcon className="w-5 h-5" />}
+                  {isUsdc ? <UsdcIcon className="w-6 h-6" /> : <UsdtIcon className="w-6 h-6" />}
                   <div>
-                    <span className="text-xs font-bold text-text-primary block leading-none">
+                    <span className="text-sm font-bold text-[#111111] block leading-none">
                       {token.symbol}
                     </span>
-                    <span className="text-[10px] text-text-secondary font-mono">Celo Mainnet</span>
+                    <span className="text-xs text-[#767676] mt-0.5 block">Celo Mainnet</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-surface rounded-md border border-[#E8E8E5] text-text-secondary">
+                <span className="text-xs font-semibold px-2 py-0.5 bg-surface rounded-md border border-[#EAEAE7] text-[#767676]">
                   ERC-20
                 </span>
               </div>
 
-              <div className="mt-3">
-                <div className="text-xl font-bold text-text-primary tabular-nums tracking-tight">
-                  {token.formattedBalance} <span className="text-xs font-normal text-text-secondary">{token.symbol}</span>
+              <div className="mt-4">
+                <div className="text-2xl font-extrabold text-[#111111] tabular-nums tracking-tight">
+                  {token.formattedBalance} <span className="text-xs font-normal text-[#767676]">{token.symbol}</span>
                 </div>
-                <div className="text-[11px] font-mono text-text-secondary mt-0.5">
+                <div className="text-xs text-[#767676] mt-1 tabular-nums">
                   ≈ {currency} {fiatValue}
                 </div>
               </div>
