@@ -2,129 +2,94 @@
 
 Murk is a spending authority layer for autonomous agents on Celo.
 
-A user defines financial authority in an accounting currency they understand, such as NGN, AED, BRL, KES, MXN, COP, SAR, or INR. The agent can then purchase compatible machine services with permitted stablecoins, but only when deterministic policy says the purchase fits inside that authority.
+A user defines financial authority in an accounting currency they understand, such as NGN or AED. The agent may then settle compatible machine purchases in permitted stablecoins, but only when deterministic Murk policy says the purchase fits inside that authority.
 
-> Give an AI agent a budget in the currency you understand, and let it spend stablecoins only inside that boundary.
+> Humans define the economic boundary. Machines choose how to operate inside it.
 
-## Product Thesis
+## Why Murk
 
-People increasingly delegate tasks to autonomous agents that may need to purchase APIs, data, compute, inference, and other machine-accessible services.
+Machine payment rails can let software spend stablecoins. Human budgets usually do not work in settlement-token units.
 
-Payment rails can already let agents spend stablecoins. The control problem is different: a human may budget in NGN or AED while the machine settles in USDC or USDT.
+A user may think:
 
-Murk separates those two layers:
+```text
+NGN 5,000 per day
+NGN 2,000 per purchase
+```
+
+while an external service invoices:
+
+```text
+1.00 USDC
+```
+
+Murk separates the two concepts:
 
 ```text
 Human accounting authority
-NGN 5,000 / day
         |
         v
-Deterministic Murk policy
+Rate evidence
         |
         v
-Approved machine settlement
-USDC / USDT when actually supported
+Deterministic policy
+        |
+        v
+Approved stablecoin settlement
         |
         v
 x402 on Celo
 ```
 
-The LLM does not control the financial boundary.
+An LLM does not control the financial boundary.
 
 ## Current Status
 
-The repository is actively being brought back into alignment with the locked build specification after an early demo-oriented MVP.
+The deterministic core, Neon-backed runtime repository, Portal integration code, responsive product UI, funding/withdrawal code, and external x402 challenge discovery are implemented.
 
-Read:
+The full live golden path is **not complete yet**.
+
+### Verified in CI
+
+- Next.js 16.3.3 production build;
+- Vitest suite;
+- Celo/x402 external 402 challenge discovery;
+- current merchant payment-requirement inspection;
+- Chromium UI rendering;
+- 320px, 390px, 768px, and 1280px responsive checks;
+- horizontal-overflow checks;
+- navigation interactions;
+- authority hide/show;
+- allowed/over-limit selector;
+- add/return wallet panels;
+- email-sign-in sandbox flow;
+- first-agent onboarding and authority preview.
+
+### Still requires live verification
+
+- real Portal email magic-link round trip;
+- real Portal MPC wallet creation/reuse on Celo;
+- real Portal-wallet funding transaction;
+- real paid external x402 settlement;
+- delivered paid resource;
+- real agent withdrawal to the bound Portal wallet;
+- production Neon provisioning/schema verification;
+- ERC-8004 registration;
+- final program-assigned ERC-8021 attribution proof;
+- public demo deployment.
+
+See:
 
 - [AGENTS.md](./AGENTS.md)
 - [LOCKED_DECISIONS.md](./LOCKED_DECISIONS.md)
 - [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
 - [BLOCKERS.md](./BLOCKERS.md)
 
-The full live golden path is **not yet complete**.
+## Locked Product Model
 
-### Implemented
+### Accounting currencies
 
-- deterministic bigint money model;
-- settlement eligibility/selection logic;
-- local-currency daily mandate;
-- per-purchase limit;
-- reserve-aware policy rules;
-- reason-coded approve/block decisions;
-- Celo mainnet RPC and ERC-20 balance reads;
-- reference FX-rate adapter;
-- x402 v2 challenge parsing;
-- x402 v2 Exact EVM client executor constrained to the exact Murk-approved terms;
-- wallet-style responsive UI shell;
-- blocked-purchase path with no payment execution;
-- unit/integration-style tests for core policy behavior.
-
-### Integration still required or still needs live verification
-
-- independent external Celo x402 merchant;
-- a real successful x402 payment and delivered resource;
-- Portal-managed email magic-link authentication + Portal embedded MPC wallet;
-- real human-wallet funding;
-- real human-wallet withdrawal;
-- Neon-backed runtime persistence;
-- real ERC-8004 agent registration;
-- correct current-hackathon ERC-8021 attribution;
-- secure embedded-wallet export/recovery;
-- final golden-demo evidence.
-
-Murk deliberately fails closed where these integrations are not yet wired. It does not fabricate success.
-
-## Human Authentication and Wallet
-
-Murk uses Portal for both the human identity flow and embedded wallet.
-
-```text
-Email
--> Portal magic link
--> Portal end-user/client
--> signed Murk HttpOnly session
--> Portal Web MPC wallet
--> Celo address
-```
-
-Murk does not use Coinbase CDP or Clerk.
-
-The Portal Custodian API key stays server-side. The Web SDK authenticates through Murk's server `authUrl`, which mints one-time Portal Web OTPs for the already-authenticated client.
-
-Portal backup/recovery and Eject remain required verification gates before Murk claims wallet portability.
-
-## Golden Path
-
-The target live demo is:
-
-```text
-Portal email magic link
--> Portal embedded user wallet
--> create Research Agent
--> choose accounting currency
--> define daily mandate
--> fund agent execution wallet
--> request independent x402 resource
--> parse merchant payment options
--> inspect real agent balances
--> select a valid permitted settlement asset
--> resolve accounting reference value
--> deterministic policy APPROVES
--> x402 v2 settlement on Celo mainnet
--> paid resource delivered
--> receipt persisted
--> remaining mandate updated
--> oversized second request
--> deterministic policy BLOCKS
--> no second transaction
-```
-
-No local self-merchant may be presented as external golden-demo evidence.
-
-## Supported Accounting Currencies
-
-The locked MVP list is:
+The MVP accounting currencies are:
 
 | Code | Currency |
 | --- | --- |
@@ -137,104 +102,267 @@ The locked MVP list is:
 | SAR | Saudi Riyal |
 | INR | Indian Rupee |
 
-These are accounting units. They do not all need an onchain local stablecoin.
+These are accounting units. They do not require matching local stablecoins.
 
-## Settlement Assets
+### Settlement assets
 
-Candidate MVP settlement assets are USDC, USDT, and USAT.
+Candidate MVP settlement assets:
 
-Only assets that are actually verified for the selected Celo x402 merchant/facilitator path may be exposed as supported in the live product.
+- USDC
+- USDT
+- USAT
 
-The current token registry includes Celo USDC and USDT. Multi-asset x402 support is treated as an observed merchant property, not an assumption.
+The current runtime token registry/UI uses verified Celo USDC/USDT metadata.
 
-## Architecture
+Murk must not claim that a merchant accepts multiple assets unless the real merchant response proves it.
+
+## Human Authentication and Wallet
+
+Murk uses Portal for both human authentication and the embedded human wallet.
 
 ```text
-Responsive web app
-        |
-        v
-Authenticated human
-        |
-        v
-Embedded user wallet
-        |
-   delegated funds
-        v
-Agent execution wallet
-        |
-        v
-Murk policy engine
-  |              |
-  |              +-> Rate provider
+Email
   |
-  +-> x402 v2 client
-        |
-        v
-Celo mainnet
-        |
-        v
-Independent paid resource
+  v
+Portal magic link
+  |
+  v
+Portal end-user/client
+  |
+  v
+Signed Murk HttpOnly session
+  |
+  v
+Portal Web MPC wallet
+  |
+  v
+Celo address
 ```
 
-The human wallet and agent wallet are intentionally separate.
+Murk does not require MetaMask, Rabby, WalletConnect, Coinbase Wallet, or another external wallet for normal onboarding.
 
-The agent can only spend the assets delegated to its execution wallet.
+The Portal Custodian API key remains server-only.
 
-## Financial Safety Rules
+Portal backup/recovery and Eject still require live verification before Murk claims verified wallet portability.
 
-Murk follows these invariants:
+## Agent Execution Wallet
 
-1. No valid rate means no autonomous payment.
-2. No valid settlement asset means no autonomous payment.
-3. A blocked purchase never calls the payment executor.
-4. The LLM cannot increase or bypass a mandate.
-5. Monetary arithmetic uses integer/rational representations, not floating-point money math.
-6. The x402 executor may only settle the exact token, amount, payTo, scheme, and network approved by Murk.
-7. If merchant terms change after policy approval, payment is refused.
-8. A settled transaction is never replaced by a fabricated success state.
-9. Resource failure after settlement must never trigger a second payment automatically.
-10. Unimplemented money-moving routes fail closed.
+The human wallet and autonomous execution wallet are separate.
+
+Each Murk agent address is deterministically derived server-side from:
+
+- `AGENT_WALLET_MASTER_SECRET`;
+- the immutable Murk agent ID;
+- a versioned derivation domain.
+
+The signing key is never persisted in Neon and never reaches the browser.
+
+The current hackathon app still limits each user to one user-created execution agent.
+
+## Funding
+
+The intended live funding path is:
+
+```text
+Portal human wallet
+        |
+        v
+ERC-20 transfer on Celo
+        |
+        v
+Confirmed transaction receipt
+        |
+        v
+Murk verifies exact Transfer
+from + to + token + amount
+        |
+        v
+Persist transaction evidence
+        |
+        v
+Agent funds become usable
+```
+
+A browser-provided transaction hash alone is not trusted.
+
+## Financial Policy
+
+Murk enforces:
+
+- daily authority in the user's accounting currency;
+- per-purchase authority in the user's accounting currency;
+- allowed settlement assets;
+- reserve constraints;
+- agent pause state;
+- fresh rate evidence;
+- atomic spend reservation before signing.
+
+Money math uses integer/rational representations.
+
+An LLM cannot approve payments, modify limits, estimate FX, or bypass policy.
 
 ## x402
 
-The runtime has been migrated to the current x402 v2 TypeScript package family:
+Murk uses the x402 v2 TypeScript package family:
 
 - `@x402/core`
 - `@x402/evm`
 - `@x402/fetch`
 
-The client registers the Exact EVM scheme for `eip155:42220`.
+The external challenge probe currently verifies:
 
-Murk first evaluates the merchant requirement itself. The x402 client's payment-requirement selector is then constrained to the exact requirement already approved by Murk.
+`https://agent402.tools/api/answer?q=what%20is%20celo`
 
-This prevents the protocol client from silently selecting a different settlement option after policy approval.
+The merchant currently exposes one Celo payment requirement.
 
-## Local Merchant Fixture
+That proves challenge discovery and parsing, not a paid settlement.
 
-`/api/merchant/*` is a development-only x402-shaped fixture.
+Murk's executor is constrained to the exact token, amount, recipient, network, and scheme already approved by Murk policy.
 
-It is disabled unless:
+## Persistence
+
+Runtime state is implemented with Neon Postgres and Drizzle.
+
+Persisted domains include:
+
+- users;
+- human and agent wallets;
+- agents;
+- settlement-asset configuration;
+- mandates;
+- purchases;
+- spend reservations;
+- receipts;
+- transactions;
+- idempotency records;
+- original payment requirements;
+- rate evidence;
+- policy decisions;
+- delivered-resource evidence.
+
+A real Neon database still needs to be provisioned and tested in the deployed environment.
+
+## Financial Concurrency
+
+Before payment signing, Murk performs an atomic spend reservation.
+
+This prevents two concurrent requests from independently observing the same remaining daily authority and both spending it.
+
+Money-moving idempotency keys are also atomically claimed before execution.
+
+## Withdrawal / Recovery
+
+Agent funds may only be returned to the authenticated user's bound Portal wallet.
+
+The browser cannot choose an arbitrary destination address.
+
+The server-side agent EOA signs the return transaction.
+
+Live Celo verification of this path is still pending.
+
+## ERC-8004
+
+The locked ownership model is:
+
+- human Portal wallet owns the identity NFT;
+- separate Murk execution EOA is bound as the agent wallet.
+
+Live registration is not implemented yet and must not be claimed as complete.
+
+## ERC-8021
+
+Murk includes ERC-8021-compatible attribution helpers using the published `ox/erc8021` primitive.
+
+The direct transaction path can append a configured attribution suffix.
+
+Still required:
+
+- obtain the actual hackathon/program-assigned Murk code;
+- configure `CELO_ATTRIBUTION_CODE`;
+- prove the code on a qualifying live transaction;
+- verify attribution in the final x402 settlement path.
+
+## Golden Demo Path
+
+The target real demo is:
 
 ```text
-ENABLE_LOCAL_X402_FIXTURE=true
+Portal email sign-in
+-> Portal human wallet
+-> create Research Agent
+-> choose accounting currency
+-> set daily/per-purchase authority
+-> fund isolated agent wallet
+-> request independent x402 resource
+-> preserve original 402
+-> inspect real accepted requirement(s)
+-> inspect real agent balances
+-> resolve accounting rate
+-> deterministic policy APPROVES
+-> atomic spend reservation
+-> live x402 settlement on Celo
+-> real paid resource delivered
+-> transaction/rate/policy/resource evidence persisted
+-> remaining authority updated
+-> second external request exceeds policy
+-> deterministic policy BLOCKS
+-> no second transaction
+-> zero funds moved
 ```
 
-It is not an independent merchant, does not prove real facilitator settlement, and must never be used as submission evidence.
+## UI
+
+Murk uses a consumer-finance wallet system:
+
+- warm light-gray canvas;
+- white financial surfaces;
+- Manrope product typography;
+- IBM Plex Mono technical identifiers;
+- near-black text;
+- restrained blue accent;
+- restrained green/red status states;
+- consistent Lucide interface icons;
+- dark pill navigation;
+- daily authority as the hero financial object;
+- stablecoins as secondary execution details.
+
+Mobile navigation is fixed near the bottom.
+
+Tablet and desktop navigation remains in document flow so it does not cover content.
+
+The product is browser-tested from 320px mobile through 1280px desktop.
+
+## Test-Only UI Sandbox
+
+The repository contains test-only browser routes under:
+
+`/ui-sandbox`
+
+They are available only when:
+
+```text
+UI_SANDBOX_MODE=true
+```
+
+Production must not enable this variable.
+
+Sandbox fixture state is only for UI/browser QA. It is never transaction or hackathon demo evidence.
 
 ## Stack
 
-- Next.js App Router
-- React
+- Next.js 16 App Router
+- React 19
 - TypeScript
 - Tailwind CSS
+- Portal Web SDK
 - viem
 - x402 v2
-- Neon Postgres + Drizzle schema
+- Neon Postgres
+- Drizzle ORM
 - Zod
 - Vitest
+- Playwright
 - Celo mainnet
-
-The Neon schema exists, but the runtime repository is still being migrated from the current in-memory implementation. See [BLOCKERS.md](./BLOCKERS.md).
 
 ## Environment
 
@@ -244,13 +372,23 @@ Copy:
 cp .env.example .env.local
 ```
 
-Important current variables include:
+Important variables include:
 
 ```text
 CELO_RPC_URL=
+NEXT_PUBLIC_CELO_RPC_URL=
+CELO_CHAIN_ID=42220
+CELO_ATTRIBUTION_CODE=
+
 DATABASE_URL=
 
-AGENT_WALLET_PRIVATE_KEY=
+PORTAL_AUTH_ENVIRONMENT_ID=
+PORTAL_AUTH_FROM_EMAIL=
+PORTAL_AUTH_TEMPLATE_ID=
+PORTAL_CUSTODIAN_API_KEY=
+MURK_SESSION_SECRET=
+
+AGENT_WALLET_MASTER_SECRET=
 
 X402_FACILITATOR_URL=
 X402_PROBE_RESOURCE_URL=
@@ -258,77 +396,80 @@ NEXT_PUBLIC_X402_RESOURCE_URL=
 NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL=
 
 EXCHANGE_RATE_API_URL=
+
+ENABLE_LOCAL_X402_FIXTURE=false
 ```
 
-Portal authentication requires a configured Auth Environment, verified sending domain, email template, server-only Custodian API key, and Murk session secret. See `.env.example` and `BLOCKERS.md`.
+See [.env.example](./.env.example) for details.
 
 ## Install
 
-The x402 dependency family was recently migrated to v2. Regenerate the lock file in the development environment:
+The committed `package-lock.json` is currently stale and still reflects the old dependency stack.
+
+Until it is regenerated, use:
 
 ```bash
 npm install
 ```
 
-Then run:
+Then:
 
 ```bash
 npm test
 npm run build
 ```
 
-Do not claim a passing build until those commands have actually run after the current migration.
-
-## Live Spike Gate
-
-The spike runner is intentionally strict:
+After regenerating and committing the lockfile, clean installs should move back to:
 
 ```bash
-npm run spikes
+npm ci
 ```
 
-The x402 spikes require:
+## Spikes
+
+Useful integration probes:
+
+```bash
+npm run spike:a
+npm run spike:b
+npm run spike:c
+npm run spike:d
+npm run spike:e
+```
+
+The external x402 spike must use a real independent Celo x402 resource.
+
+A simulated 402 body is not accepted as live proof.
+
+## Local Merchant Fixture
+
+`/api/merchant/*` is development-only and disabled unless:
 
 ```text
-X402_PROBE_RESOURCE_URL
+ENABLE_LOCAL_X402_FIXTURE=true
 ```
 
-to point to a real independent x402-protected Celo resource.
-
-A simulated 402 body is not accepted as proof.
-
-## UI Direction
-
-Murk uses a consumer-finance wallet visual system:
-
-- warm light-gray canvas;
-- white rounded financial surfaces;
-- near-black typography;
-- restrained blue accent;
-- restrained green/red status colors;
-- dark floating navigation pill;
-- responsive mobile/tablet/desktop composition.
-
-The locked MVP does not include dark mode, a physical card visual, gradients, glow, glassmorphism-heavy styling, crypto-casino visuals, or a generic SaaS sidebar.
+It must never be shown as independent golden-demo evidence.
 
 ## Demo Evidence Standard
 
-A successful live purchase must preserve enough evidence to show:
+A successful paid purchase must preserve:
 
-- the original external 402;
-- accepted payment requirement(s);
-- selected asset and why it was eligible;
+- purchase ID;
+- original external 402;
+- real accepted payment requirement;
+- selected settlement asset;
 - rate source and timestamp;
-- policy decision;
-- Celo settlement transaction hash;
-- delivered resource evidence;
-- remaining local-currency mandate.
+- policy decision/reason codes;
+- Celo transaction hash;
+- delivered-resource evidence;
+- remaining accounting authority.
 
-A blocked purchase must show:
+A blocked purchase must preserve:
 
-- requested accounting value;
-- remaining authority;
-- reason code;
+- external request/402;
+- accounting value;
+- policy reason code;
 - no signing/payment execution;
 - no transaction hash;
 - zero funds moved.
