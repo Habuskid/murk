@@ -4,6 +4,12 @@ import { repository } from "@/db/repository"
 
 export const dynamic = "force-dynamic"
 
+/**
+ * Withdrawal is intentionally fail-closed until the authenticated
+ * embedded-user-wallet signing flow is wired and verified on Celo mainnet.
+ *
+ * Returning a synthetic success here would create false financial evidence.
+ */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const ownerId = repository.getDemoUserId()
@@ -14,26 +20,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const body = await req.json()
-    const validated = WithdrawAgentSchema.parse(body)
+    WithdrawAgentSchema.parse(body)
 
-    // Idempotency check
-    const existing = repository.idempotency.get(validated.idempotencyKey)
-    if (existing) {
-      return NextResponse.json(existing.result)
-    }
-
-    const result = {
-      success: true,
-      agentId: agent.id,
-      withdrawnAsset: validated.assetSymbol,
-      amountRaw: validated.amountRaw,
-      destinationAddress: validated.destinationAddress,
-      timestamp: new Date().toISOString(),
-    }
-
-    repository.idempotency.set(validated.idempotencyKey, { result, createdAt: new Date() })
-
-    return NextResponse.json(result)
+    return NextResponse.json(
+      {
+        error: "LIVE_USER_WALLET_WITHDRAWAL_NOT_INTEGRATED",
+        message: "Withdrawal requires the verified email-authenticated embedded wallet signing flow.",
+        fundsMoved: false,
+      },
+      { status: 501 }
+    )
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Withdrawal failed" }, { status: 400 })
   }
