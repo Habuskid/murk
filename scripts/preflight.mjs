@@ -121,21 +121,15 @@ if (databaseUrl) {
   }
 }
 
-const portalEnvironmentId = requireValue("PORTAL_AUTH_ENVIRONMENT_ID")
-const portalFromEmail = requireValue("PORTAL_AUTH_FROM_EMAIL")
-const portalTemplateId = requireValue("PORTAL_AUTH_TEMPLATE_ID")
-const portalCustodianKey = requireValue("PORTAL_CUSTODIAN_API_KEY")
+const privyAppId = requireValue("NEXT_PUBLIC_PRIVY_APP_ID")
+const privyAppSecret = requireValue("PRIVY_APP_SECRET")
 
-rejectPlaceholder("PORTAL_AUTH_ENVIRONMENT_ID", portalEnvironmentId)
-rejectPlaceholder("PORTAL_AUTH_FROM_EMAIL", portalFromEmail)
-rejectPlaceholder("PORTAL_AUTH_TEMPLATE_ID", portalTemplateId)
-rejectPlaceholder("PORTAL_CUSTODIAN_API_KEY", portalCustodianKey)
+rejectPlaceholder("NEXT_PUBLIC_PRIVY_APP_ID", privyAppId)
+rejectPlaceholder("PRIVY_APP_SECRET", privyAppSecret)
 
-const sessionSecret = requireValue("MURK_SESSION_SECRET")
-if (sessionSecret && sessionSecret.length < 32) {
-  errors.push("MURK_SESSION_SECRET must be at least 32 characters")
+if (privyAppSecret && privyAppSecret.length < 16) {
+  errors.push("PRIVY_APP_SECRET appears too short")
 }
-rejectPlaceholder("MURK_SESSION_SECRET", sessionSecret)
 
 const masterSecret = requireValue("AGENT_WALLET_MASTER_SECRET")
 if (masterSecret && !/^(?:0x)?[a-fA-F0-9]{64}$/.test(masterSecret)) {
@@ -263,16 +257,9 @@ if (mode === "demo") {
     )
   }
 
-  requireValue("PORTAL_USER_WALLET_VERIFIED_ADDRESS")
-  requireValue("PORTAL_USER_WALLET_EVIDENCE_REFERENCE")
+  requireValue("USER_WALLET_VERIFIED_ADDRESS")
+  requireValue("USER_WALLET_EVIDENCE_REFERENCE")
   requireValue("LIVE_AGENT_ID")
-
-  if (value("PORTAL_USER_WALLET_BACKUP_VERIFIED") !== "true") {
-    errors.push("PORTAL_USER_WALLET_BACKUP_VERIFIED must be true before demo lock")
-  }
-  if (value("PORTAL_USER_WALLET_EJECT_VERIFIED") !== "true") {
-    errors.push("PORTAL_USER_WALLET_EJECT_VERIFIED must be true before claiming wallet portability")
-  }
 }
 
 if (warnings.length) {
