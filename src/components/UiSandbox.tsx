@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import { ActivityList } from "@/components/ActivityList"
 import { AgentIdentity } from "@/components/AgentIdentity"
 import { AgentFunds } from "@/components/AgentFunds"
@@ -59,11 +58,13 @@ const balances = [
   },
 ]
 
-export function UiSandbox() {
-  const searchParams = useSearchParams()
+export function UiSandbox({
+  emptyActivity = false,
+}: {
+  emptyActivity?: boolean
+}) {
   const [activeTab, setActiveTab] = useState<TabKey>("home")
   const [paused, setPaused] = useState(false)
-  const emptyActivity = searchParams.get("activity") === "empty"
 
   const body = useMemo(() => {
     if (activeTab === "activity") {
