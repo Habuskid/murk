@@ -1,13 +1,17 @@
 /**
- * API Contract & End-to-End Route Tests
- * Verifies all endpoints defined in API_CONTRACTS.md
+ * API security-boundary tests.
+ *
+ * Live authenticated-route behavior depends on CDP access-token validation and
+ * is covered by the browser/live integration gate. Unit tests here assert that
+ * protected data and money-moving endpoints fail closed without authentication.
  */
 
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import { NextRequest } from "next/server"
 import { GET as healthGet } from "../src/app/api/health/route"
 import { GET as agentsGet, POST as agentsPost } from "../src/app/api/agents/route"
 import { GET as agentDetailGet, PATCH as agentDetailPatch } from "../src/app/api/agents/[id]/route"
+import { GET as agentBalancesGet } from "../src/app/api/agents/[id]/balances/route"
 import { POST as agentPausePost } from "../src/app/api/agents/[id]/pause/route"
 import { POST as agentResumePost } from "../src/app/api/agents/[id]/resume/route"
 import { POST as agentFundPost } from "../src/app/api/agents/[id]/fund/route"
@@ -17,107 +21,154 @@ import { GET as purchasesDetailGet } from "../src/app/api/purchases/[id]/route"
 import { GET as purchaseReceiptGet } from "../src/app/api/purchases/[id]/receipt/route"
 import { GET as activityGet } from "../src/app/api/activity/route"
 
-describe("API Contracts Verification", () => {
-  it("GET /api/health returns operational summary without moving funds", async () => {
+function request(
+  path: string,
+  init: RequestInit = {}
+): NextRequest {
+  return new NextRequest(`http://localhost:3000${path}`, init)
+}
+
+async function expectUnauthorized(response: Response) {
+  expect(response.status).toBe(401)
+  const body = await response.json()
+  expect(body.error).toBe("AUTHORIZATION_REQUIRED")
+}
+
+describe("API security boundary", () => {
+  it("keeps GET /api/health public and non-financial", async () => {
     const res = await healthGet()
     expect(res.status).toBe(200)
+
     const json = await res.json()
     expect(json.status).toBe("ok")
-    expect(json.components).toBeDefined()
-    expect(json.components.app).toBe("healthy")
+    expect(json.components?.app).toBe("healthy")
   })
 
-  it("GET /api/agents returns owner-scoped agent list", async () => {
-    const req = new NextRequest("http://localhost:3000/api/agents")
-    const res = await agentsGet(req)
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(Array.isArray(json.agents)).toBe(true)
-    expect(json.agents.length).toBeGreaterThan(0)
+  it("protects the agent collection", async () => {
+    await expectUnauthorized(await agentsGet(request("/api/agents")))
+
+    await expectUnauthorized(
+      await agentsPost(
+        request("/api/agents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Procurement Agent",
+            accountingCurrency: "NGN",
+            timezone: "Africa/Lagos",
+            dailyLimitMinor: "500000",
+            perPurchaseLimitMinor: "200000",
+            allowedAssets: ["USDC"],
+          }),
+        })
+      )
+    )
   })
 
-  it("POST /api/agents creates DRAFT agent with version 1 mandate", async () => {
-    const req = new NextRequest("http://localhost:3000/api/agents", {
-      method: "POST",
-      body: JSON.stringify({
-        name: "Procurement Bot",
-        accountingCurrency: "AED",
-        timezone: "Asia/Dubai",
-        dailyLimitMinor: "100000", // AED 1,000.00
-        perPurchaseLimitMinor: "25000", // AED 250.00
-        allowedAssets: ["USDC"],
-      }),
-    })
+  it("protects agent detail, balances, and policy mutation", async () => {
+    const context = { params: { id: "agent_demo_01" } }
 
-    const res = await agentsPost(req)
-    expect(res.status).toBe(201)
-    const json = await res.json()
-    expect(json.name).toBe("Procurement Bot")
-    expect(json.status).toBe("DRAFT")
-    expect(json.accountingCurrency).toBe("AED")
-    expect(json.mandate.version).toBe(1)
+    await expectUnauthorized(
+      await agentDetailGet(request("/api/agents/agent_demo_01"), context)
+    )
+    await expectUnauthorized(
+      await agentBalancesGet(
+        request("/api/agents/agent_demo_01/balances"),
+        context
+      )
+    )
+    await expectUnauthorized(
+      await agentDetailPatch(
+        request("/api/agents/agent_demo_01", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dailyLimitMinor: "600000" }),
+        }),
+        context
+      )
+    )
   })
 
-  it("PATCH /api/agents/:id updates mandate version on policy change", async () => {
-    const req = new NextRequest("http://localhost:3000/api/agents/agent_demo_01", {
-      method: "PATCH",
-      body: JSON.stringify({
-        dailyLimitMinor: "600000", // Increase to NGN 6,000.00
-      }),
-    })
+  it("protects pause and resume controls", async () => {
+    const context = { params: { id: "agent_demo_01" } }
 
-    const res = await agentDetailPatch(req, { params: { id: "agent_demo_01" } })
-    expect(res.status).toBe(200)
-
-    // Verify detail
-    const detailReq = new NextRequest("http://localhost:3000/api/agents/agent_demo_01")
-    const detailRes = await agentDetailGet(detailReq, { params: { id: "agent_demo_01" } })
-    const json = await detailRes.json()
-    expect(json.mandate.version).toBe(2)
-    expect(json.mandate.dailyLimitMinor).toBe("600000")
+    await expectUnauthorized(
+      await agentPausePost(
+        request("/api/agents/agent_demo_01/pause", { method: "POST" }),
+        context
+      )
+    )
+    await expectUnauthorized(
+      await agentResumePost(
+        request("/api/agents/agent_demo_01/resume", { method: "POST" }),
+        context
+      )
+    )
   })
 
-  it("POST /api/agents/:id/pause and /resume mutates execution state", async () => {
-    const pauseReq = new NextRequest("http://localhost:3000/api/agents/agent_demo_01/pause", { method: "POST" })
-    const pauseRes = await agentPausePost(pauseReq, { params: { id: "agent_demo_01" } })
-    expect((await pauseRes.json()).status).toBe("PAUSED")
+  it("protects all money-moving routes before parsing financial payloads", async () => {
+    const context = { params: { id: "agent_demo_01" } }
 
-    const resumeReq = new NextRequest("http://localhost:3000/api/agents/agent_demo_01/resume", { method: "POST" })
-    const resumeRes = await agentResumePost(resumeReq, { params: { id: "agent_demo_01" } })
-    expect((await resumeRes.json()).status).toBe("ACTIVE")
+    await expectUnauthorized(
+      await agentFundPost(
+        request("/api/agents/agent_demo_01/fund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assetSymbol: "USDC",
+            amountRaw: "1000000",
+            idempotencyKey: "fund_test_0001",
+          }),
+        }),
+        context
+      )
+    )
+
+    await expectUnauthorized(
+      await agentWithdrawPost(
+        request("/api/agents/agent_demo_01/withdraw", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assetSymbol: "USDC",
+            amountRaw: "1000000",
+            destinationAddress: "0x0000000000000000000000000000000000000001",
+            idempotencyKey: "withdraw_test_0001",
+          }),
+        }),
+        context
+      )
+    )
+
+    await expectUnauthorized(
+      await agentPurchasesPost(
+        request("/api/agents/agent_demo_01/purchases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            merchantUrl: "https://merchant.example",
+            resourceUrl: "https://merchant.example/resource",
+            idempotencyKey: "purchase_test_0001",
+          }),
+        }),
+        context
+      )
+    )
   })
 
-  it("POST /api/agents/:id/fund is idempotent", async () => {
-    const idempotencyKey = `fund_idem_${Date.now()}`
-    const fundPayload = {
-      assetSymbol: "USDC",
-      amountRaw: "5000000",
-      idempotencyKey,
-    }
+  it("protects activity and purchase evidence from cross-user reads", async () => {
+    await expectUnauthorized(await activityGet(request("/api/activity")))
 
-    const req1 = new NextRequest("http://localhost:3000/api/agents/agent_demo_01/fund", {
-      method: "POST",
-      body: JSON.stringify(fundPayload),
-    })
-    const res1 = await agentFundPost(req1, { params: { id: "agent_demo_01" } })
-    const json1 = await res1.json()
-    expect(json1.success).toBe(true)
+    await expectUnauthorized(
+      await purchasesDetailGet(request("/api/purchases/pur_01"), {
+        params: { id: "pur_01" },
+      })
+    )
 
-    // Repeat with same idempotency key
-    const req2 = new NextRequest("http://localhost:3000/api/agents/agent_demo_01/fund", {
-      method: "POST",
-      body: JSON.stringify(fundPayload),
-    })
-    const res2 = await agentFundPost(req2, { params: { id: "agent_demo_01" } })
-    const json2 = await res2.json()
-    expect(json2).toEqual(json1)
-  })
-
-  it("GET /api/activity returns list of historical transactions", async () => {
-    const req = new NextRequest("http://localhost:3000/api/activity")
-    const res = await activityGet(req)
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(Array.isArray(json.activity)).toBe(true)
+    await expectUnauthorized(
+      await purchaseReceiptGet(request("/api/purchases/pur_01/receipt"), {
+        params: { id: "pur_01" },
+      })
+    )
   })
 })
