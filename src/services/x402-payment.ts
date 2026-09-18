@@ -25,7 +25,11 @@ export type ApprovedX402Payment = {
 
 export type LiveX402PaymentResult = {
   txHash: `0x${string}`
-  deliveredResource: unknown
+  deliveredResource?: unknown
+  resourceFailure?: {
+    status: number
+    contentType: string
+  }
 }
 
 export class X402PaymentOutcomeUncertainError extends Error {
@@ -122,16 +126,16 @@ export async function executeApprovedX402Payment(
     throw new X402PaymentOutcomeUncertainError(cause)
   }
 
-  if (!response.ok) {
-    throw new Error(`X402_RESOURCE_REQUEST_FAILED_${response.status}`)
-  }
-
   const settlement = new x402HTTPClient(client).getPaymentSettleResponse((name) =>
     response.headers.get(name)
   )
 
   if (!settlement?.success || !settlement.transaction) {
-    throw new Error("X402_SETTLEMENT_EVIDENCE_MISSING")
+    // The payment wrapper has already been invoked. Without a definitive
+    // settlement result Murk cannot safely assume zero funds moved.
+    throw new X402PaymentOutcomeUncertainError(
+      new Error("X402_SETTLEMENT_EVIDENCE_MISSING")
+    )
   }
 
   const txHash = settlement.transaction as `0x${string}`
@@ -170,6 +174,17 @@ export async function executeApprovedX402Payment(
       new Error("X402_SETTLEMENT_TRANSFER_MISMATCH"),
       txHash
     )
+  }
+
+  if (!response.ok) {
+    return {
+      txHash,
+      resourceFailure: {
+        status: response.status,
+        contentType:
+          response.headers.get("content-type") || "application/octet-stream",
+      },
+    }
   }
 
   const deliveredResource = await readDeliveredBody(response)
