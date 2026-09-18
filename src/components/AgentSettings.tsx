@@ -1,13 +1,12 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
-  PlayIcon,
-  PauseIcon,
-  ArrowDownLeftIcon,
-  ShieldCheckIcon,
   CheckIcon,
+  PauseIcon,
+  PlayIcon,
+  ShieldCheckIcon,
 } from "@/components/Icons"
 
 interface AgentSettingsProps {
@@ -32,7 +31,9 @@ export function AgentSettings({
   const [isPaused, setIsPaused] = useState(agentStatus === "PAUSED")
   const [editMode, setEditMode] = useState(false)
   const [newDaily, setNewDaily] = useState(dailyLimitFormatted.replace(/,/g, ""))
-  const [newPerPurchase, setNewPerPurchase] = useState(perPurchaseLimitFormatted.replace(/,/g, ""))
+  const [newPerPurchase, setNewPerPurchase] = useState(
+    perPurchaseLimitFormatted.replace(/,/g, "")
+  )
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,37 +46,53 @@ export function AgentSettings({
     if (!/^\d+(\.\d{0,2})?$/.test(normalized)) {
       throw new Error("Enter a valid amount with up to 2 decimal places")
     }
+
     const [whole, fraction = ""] = normalized.split(".")
-    const paddedFraction = (fraction + "00").slice(0, 2)
-    return (BigInt(whole) * 100n + BigInt(paddedFraction)).toString()
+    return (
+      BigInt(whole) * 100n +
+      BigInt((fraction + "00").slice(0, 2))
+    ).toString()
   }
 
   const togglePause = async () => {
     const action = isPaused ? "resume" : "pause"
+
     try {
       setError(null)
-      const res = await authedFetch(`/api/agents/${agentId}/${action}`, { method: "POST" })
-      if (res.ok) {
-        const next = !isPaused
-        setIsPaused(next)
-        onStatusChange(next ? "PAUSED" : "ACTIVE")
-      }
-      else {
+      const res = await authedFetch(`/api/agents/${agentId}/${action}`, {
+        method: "POST",
+      })
+
+      if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setError(body.error || "Could not update agent status")
+        throw new Error(body.error || "Could not update agent status")
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update agent status")
+
+      const next = !isPaused
+      setIsPaused(next)
+      onStatusChange(next ? "PAUSED" : "ACTIVE")
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not update agent status"
+      )
     }
   }
 
   const handleSaveLimits = async () => {
     setIsSaving(true)
+
     try {
       const dailyMinor = decimalToMinorUnits(newDaily)
       const perPurchaseMinor = decimalToMinorUnits(newPerPurchase)
 
+      if (BigInt(perPurchaseMinor) > BigInt(dailyMinor)) {
+        throw new Error("Per-purchase limit cannot exceed the daily limit")
+      }
+
       setError(null)
+
       const res = await authedFetch(`/api/agents/${agentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -85,186 +102,180 @@ export function AgentSettings({
         }),
       })
 
-      if (res.ok) {
-        setEditMode(false)
-        onLimitsUpdated(newDaily, newPerPurchase)
-      } else {
+      if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setError(body.error || "Could not update mandate")
+        throw new Error(body.error || "Could not update policy")
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update mandate")
+
+      setEditMode(false)
+      onLimitsUpdated(newDaily, newPerPurchase)
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not update policy"
+      )
     } finally {
       setIsSaving(false)
     }
   }
 
-
-
   return (
-    <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-border card-elevation mt-4 space-y-6">
-      {/* Top Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-border">
+    <section className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h3 className="text-sm font-bold text-text-primary">
-            Agent Spending Authority Controls
-          </h3>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Owner policy boundaries, limits, and kill-switch
-          </p>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+            Policy
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-[-0.025em] text-text-primary">
+            Spending limits
+          </h2>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 bg-surface-inset rounded-full text-text-secondary border border-border">
-          Mandate v1.0
+
+        <span
+          className={[
+            "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+            isPaused
+              ? "bg-danger-soft text-danger"
+              : "bg-success-soft text-success",
+          ].join(" ")}
+        >
+          {isPaused ? "Paused" : "Active"}
         </span>
       </div>
 
-      {/* Financial Limits Section */}
-      <div className="space-y-3.5">
-        <div className="flex justify-between items-center">
-          <span className="text-xs font-semibold text-text-secondary">
-            Mandate Thresholds ({currency})
+      <div className="pt-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-text-secondary">
+            Accounting currency: {currency}
           </span>
+
           {!editMode ? (
             <button
+              type="button"
               onClick={() => setEditMode(true)}
-              className="text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+              className="text-xs font-semibold text-accent"
             >
-              Edit Thresholds
+              Edit limits
             </button>
           ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setEditMode(false)}
-                className="text-xs text-text-secondary hover:text-text-primary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveLimits}
-                disabled={isSaving}
-                className="text-xs font-bold text-success hover:text-success/80 transition-colors flex items-center gap-1"
-              >
-                {isSaving ? "Saving..." : (
-                  <>
-                    <CheckIcon className="w-3.5 h-3.5" />
-                    <span>Save Mandate</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="text-xs font-medium text-text-secondary"
+            >
+              Cancel
+            </button>
           )}
         </div>
 
         {!editMode ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-4 bg-surface-inset rounded-2xl border border-border">
-              <span className="text-xs text-text-secondary block font-medium">
-                Daily Mandate Ceiling
-              </span>
-              <span className="text-2xl font-extrabold text-text-primary tabular-nums mt-1 block tracking-tight">
+          <div className="mt-3 overflow-hidden rounded-[14px] border border-border">
+            <div className="flex items-center justify-between gap-4 bg-surface-inset px-4 py-4">
+              <div>
+                <div className="text-xs font-medium text-text-secondary">
+                  Daily authority
+                </div>
+                <div className="mt-1 text-[11px] text-text-secondary">
+                  Maximum spend per day
+                </div>
+              </div>
+              <div className="text-lg font-semibold tracking-[-0.02em] text-text-primary tabular-nums">
                 {currency} {dailyLimitFormatted}
-              </span>
-              <span className="text-xs text-text-secondary mt-1 block">
-                Ceiling across all transactions in 24h window
-              </span>
+              </div>
             </div>
 
-            <div className="p-4 bg-surface-inset rounded-2xl border border-border">
-              <span className="text-xs text-text-secondary block font-medium">
-                Per-Purchase Cap
-              </span>
-              <span className="text-2xl font-extrabold text-text-primary tabular-nums mt-1 block tracking-tight">
+            <div className="flex items-center justify-between gap-4 border-t border-border bg-surface-inset px-4 py-4">
+              <div>
+                <div className="text-xs font-medium text-text-secondary">
+                  Per purchase
+                </div>
+                <div className="mt-1 text-[11px] text-text-secondary">
+                  Maximum single payment
+                </div>
+              </div>
+              <div className="text-lg font-semibold tracking-[-0.02em] text-text-primary tabular-nums">
                 {currency} {perPurchaseLimitFormatted}
-              </span>
-              <span className="text-xs text-text-secondary mt-1 block">
-                Single checkout ceiling before block
-              </span>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-3.5 p-4 bg-surface-inset rounded-2xl border border-border animate-in fade-in duration-150">
-            <div>
-              <label className="text-xs text-text-secondary font-medium block mb-1">
-                New Daily Limit ({currency})
-              </label>
+          <div className="mt-3 space-y-3 border-l-2 border-accent pl-4">
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-medium text-text-secondary">
+                Daily authority ({currency})
+              </span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={newDaily}
-                onChange={(e) => setNewDaily(e.target.value)}
-                className="w-full p-2.5 text-xs bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent transition-colors tabular-nums"
+                onChange={(event) => setNewDaily(event.target.value)}
+                className="h-11 w-full rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold tabular-nums text-text-primary outline-none focus:border-accent"
               />
-            </div>
-            <div>
-              <label className="text-xs text-text-secondary font-medium block mb-1">
-                New Per-Purchase Cap ({currency})
-              </label>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-medium text-text-secondary">
+                Per purchase ({currency})
+              </span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={newPerPurchase}
-                onChange={(e) => setNewPerPurchase(e.target.value)}
-                className="w-full p-2.5 text-xs bg-surface border border-border rounded-xl text-text-primary focus:outline-none focus:border-accent transition-colors tabular-nums"
+                onChange={(event) => setNewPerPurchase(event.target.value)}
+                className="h-11 w-full rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold tabular-nums text-text-primary outline-none focus:border-accent"
               />
-            </div>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void handleSaveLimits()}
+              disabled={isSaving}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-white disabled:opacity-45"
+            >
+              <CheckIcon className="h-4 w-4" />
+              {isSaving ? "Saving…" : "Save limits"}
+            </button>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-xs text-danger">
+        <div className="mt-4 rounded-xl bg-danger-soft px-3.5 py-3 text-xs text-danger">
           {error}
         </div>
       )}
 
-      {/* Emergency Authority Controls */}
-      <div className="pt-4 border-t border-border space-y-3">
-        <span className="text-xs font-semibold text-text-secondary block">
-          Emergency Authority Controls
-        </span>
+      <div className="mt-5 border-t border-border pt-4">
+        <div className="text-xs font-semibold text-text-primary">Agent control</div>
+        <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+          Pausing prevents new purchases before any transaction is signed.
+        </p>
 
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          <button
-            onClick={togglePause}
-            className={`flex-1 py-3 px-4 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] ${
-              isPaused
-                ? "bg-success-soft text-success border-success/30 hover:bg-success/15"
-                : "bg-danger-soft text-danger border-danger/30 hover:bg-danger/15"
-            }`}
-          >
-            {isPaused ? (
-              <>
-                <PlayIcon className="w-3.5 h-3.5" />
-                <span>Resume Agent Authority</span>
-              </>
-            ) : (
-              <>
-                <PauseIcon className="w-3.5 h-3.5" />
-                <span>Emergency Pause Agent</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            disabled
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-surface-inset border border-border text-text-secondary flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
-            title="Enabled after the authenticated user wallet is wired"
-          >
-            <ArrowDownLeftIcon className="w-3.5 h-3.5 text-text-secondary" />
-            <span>Withdraw Funds</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void togglePause()}
+          className={[
+            "mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-xs font-semibold transition active:scale-[0.99]",
+            isPaused
+              ? "border-success/25 bg-success-soft text-success"
+              : "border-danger/20 bg-danger-soft text-danger",
+          ].join(" ")}
+        >
+          {isPaused ? (
+            <PlayIcon className="h-4 w-4" strokeWidth={1.9} />
+          ) : (
+            <PauseIcon className="h-4 w-4" strokeWidth={1.9} />
+          )}
+          {isPaused ? "Resume agent" : "Pause agent"}
+        </button>
       </div>
 
-      {/* Security Architecture Callout */}
-      <div className="p-4 bg-surface-inset rounded-2xl border border-border text-xs space-y-1.5">
-        <div className="flex items-center gap-2 font-bold text-text-primary">
-          <ShieldCheckIcon className="w-4 h-4 text-accent" />
-          <span>Isolated Execution Wallet</span>
-        </div>
-        <p className="text-xs text-text-secondary leading-relaxed">
-          Agent signing material stays server-side. User-wallet recovery is only enabled after the real embedded-wallet export flow is integrated and verified.
+      <div className="mt-5 flex items-start gap-2.5 border-t border-border pt-4">
+        <ShieldCheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={1.9} />
+        <p className="text-[11px] leading-relaxed text-text-secondary">
+          The execution wallet is isolated from your Portal wallet. Spending
+          policy is checked before signing.
         </p>
       </div>
-    </div>
+    </section>
   )
 }
