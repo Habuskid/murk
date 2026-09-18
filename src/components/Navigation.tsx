@@ -39,6 +39,7 @@ export function Navigation({ activeTab, onSelectTab }: NavigationProps) {
               type="button"
               onClick={() => onSelectTab(tab.key)}
               aria-current={isActive ? "page" : undefined}
+              aria-label={tab.label}
               className={[
                 "flex min-h-11 items-center gap-2 rounded-[13px] px-3.5 text-xs font-semibold transition",
                 isActive
