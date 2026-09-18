@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import type { OrchestratorReceipt } from "@/services/orchestrator"
 import { authedFetch } from "@/lib/authed-fetch"
+import { PUBLIC_CELO_EXPLORER_BASE_URL, PUBLIC_CELO_NETWORK_NAME } from "@/lib/celo-public"
 import {
   BoltIcon,
   CheckIcon,
@@ -319,7 +320,7 @@ export function PurchaseRunner({
               </div>
               <div className="mt-1 text-[11px] text-text-secondary">
                 {activeReceipt.policyDecision === "APPROVED"
-                  ? "Celo mainnet"
+                  ? PUBLIC_CELO_NETWORK_NAME
                   : activeReceipt.humanReadableReasons?.[0] || "Policy rejected"}
               </div>
             </div>
@@ -363,7 +364,7 @@ export function PurchaseRunner({
                 <dd>
                   {activeReceipt.txHash ? (
                     <a
-                      href={`https://celoscan.io/tx/${activeReceipt.txHash}`}
+                      href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/tx/${activeReceipt.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 font-mono text-accent"
