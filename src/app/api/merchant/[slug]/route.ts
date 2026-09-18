@@ -3,16 +3,29 @@ import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 
 /**
- * Standard x402 Merchant Endpoint
- * Returns real HTTP 402 Payment Required status code with Celo USDC requirements.
- * When payment proof (x-payment) is supplied, delivers the protected resource.
+ * Development-only x402-shaped fixture.
+ *
+ * This endpoint exists for parser/UI development only. It is not an independent
+ * merchant, it does not verify a real x402 payment with a facilitator, and it
+ * must never be used as golden-demo or submission evidence.
  */
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+  if (process.env.ENABLE_LOCAL_X402_FIXTURE !== "true") {
+    return NextResponse.json(
+      {
+        error: "Local x402 fixture disabled",
+        note: "Configure an independent external x402 resource for runtime purchases.",
+      },
+      { status: 404 }
+    )
+  }
+
   const paymentProof = req.headers.get("x-payment") || req.headers.get("authorization")
 
   // If payment proof is supplied, deliver the paid resource!
   if (paymentProof) {
     return NextResponse.json({
+      fixture: true,
       status: "success",
       purchasedItem: params.slug === "expensive-report" ? "Global Macro Agent Research Report" : "Research Dataset Access",
       data: {
