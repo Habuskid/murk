@@ -42,7 +42,19 @@ Live support for all eight currencies still needs one verification run.
 
 ### Embedded user wallet
 
-Status: NOT IMPLEMENTED
+Status: PORTAL INTEGRATION SCAFFOLDED, LIVE VERIFICATION PENDING
+
+Implemented in code:
+
+- Clerk email OTP custom UI;
+- Clerk server session authorization;
+- Portal Web SDK provider;
+- server-issued Portal Web OTP route;
+- Portal MPC wallet create/reuse flow;
+- Portal Celo address registration;
+- Portal backup/Eject verification gates.
+
+Still requires real Portal/Clerk credentials and browser verification.
 
 ## CORE
 
@@ -79,9 +91,9 @@ Not yet live verified:
 - external x402 paid request;
 - settlement transaction;
 - resource delivery;
-- embedded user wallet;
-- funding;
-- withdrawal;
+- live Portal embedded wallet verification;
+- Portal-signed funding;
+- Portal-signed withdrawal;
 - ERC-8004;
 - ERC-8021.
 
@@ -91,7 +103,7 @@ Status: NOT PASSED
 
 A full real path from:
 
-`email OTP -> user wallet -> fund agent -> real external 402 -> Murk policy -> live x402 settlement -> resource -> persisted receipt`
+`Clerk email OTP -> Portal user wallet -> fund agent -> real external 402 -> Murk policy -> live x402 settlement -> resource -> persisted receipt`
 
 has not yet been demonstrated.
 
