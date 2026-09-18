@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F4F4F2;
+  --surface: #FFFFFF;
+  --text-primary: #111111;
+  --text-secondary: #8A8A8A;
+  --border: #E8E8E5;
+  --accent: #2F9CF4;
+  --accent-soft: #EAF5FE;
+  --success: #228B5A;
+  --success-soft: #EDF8F2;
+  --danger: #D64545;
+  --danger-soft: #FCEEEE;
+  --nav: #171717;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

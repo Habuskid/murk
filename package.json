@@ -1,0 +1,43 @@
+{
+  "name": "murk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "spike:a": "tsx spikes/spike-a-user-wallet.ts",
+    "spike:b": "tsx spikes/spike-b-agent-wallet.ts",
+    "spike:c": "tsx spikes/spike-c-x402-purchase.ts",
+    "spike:d": "tsx spikes/spike-d-multi-asset.ts",
+    "spike:e": "tsx spikes/spike-e-rate-provider.ts",
+    "spikes": "tsx spikes/run-all-spikes.ts"
+  },
+  "dependencies": {
+    "@coinbase/coinbase-sdk": "^0.25.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "drizzle-orm": "^0.38.3",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.21.26",
+    "x402": "^1.2.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.30.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}
