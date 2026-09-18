@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { CreateAgentSchema } from "@/lib/validation"
-import { repository, AgentRecord, MandateRecord, WalletRecord } from "@/db/repository"
+import {
+  repository,
+  type AgentRecord,
+  type MandateRecord,
+  type WalletRecord,
+} from "@/db/repository"
 import { resolveAgentExecutionWallet } from "@/services/agent-wallet"
 import { authErrorResponse, requireAuthenticatedOwner } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
-function serializeAgent(a: AgentRecord) {
-  const mandate = repository.getLatestMandate(a.id)
+async function serializeAgent(a: AgentRecord) {
+  const mandate = await repository.getLatestMandate(a.id)
+
   return {
     id: a.id,
     name: a.name,
@@ -33,8 +39,10 @@ function serializeAgent(a: AgentRecord) {
 export async function GET(req: NextRequest) {
   try {
     const owner = await requireAuthenticatedOwner(req)
-    const agents = repository.listAgentsByOwner(owner.userId)
-    return NextResponse.json({ agents: agents.map(serializeAgent) })
+    const agents = await repository.listAgentsByOwner(owner.userId)
+    return NextResponse.json({
+      agents: await Promise.all(agents.map(serializeAgent)),
+    })
   } catch (error) {
     const mapped = authErrorResponse(error)
     return NextResponse.json(mapped.body, { status: mapped.status })
@@ -44,7 +52,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const owner = await requireAuthenticatedOwner(req)
-    const existingAgents = repository.listAgentsByOwner(owner.userId)
+    const existingAgents = await repository.listAgentsByOwner(owner.userId)
+
     if (existingAgents.length > 0) {
       return NextResponse.json(
         {
@@ -61,6 +70,7 @@ export async function POST(req: NextRequest) {
 
     const agentId = `agent_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`
     const executionWallet = await resolveAgentExecutionWallet(agentId)
+    const now = new Date()
 
     const wallet: WalletRecord = {
       id: `wal_${agentId}`,
@@ -69,9 +79,8 @@ export async function POST(req: NextRequest) {
       address: executionWallet.address,
       provider: executionWallet.provider,
       chainId: 42220,
-      createdAt: new Date(),
+      createdAt: now,
     }
-    repository.wallets.set(wallet.id, wallet)
 
     const agent: AgentRecord = {
       id: agentId,
@@ -85,10 +94,9 @@ export async function POST(req: NextRequest) {
       erc8004AgentId: undefined,
       allowedAssets: validated.allowedAssets,
       minimumReserves: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     }
-    repository.saveAgent(agent)
 
     const mandate: MandateRecord = {
       id: `man_${agentId}_v1`,
@@ -100,13 +108,14 @@ export async function POST(req: NextRequest) {
       status: "ACTIVE",
       spentTodayMinor: 0n,
       reservedTodayMinor: 0n,
-      effectiveFrom: new Date(),
+      effectiveFrom: now,
       supersededAt: null,
-      createdAt: new Date(),
+      createdAt: now,
     }
-    repository.createMandate(mandate)
 
-    return NextResponse.json(serializeAgent(agent), { status: 201 })
+    await repository.createAgentBundle({ agent, wallet, mandate })
+
+    return NextResponse.json(await serializeAgent(agent), { status: 201 })
   } catch (error) {
     const mapped = authErrorResponse(error)
     if (mapped.status !== 500) {
