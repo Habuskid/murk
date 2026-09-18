@@ -70,22 +70,30 @@ Then commit the regenerated `package-lock.json`.
 
 Do not revert to the legacy x402 package to avoid this step.
 
-## B4. Email OTP embedded user wallet
+## B4. Clerk + Portal embedded user wallet
 
-Status: NOT INTEGRATED
+Status: CODED, LIVE CREDENTIALS / VERIFICATION REQUIRED
 
-The current runtime still uses a seeded demo user and does not implement the locked email OTP onboarding.
+Murk no longer uses Coinbase CDP.
 
-Required:
+Current architecture:
 
-- verified email OTP;
-- embedded EVM EOA;
-- same authenticated identity resolves to the same application user;
-- user wallet address persisted;
-- Celo signing verified;
-- secure provider-isolated wallet export/recovery.
+- Clerk email OTP for human identity/session;
+- Portal Web MPC wallet for the user's Celo wallet;
+- Murk backend fetches a one-time Portal Web OTP using the server-only Custodian API key;
+- Portal creates/reuses the user's MPC wallet in the browser;
+- Celo address is registered back to Murk;
+- Portal backup/recovery and Eject must be verified before claiming portability.
 
-Do not claim this is working until live verified.
+Required configuration:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `PORTAL_CUSTODIAN_API_KEY`
+- `PORTAL_DEMO_CLIENT_ID`
+- `PORTAL_DEMO_CLERK_USER_ID`
+
+Current demo integration deliberately binds one Portal test client to one Clerk user. Programmatic multi-user Portal client provisioning remains future work and must not be implied.
 
 ## B5. User-wallet funding and withdrawal
 
@@ -95,7 +103,7 @@ The endpoints now return HTTP 501 and `fundsMoved: false`.
 
 This is intentional.
 
-They must remain fail-closed until the authenticated embedded user wallet signs real Celo transactions.
+They must remain fail-closed until the authenticated Portal wallet signs real Celo transactions.
 
 ## B6. Neon runtime persistence
 
