@@ -19,6 +19,7 @@ jobs:
       CELO_CHAIN_ID: "42220"
       EXCHANGE_RATE_API_URL: https://open.er-api.com/v6/latest/USD
       ENABLE_LOCAL_X402_FIXTURE: "false"
+      X402_PROBE_RESOURCE_URL: "https://agent402.tools/api/answer?q=what%20is%20celo"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,3 +37,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Probe external x402 challenge
+        run: npm run spike:c
