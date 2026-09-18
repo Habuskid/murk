@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { authedFetch } from "@/lib/authed-fetch"
 import {
   PlayIcon,
   PauseIcon,
   ArrowDownLeftIcon,
   ShieldCheckIcon,
   CheckIcon,
-  LockClosedIcon,
 } from "@/components/Icons"
 
 interface AgentSettingsProps {
@@ -34,6 +34,11 @@ export function AgentSettings({
   const [newDaily, setNewDaily] = useState(dailyLimitFormatted.replace(/,/g, ""))
   const [newPerPurchase, setNewPerPurchase] = useState(perPurchaseLimitFormatted.replace(/,/g, ""))
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setIsPaused(agentStatus === "PAUSED")
+  }, [agentStatus])
 
   const decimalToMinorUnits = (value: string): string => {
     const normalized = value.trim()
@@ -48,14 +53,19 @@ export function AgentSettings({
   const togglePause = async () => {
     const action = isPaused ? "resume" : "pause"
     try {
-      const res = await fetch(`/api/agents/${agentId}/${action}`, { method: "POST" })
+      setError(null)
+      const res = await authedFetch(`/api/agents/${agentId}/${action}`, { method: "POST" })
       if (res.ok) {
         const next = !isPaused
         setIsPaused(next)
         onStatusChange(next ? "PAUSED" : "ACTIVE")
       }
+      else {
+        const body = await res.json().catch(() => ({}))
+        setError(body.error || "Could not update agent status")
+      }
     } catch (e) {
-      console.error(e)
+      setError(e instanceof Error ? e.message : "Could not update agent status")
     }
   }
 
@@ -65,7 +75,8 @@ export function AgentSettings({
       const dailyMinor = decimalToMinorUnits(newDaily)
       const perPurchaseMinor = decimalToMinorUnits(newPerPurchase)
 
-      const res = await fetch(`/api/agents/${agentId}`, {
+      setError(null)
+      const res = await authedFetch(`/api/agents/${agentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -77,9 +88,12 @@ export function AgentSettings({
       if (res.ok) {
         setEditMode(false)
         onLimitsUpdated(newDaily, newPerPurchase)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setError(body.error || "Could not update mandate")
       }
     } catch (e) {
-      console.error(e)
+      setError(e instanceof Error ? e.message : "Could not update mandate")
     } finally {
       setIsSaving(false)
     }
@@ -194,6 +208,12 @@ export function AgentSettings({
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-xs text-danger">
+          {error}
+        </div>
+      )}
 
       {/* Emergency Authority Controls */}
       <div className="pt-4 border-t border-border space-y-3">
