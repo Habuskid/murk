@@ -154,6 +154,17 @@ export async function runSpikeC(): Promise<{
     console.log(
       `Verified external 402 with ${merchant.requirements.length} Celo requirement(s) from ${probeUrl}`
     )
+    for (const requirement of merchant.requirements) {
+      console.log(
+        JSON.stringify({
+          scheme: requirement.scheme,
+          network: requirement.network,
+          assetAddress: requirement.assetAddress,
+          amountRaw: requirement.amountRaw.toString(),
+          payTo: requirement.payTo,
+        })
+      )
+    }
     console.log("SPIKE C RESULT: PASSED\n")
 
     return {
