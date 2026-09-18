@@ -1,18 +1,40 @@
 "use client"
 
-import React, { FormEvent, useEffect, useState } from "react"
+import type { FormEvent, ReactNode } from "react"
+import { useEffect, useState } from "react"
+import { MurkLogoIcon, ShieldCheckIcon, WalletIcon } from "@/components/Icons"
 
 type AuthState = "loading" | "signed-out" | "signed-in"
 
-export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>("loading")
+type AuthGateProps = {
+  children: ReactNode
+  sandboxState?: "loading" | "signed-out" | "link-sent" | "signed-in"
+  sandboxEmail?: string
+}
+
+export function AuthGate({
+  children,
+  sandboxState,
+  sandboxEmail = "builder@example.com",
+}: AuthGateProps) {
+  const [authState, setAuthState] = useState<AuthState>(
+    sandboxState === "signed-in"
+      ? "signed-in"
+      : sandboxState === "signed-out" || sandboxState === "link-sent"
+        ? "signed-out"
+        : "loading"
+  )
   const [email, setEmail] = useState("")
-  const [submittedEmail, setSubmittedEmail] = useState("")
-  const [linkSent, setLinkSent] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState(
+    sandboxState === "link-sent" ? sandboxEmail : ""
+  )
+  const [linkSent, setLinkSent] = useState(sandboxState === "link-sent")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (sandboxState) return
+
     let cancelled = false
 
     async function loadSession() {
@@ -36,13 +58,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [sandboxState])
 
   if (authState === "loading") {
     return (
       <main className="flex min-h-[calc(100dvh-3rem)] items-center justify-center py-8">
-        <div className="rounded-2xl border border-[#E8E8E5] bg-white px-5 py-4 text-sm text-[#767676]">
-          Loading secure session...
+        <div className="flex items-center gap-3 text-sm text-text-secondary">
+          <MurkLogoIcon className="h-9 w-9" />
+          <div>
+            <div className="font-semibold text-text-primary">Opening Murk</div>
+            <div className="mt-0.5 text-xs">Checking your secure session…</div>
+          </div>
         </div>
       </main>
     )
@@ -57,6 +83,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     const normalized = email.trim().toLowerCase()
     if (!normalized) return
+
+    if (sandboxState) {
+      setSubmittedEmail(normalized)
+      setLinkSent(true)
+      return
+    }
 
     setIsSubmitting(true)
     setError(null)
@@ -89,85 +121,149 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <main className="flex min-h-[calc(100dvh-3rem)] items-center justify-center py-8">
-      <section className="w-full rounded-[30px] border border-[#E8E8E5] bg-white p-6 card-elevation sm:p-8">
-        <div className="mb-8">
-          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#171717] text-sm font-black tracking-tight text-white">
-            M
+    <main className="flex min-h-[calc(100dvh-3rem)] items-center py-8">
+      <div className="mx-auto grid w-full max-w-[900px] gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12">
+        <section className="px-1">
+          <div className="flex items-center gap-3">
+            <MurkLogoIcon className="h-10 w-10" />
+            <div>
+              <div className="text-[13px] font-bold tracking-[0.08em] text-text-primary">
+                MURK
+              </div>
+              <div className="mt-0.5 text-xs text-text-secondary">
+                Spending authority for agents
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-[28px] font-extrabold tracking-[-0.03em] text-[#111111]">
-            {linkSent ? "Check your email" : "Welcome to Murk"}
+          <h1 className="mt-7 max-w-[520px] text-[34px] font-semibold leading-[1.08] tracking-[-0.045em] text-text-primary sm:text-[42px]">
+            Control how your agent spends.
           </h1>
 
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#767676]">
-            {linkSent
-              ? `Open the secure sign-in link sent to ${submittedEmail}.`
-              : "Give your agents spending authority without giving up control."}
+          <p className="mt-4 max-w-[520px] text-sm leading-6 text-text-secondary">
+            Set limits in the currency you use. Murk checks them before the
+            agent signs a Celo payment.
           </p>
-        </div>
 
-        {linkSent ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 py-4 text-sm text-[#111111]">
-              Portal will return you to Murk after the email link is verified.
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setLinkSent(false)
-                setSubmittedEmail("")
-                setError(null)
-              }}
-              className="w-full py-2 text-xs font-semibold text-[#767676] transition hover:text-[#111111]"
-            >
-              Use a different email
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={sendMagicLink} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-xs font-semibold text-[#767676]"
-              >
-                Email address
-              </label>
-
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
-                inputMode="email"
-                required
-                placeholder="you@example.com"
-                className="h-14 w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-medium text-[#111111] outline-none transition placeholder:text-[#A2A2A2] focus:border-[#2F9CF4] focus:bg-white"
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-xs text-danger">
-                {error}
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:max-w-[520px] lg:grid-cols-1">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <ShieldCheckIcon className="h-4 w-4" strokeWidth={1.9} />
               </div>
-            )}
+              <div>
+                <div className="text-sm font-semibold text-text-primary">
+                  Policy before signing
+                </div>
+                <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
+                  Daily and per-purchase limits are checked before funds move.
+                </p>
+              </div>
+            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !email.trim()}
-              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? "Sending link..." : "Continue"}
-            </button>
-          </form>
-        )}
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-inset text-text-primary">
+                <WalletIcon className="h-4 w-4" strokeWidth={1.9} />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-text-primary">
+                  Separate execution wallet
+                </div>
+                <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">
+                  The agent only holds the funds you deliberately delegate.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <p className="mt-6 text-center text-[11px] leading-relaxed text-[#9A9A9A]">
-          Portal secures both your Murk sign-in and embedded Celo wallet.
-        </p>
-      </section>
+        <section className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
+          {linkSent ? (
+            <>
+              <div className="text-xs font-medium text-text-secondary">
+                Email sign-in
+              </div>
+              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-text-primary">
+                Check your inbox
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                Open the secure sign-in link sent to:
+              </p>
+
+              <div className="mt-4 rounded-[14px] border border-border bg-surface-inset px-4 py-3 font-mono text-xs text-text-primary">
+                {submittedEmail}
+              </div>
+
+              <p className="mt-4 text-xs leading-relaxed text-text-secondary">
+                After verification, Portal returns you to Murk and restores your
+                embedded wallet session.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLinkSent(false)
+                  setSubmittedEmail("")
+                  setError(null)
+                }}
+                className="mt-5 h-11 w-full rounded-xl border border-border bg-surface text-xs font-semibold text-text-primary transition hover:bg-surface-inset"
+              >
+                Use another email
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="text-xs font-medium text-text-secondary">
+                Email sign-in
+              </div>
+              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-text-primary">
+                Sign in to Murk
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                No password. We’ll send one secure link to your email.
+              </p>
+
+              <form onSubmit={sendMagicLink} className="mt-5">
+                <label
+                  htmlFor="email"
+                  className="mb-1.5 block text-xs font-medium text-text-secondary"
+                >
+                  Email address
+                </label>
+
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  inputMode="email"
+                  required
+                  placeholder="you@example.com"
+                  className="h-12 w-full rounded-xl border border-border bg-surface-inset px-3.5 text-sm font-medium text-text-primary outline-none transition placeholder:text-text-tertiary focus:border-accent focus:bg-surface"
+                />
+
+                {error && (
+                  <div className="mt-3 rounded-xl bg-danger-soft px-3.5 py-3 text-xs text-danger">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !email.trim()}
+                  className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-accent px-4 text-sm font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {isSubmitting ? "Sending…" : "Send sign-in link"}
+                </button>
+              </form>
+
+              <p className="mt-4 text-[11px] leading-relaxed text-text-secondary">
+                Portal secures both your Murk session and embedded Celo wallet.
+              </p>
+            </>
+          )}
+        </section>
+      </div>
     </main>
   )
 }
