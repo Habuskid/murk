@@ -1,5 +1,9 @@
 name: Murk CI
 
+concurrency:
+  group: murk-ci-main
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
