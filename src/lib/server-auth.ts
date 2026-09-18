@@ -133,6 +133,10 @@ export function authErrorResponse(error: unknown): {
     return { status: 401, body: { error: message } }
   }
 
+  if (message === "AGENT_NOT_FOUND") {
+    return { status: 404, body: { error: "Agent not found" } }
+  }
+
   if (message === "CDP_SERVER_AUTH_NOT_CONFIGURED") {
     return { status: 503, body: { error: message } }
   }
