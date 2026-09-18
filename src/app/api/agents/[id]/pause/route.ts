@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { repository } from "@/db/repository"
+import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const ownerId = repository.getDemoUserId()
-  const agent = repository.findAgentById(params.id, ownerId)
+  try {
+    const { agent } = await requireOwnedAgent(req, params.id)
 
-  if (!agent) {
-    return NextResponse.json({ error: "Agent not found" }, { status: 404 })
+    agent.status = "PAUSED"
+    agent.updatedAt = new Date()
+    repository.saveAgent(agent)
+
+    return NextResponse.json({ success: true, status: agent.status })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    return NextResponse.json(mapped.body, { status: mapped.status })
   }
-
-  agent.status = "PAUSED"
-  agent.updatedAt = new Date()
-  repository.saveAgent(agent)
-
-  return NextResponse.json({ success: true, status: agent.status })
 }
