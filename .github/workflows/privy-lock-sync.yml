@@ -1,0 +1,58 @@
+name: Privy Lock Sync
+
+on:
+  push:
+    branches:
+      - feat/privy-auth
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/privy-auth
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Sync npm lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit lockfile if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json already current"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore(deps): sync Privy lockfile"
+            git push origin HEAD:feat/privy-auth
+          fi
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Check migration history
+        run: npm run db:check
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_MURK_NETWORK: testnet
+          NEXT_PUBLIC_PRIVY_APP_ID: ci_privy_app_id
+        run: npm run build
