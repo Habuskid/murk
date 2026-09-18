@@ -20,16 +20,12 @@ interface TokenBalance {
 interface AgentFundsProps {
   walletAddress: string
   balances: TokenBalance[]
-  currency?: string
-  exchangeRatePerUsd?: number
   onTopUp?: () => void
 }
 
 export function AgentFunds({
   walletAddress,
   balances,
-  currency = "NGN",
-  exchangeRatePerUsd = 1330,
 }: AgentFundsProps) {
   const [copied, setCopied] = useState(false)
 
@@ -88,12 +84,6 @@ export function AgentFunds({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         {balances.map((token) => {
           const isUsdc = token.symbol === "USDC"
-          const parsedAmount = parseFloat(token.formattedBalance) || 0
-          const fiatValue = (parsedAmount * exchangeRatePerUsd).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-
           return (
             <div
               key={token.symbol}
@@ -118,8 +108,8 @@ export function AgentFunds({
                 <div className="text-2xl font-extrabold text-text-primary tabular-nums tracking-tight">
                   {token.formattedBalance} <span className="text-xs font-normal text-text-secondary">{token.symbol}</span>
                 </div>
-                <div className="text-xs text-text-secondary mt-1 tabular-nums">
-                  ≈ {currency} {fiatValue}
+                <div className="text-xs text-text-secondary mt-1">
+                  Live Celo balance
                 </div>
               </div>
             </div>
