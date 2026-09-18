@@ -14,7 +14,8 @@
     "spike:c": "tsx spikes/spike-c-x402-purchase.ts",
     "spike:d": "tsx spikes/spike-d-multi-asset.ts",
     "spike:e": "tsx spikes/spike-e-rate-provider.ts",
-    "spikes": "tsx spikes/run-all-spikes.ts"
+    "spikes": "tsx spikes/run-all-spikes.ts",
+    "ui:capture": "node scripts/capture-ui.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
@@ -41,6 +42,7 @@
     "tailwindcss": "^3.4.14",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.3"
+    "vitest": "^2.1.3",
+    "@playwright/test": "^1.51.0"
   }
 }
