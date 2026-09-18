@@ -3,10 +3,15 @@ import type { Hex } from "viem"
 import { NextRequest, NextResponse } from "next/server"
 import { repository } from "@/db/repository"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
-import { selectStableFeeCurrency } from "@/services/celo"
+import {
+  CELO_CAIP2_NETWORK,
+  CELO_CHAIN_ID,
+  selectStableFeeCurrency,
+} from "@/services/celo"
 import {
   buildBindWalletTransaction,
   buildRegisterTransaction,
+  CELO_ERC8004_IDENTITY_REGISTRY,
   getErc8004Status,
   parseRegisteredAgent,
   verifyBoundWallet,
@@ -144,7 +149,7 @@ export async function POST(
       })
 
       return NextResponse.json({
-        chainId: "eip155:42220",
+        chainId: CELO_CAIP2_NETWORK,
         transaction: {
           from: owner.walletAddress,
           to: tx.to,
@@ -188,10 +193,10 @@ export async function POST(
         id: `tx_erc8004_register_${action.txHash.slice(2, 18)}`,
         walletId: userWallet.id,
         purpose: "ERC8004_REGISTER",
-        chainId: 42220,
+        chainId: CELO_CHAIN_ID,
         txHash: action.txHash,
         fromAddress: owner.walletAddress,
-        toAddress: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+        toAddress: CELO_ERC8004_IDENTITY_REGISTRY,
         status: "CONFIRMED",
         submittedAt: new Date(),
         confirmedAt: new Date(),
@@ -250,7 +255,7 @@ export async function POST(
       })
 
       return NextResponse.json({
-        chainId: "eip155:42220",
+        chainId: CELO_CAIP2_NETWORK,
         transaction: {
           from: owner.walletAddress,
           to: tx.to,
@@ -274,10 +279,10 @@ export async function POST(
       id: `tx_erc8004_bind_${action.txHash.slice(2, 18)}`,
       walletId: userWallet.id,
       purpose: "ERC8004_BIND_AGENT_WALLET",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       txHash: action.txHash,
       fromAddress: owner.walletAddress,
-      toAddress: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      toAddress: CELO_ERC8004_IDENTITY_REGISTRY,
       status: "CONFIRMED",
       submittedAt: new Date(),
       confirmedAt: new Date(),
