@@ -1,4 +1,4 @@
-import { toDataSuffix, verifyTx } from "@celo/attribution-tags"
+import { Attribution } from "ox/erc8021"
 import { concat, type Hex } from "viem"
 import { getCeloClient } from "./celo"
 
@@ -13,6 +13,10 @@ export function getConfiguredAttributionCode(): string | null {
   }
 
   return code
+}
+
+function toDataSuffix(code: string): Hex {
+  return Attribution.toDataSuffix({ codes: [code] }) as Hex
 }
 
 export function appendMurkAttribution(data: Hex): Hex {
@@ -45,16 +49,25 @@ export async function verifyMurkAttribution(hash: Hex): Promise<{
     }
   }
 
-  const result = await verifyTx({
-    client: getCeloClient(),
-    hash,
-  })
+  try {
+    const tx = await getCeloClient().getTransaction({ hash })
+    const decoded = Attribution.fromData(tx.input as Hex)
 
-  const observedCodes = result?.codes || []
+    const observedCodes =
+      decoded && "codes" in decoded && Array.isArray(decoded.codes)
+        ? [...decoded.codes]
+        : []
 
-  return {
-    configuredCode,
-    verified: observedCodes.includes(configuredCode),
-    observedCodes,
+    return {
+      configuredCode,
+      verified: observedCodes.includes(configuredCode),
+      observedCodes,
+    }
+  } catch {
+    return {
+      configuredCode,
+      verified: false,
+      observedCodes: [],
+    }
   }
 }
