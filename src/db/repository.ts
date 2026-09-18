@@ -264,6 +264,20 @@ class Store {
     return this.purchases.get(id) || null
   }
 
+  listActivityByOwner(ownerUserId: string, agentId?: string): ActivityItem[] {
+    const ownedAgentIds = new Set(
+      this.listAgentsByOwner(ownerUserId).map((agent) => agent.id)
+    )
+
+    if (agentId && !ownedAgentIds.has(agentId)) {
+      return []
+    }
+
+    return this.listActivity(agentId).filter((item) =>
+      ownedAgentIds.has(item.agentId)
+    )
+  }
+
   listActivity(agentId?: string): ActivityItem[] {
     const items: ActivityItem[] = []
     for (const p of this.purchases.values()) {
