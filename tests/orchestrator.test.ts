@@ -428,6 +428,127 @@ describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
     expect(result.receipt.remainingMandateMinor).toBe("366973")
   })
 
+  it("preserves a known settlement hash when verification becomes uncertain", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const txHash =
+      "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as `0x${string}`
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn()
+    const releaseSpend = vi.fn()
+    const paymentExecutor = vi.fn().mockRejectedValue(
+      Object.assign(new Error("X402_PAYMENT_OUTCOME_UNCERTAIN"), {
+        code: "X402_PAYMENT_OUTCOME_UNCERTAIN",
+        txHash,
+      })
+    )
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_uncertain_with_hash",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("PAYMENT_FAILED")
+    expect(result.receipt.txHash).toBe(txHash)
+    expect(result.receipt.resourceDeliveryStatus).toBe(
+      "PAYMENT_OUTCOME_UNCERTAIN"
+    )
+    expect(result.receipt.reasonCodes).toContain("PAYMENT_OUTCOME_UNCERTAIN")
+    expect(result.evidence?.settlementTxHash).toBe(txHash)
+    expect(releaseSpend).not.toHaveBeenCalled()
+    expect(commitSpend).not.toHaveBeenCalled()
+    expect(result.receipt.remainingMandateMinor).toBe("366973")
+  })
+
+  it("releases reserved authority when the known settlement transaction reverted", async () => {
+    vi.spyOn(x402Module, "requestResource").mockResolvedValueOnce({
+      type: "PAYMENT_REQUIRED",
+      status: 402,
+      requirements: [
+        {
+          scheme: "exact",
+          network: "eip155:42220",
+          chainId: 42220,
+          assetAddress: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          amountRaw: 1000000n,
+          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
+        },
+      ],
+      rawHeaders: {},
+      rawPayload: {},
+    })
+
+    const txHash =
+      "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" as `0x${string}`
+    const reserveSpend = vi.fn().mockResolvedValue({
+      remainingAfterMinor: 366973n,
+    })
+    const commitSpend = vi.fn()
+    const releaseSpend = vi.fn().mockResolvedValue(undefined)
+    const paymentExecutor = vi.fn().mockRejectedValue(
+      Object.assign(new Error("X402_SETTLEMENT_REVERTED"), {
+        code: "X402_SETTLEMENT_REVERTED",
+        txHash,
+      })
+    )
+
+    const result = await executePurchaseWorkflow({
+      purchaseId: "pur_reverted_settlement",
+      agentId: "agent_research_01",
+      agentName: "Research Agent",
+      agentAddress,
+      agentStatus: "ACTIVE",
+      mandate: goldenMandate,
+      allowedAssetSymbols: ["USDC"],
+      merchantUrl: "https://api.research-provider.com",
+      resourceUrl: "https://api.research-provider.com/v1/dataset",
+      overridePortfolio: mockPortfolio,
+      overrideRateQuote: fixedRateQuote,
+      reserveSpend,
+      commitSpend,
+      releaseSpend,
+      paymentExecutor,
+    })
+
+    expect(result.finalState).toBe("PAYMENT_FAILED")
+    expect(result.receipt.txHash).toBe(txHash)
+    expect(result.receipt.resourceDeliveryStatus).toBe("SETTLEMENT_REVERTED")
+    expect(result.receipt.reasonCodes).toContain("X402_SETTLEMENT_REVERTED")
+    expect(releaseSpend).toHaveBeenCalledWith("pur_reverted_settlement")
+    expect(commitSpend).not.toHaveBeenCalled()
+    expect(result.receipt.remainingMandateMinor).toBe("500000")
+  })
+
   it("commits spend after settlement and never repays when resource delivery fails", async () => {
     vi.spyOn(x402Module, "requestResource")
       .mockResolvedValueOnce({
