@@ -1,20 +1,13 @@
 import { createHash } from "node:crypto"
-import {
-  decodeEventLog,
-  parseAbi,
-  type Hex,
-} from "viem"
+import { type Hex } from "viem"
 import { NextRequest, NextResponse } from "next/server"
 import { FundAgentSchema } from "@/lib/validation"
 import { repository } from "@/db/repository"
 import { CELO_TOKENS, getCeloClient } from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
+import { hasExactErc20Transfer } from "@/services/funding"
 
 export const dynamic = "force-dynamic"
-
-const TRANSFER_ABI = parseAbi([
-  "event Transfer(address indexed from, address indexed to, uint256 value)",
-])
 
 function requestHash(input: {
   userId: string
@@ -102,42 +95,15 @@ export async function POST(
       )
     }
 
-    const expectedFrom = owner.walletAddress.toLowerCase()
-    const expectedTo = agent.walletAddress.toLowerCase()
     const expectedAmount = BigInt(validated.amountRaw)
 
-    let verifiedTransfer = false
-
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== token.address.toLowerCase()) {
-        continue
-      }
-
-      try {
-        const decoded = decodeEventLog({
-          abi: TRANSFER_ABI,
-          data: log.data,
-          topics: log.topics,
-        })
-
-        if (decoded.eventName !== "Transfer") continue
-
-        const from = decoded.args.from.toLowerCase()
-        const to = decoded.args.to.toLowerCase()
-        const value = decoded.args.value
-
-        if (
-          from === expectedFrom &&
-          to === expectedTo &&
-          value === expectedAmount
-        ) {
-          verifiedTransfer = true
-          break
-        }
-      } catch {
-        continue
-      }
-    }
+    const verifiedTransfer = hasExactErc20Transfer({
+      logs: receipt.logs,
+      tokenAddress: token.address,
+      expectedFrom: owner.walletAddress,
+      expectedTo: agent.walletAddress,
+      expectedAmount,
+    })
 
     if (!verifiedTransfer) {
       return NextResponse.json(
