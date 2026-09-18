@@ -12,7 +12,7 @@ export async function GET(
   try {
     const agent = await repository.findAgentById(id)
 
-    if (!agent || !agent.erc8004AgentId) {
+    if (!agent) {
       return NextResponse.json(
         { error: "Agent identity not found" },
         { status: 404 }
