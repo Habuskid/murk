@@ -8,7 +8,7 @@
  */
 
 import { CdpClient } from "@coinbase/cdp-sdk"
-import { fromCdpEvmAccount } from "@coinbase/cdp-sdk/x402"
+import { toClientEvmSigner, type ClientEvmSigner } from "@x402/evm"
 import { getAgentSigner } from "./celo"
 
 let cdpClient: CdpClient | null = null
@@ -45,7 +45,7 @@ function accountNameForAgent(agentId: string): string {
 export async function resolveAgentExecutionWallet(agentId: string): Promise<{
   address: `0x${string}`
   provider: "CDP_SERVER_EOA" | "VIEM_SERVER_EOA"
-  x402Signer: ReturnType<typeof fromCdpEvmAccount> | ReturnType<typeof getAgentSigner>
+  x402Signer: ClientEvmSigner
 }> {
   if (isCdpServerWalletConfigured()) {
     const account = await getCdpClient().evm.getOrCreateAccount({
@@ -55,7 +55,7 @@ export async function resolveAgentExecutionWallet(agentId: string): Promise<{
     return {
       address: account.address as `0x${string}`,
       provider: "CDP_SERVER_EOA",
-      x402Signer: fromCdpEvmAccount(account),
+      x402Signer: toClientEvmSigner(account),
     }
   }
 
