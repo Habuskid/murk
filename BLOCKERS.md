@@ -4,9 +4,9 @@ This file records unresolved blockers that affect the locked Murk golden path.
 
 Coding agents must not hide, bypass, simulate, or silently replace these blockers.
 
-## B1. Real paid external Celo x402 execution
+## B1. Real paid x402 execution
 
-Status: BLOCKING END-TO-END
+Status: BLOCKING LIVE END-TO-END
 
 CI verifies a real independent 402 challenge from:
 
@@ -19,10 +19,14 @@ Already verified:
 - payment-requirement parsing;
 - current merchant discovery.
 
+Murk now has a guarded Celo Sepolia settlement harness using the official x402 server packages. It can prove the buyer, policy, signing, facilitator settlement, onchain transfer, accounting, and delivery path once staging is funded. Because Murk hosts that endpoint, it is not independent merchant evidence.
+
 Still required:
 
-- fund a real Murk execution wallet;
-- execute the exact Murk-approved x402 payment;
+- deploy/fund a real Murk Sepolia execution wallet;
+- execute the exact Murk-approved x402 payment against the Sepolia engineering harness;
+- preserve that transaction as engineering evidence;
+- execute the final independent-merchant payment proof (Sepolia if available, otherwise the smallest mainnet canary);
 - obtain confirmed Celo settlement evidence;
 - obtain the real paid resource;
 - persist the resulting receipt/audit evidence;
@@ -118,7 +122,7 @@ Do not add arbitrary withdrawal destinations.
 
 ## B7. Live ERC-8004 registration and binding
 
-Status: IMPLEMENTED IN CODE, LIVE VERIFICATION REQUIRED
+Status: IMPLEMENTED IN CODE, SEPOLIA VERIFICATION REQUIRED NEXT
 
 Implemented:
 
@@ -134,9 +138,10 @@ Implemented:
 Still required:
 
 - deploy Murk so the metadata URI is publicly resolvable;
-- register on Celo mainnet through the real Portal wallet;
+- register on Celo Sepolia through the real Portal wallet;
 - bind the real derived execution wallet;
-- preserve explorer evidence.
+- preserve Sepolia explorer evidence;
+- repeat on mainnet before claiming mainnet completion.
 
 Do not seed or display a placeholder agent ID as verified.
 
@@ -205,13 +210,22 @@ Required evidence:
 
 Do not use the UI sandbox or local self-merchant as final blocked-scenario evidence.
 
-## B11. Final deployment environment
+## B11. Hosted staging and final deployment environment
 
 Status: NOT DEPLOYED
 
 Murk has not yet been deployed to the public production/demo URL.
 
-Before deployment:
+Before Sepolia deployment:
+
+- create/link the dedicated Murk staging Vercel project;
+- provision/verify an isolated staging Neon database through the Vercel-managed integration;
+- configure the GitHub `staging` environment secrets;
+- configure Portal callbacks for the stable staging origin;
+- configure the Celo x402 Sepolia API key and seller address;
+- run the guarded staging workflow.
+
+Before mainnet deployment:
 
 - configure production environment variables;
 - provision/verify the dedicated Murk Neon database and apply the committed migration;
