@@ -1,17 +1,18 @@
 /**
  * Live x402 v2 payment executor for Murk's server-side agent wallet.
  *
- * The Murk policy engine chooses and approves an exact payment requirement first.
- * This adapter then configures x402's selector to accept only that already-approved
- * requirement. It must never silently choose a different token, amount, recipient,
- * network, or scheme.
+ * Murk policy approves one exact payment requirement before this adapter runs.
+ * The executor constrains x402 to that exact requirement, then independently
+ * verifies the resulting Celo settlement receipt contains the exact ERC-20
+ * transfer Murk approved.
  */
 
 import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { wrapFetchWithPayment } from "@x402/fetch"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
-import { CELO_RPC_URL } from "./celo"
+import { CELO_RPC_URL, getCeloClient } from "./celo"
 import { resolveAgentExecutionWallet } from "./agent-wallet"
+import { hasExactErc20Transfer } from "./funding"
 
 export type ApprovedX402Payment = {
   agentId: string
@@ -29,13 +30,26 @@ export type LiveX402PaymentResult = {
 
 export class X402PaymentOutcomeUncertainError extends Error {
   readonly code = "X402_PAYMENT_OUTCOME_UNCERTAIN"
+  readonly txHash?: `0x${string}`
 
-  constructor(cause?: unknown) {
+  constructor(cause?: unknown, txHash?: `0x${string}`) {
     super("X402_PAYMENT_OUTCOME_UNCERTAIN")
     this.name = "X402PaymentOutcomeUncertainError"
+    this.txHash = txHash
     if (cause !== undefined) {
       ;(this as Error & { cause?: unknown }).cause = cause
     }
+  }
+}
+
+export class X402SettlementRevertedError extends Error {
+  readonly code = "X402_SETTLEMENT_REVERTED"
+  readonly txHash: `0x${string}`
+
+  constructor(txHash: `0x${string}`) {
+    super("X402_SETTLEMENT_REVERTED")
+    this.name = "X402SettlementRevertedError"
+    this.txHash = txHash
   }
 }
 
@@ -63,7 +77,9 @@ export async function executeApprovedX402Payment(
     schemes: [
       {
         network: "eip155:42220",
-        client: new ExactEvmScheme(executionWallet.x402Signer, { rpcUrl: CELO_RPC_URL }),
+        client: new ExactEvmScheme(executionWallet.x402Signer, {
+          rpcUrl: CELO_RPC_URL,
+        }),
       },
     ],
     // Murk already performs stricter local-currency policy evaluation before
@@ -75,7 +91,8 @@ export async function executeApprovedX402Payment(
         return (
           candidate.scheme === "exact" &&
           candidate.network === "eip155:42220" &&
-          normalizeAddress(candidate.asset) === normalizeAddress(approved.assetAddress) &&
+          normalizeAddress(candidate.asset) ===
+            normalizeAddress(approved.assetAddress) &&
           BigInt(candidate.amount) === approved.amountRaw &&
           normalizeAddress(candidate.payTo) === normalizeAddress(approved.payTo)
         )
@@ -101,9 +118,7 @@ export async function executeApprovedX402Payment(
     })
   } catch (cause) {
     // Once the x402 wrapper is invoked, Murk cannot prove whether failure
-    // occurred before or after payment submission. Treat transport failures as
-    // financially uncertain and preserve the spend reservation for
-    // reconciliation instead of releasing authority that may already be spent.
+    // occurred before or after payment submission. Keep spend reserved.
     throw new X402PaymentOutcomeUncertainError(cause)
   }
 
@@ -122,6 +137,39 @@ export async function executeApprovedX402Payment(
   const txHash = settlement.transaction as `0x${string}`
   if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
     throw new Error("X402_SETTLEMENT_TX_HASH_INVALID")
+  }
+
+  // From this point onward a settlement hash exists. Any inability to prove
+  // the final onchain state is financially uncertain and must never release
+  // the spend reservation or trigger another automatic payment.
+  let receipt
+  try {
+    receipt = await getCeloClient().waitForTransactionReceipt({
+      hash: txHash,
+      confirmations: 1,
+      timeout: 60_000,
+    })
+  } catch (cause) {
+    throw new X402PaymentOutcomeUncertainError(cause, txHash)
+  }
+
+  if (receipt.status !== "success") {
+    throw new X402SettlementRevertedError(txHash)
+  }
+
+  const exactTransfer = hasExactErc20Transfer({
+    logs: receipt.logs,
+    tokenAddress: approved.assetAddress as `0x${string}`,
+    expectedFrom: executionWallet.address,
+    expectedTo: approved.payTo as `0x${string}`,
+    expectedAmount: approved.amountRaw,
+  })
+
+  if (!exactTransfer) {
+    throw new X402PaymentOutcomeUncertainError(
+      new Error("X402_SETTLEMENT_TRANSFER_MISMATCH"),
+      txHash
+    )
   }
 
   const deliveredResource = await readDeliveredBody(response)
