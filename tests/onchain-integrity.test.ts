@@ -13,6 +13,7 @@ import {
 } from "../src/services/attribution"
 import {
   CELO_TOKENS,
+  IS_CELO_SEPOLIA,
   tokenRawToFeeUnits,
 } from "../src/services/celo"
 import {
@@ -128,16 +129,22 @@ describe("onchain integrity", () => {
     expect(decoded && "codes" in decoded ? decoded.codes : []).toContain("murk")
   })
 
-  it("uses verified mainnet fee adapters and normalizes 6-decimal stablecoins", () => {
+  it("uses only verified fee configuration for the active Celo network", () => {
     const usdc = CELO_TOKENS.USDC
-    const usdt = CELO_TOKENS.USDT
-
     expect(usdc).not.toBeNull()
-    expect(usdt).not.toBeNull()
-    if (!usdc || !usdt) throw new Error("MAINNET_TOKEN_CONFIG_MISSING")
+    if (!usdc) throw new Error("USDC_CONFIG_MISSING")
 
-    expect(usdc.feeCurrencyAddress).not.toBe(usdc.address)
-    expect(usdt.feeCurrencyAddress).not.toBe(usdt.address)
+    if (IS_CELO_SEPOLIA) {
+      expect(usdc.feeCurrencyAddress).toBeNull()
+      expect(CELO_TOKENS.USDT).toBeNull()
+    } else {
+      const usdt = CELO_TOKENS.USDT
+      expect(usdt).not.toBeNull()
+      if (!usdt) throw new Error("MAINNET_USDT_CONFIG_MISSING")
+
+      expect(usdc.feeCurrencyAddress).not.toBe(usdc.address)
+      expect(usdt.feeCurrencyAddress).not.toBe(usdt.address)
+    }
 
     expect(tokenRawToFeeUnits(1_000_000n, 6)).toBe(
       1_000_000_000_000_000_000n
