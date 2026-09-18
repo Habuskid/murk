@@ -584,10 +584,26 @@ export async function executePurchaseWorkflow(
       evidence,
     }
   } catch (err: any) {
-    const failedAfterSettlement = Boolean(txHash)
     const paymentOutcomeUncertain =
       err?.code === "X402_PAYMENT_OUTCOME_UNCERTAIN" ||
       err?.message === "X402_PAYMENT_OUTCOME_UNCERTAIN"
+    const settlementReverted =
+      err?.code === "X402_SETTLEMENT_REVERTED" ||
+      err?.message === "X402_SETTLEMENT_REVERTED"
+
+    const errorTxHash =
+      typeof err?.txHash === "string" &&
+      /^0x[a-fA-F0-9]{64}$/.test(err.txHash)
+        ? (err.txHash as `0x${string}`)
+        : null
+
+    if (!txHash && errorTxHash) {
+      txHash = errorTxHash
+      evidence.settlementTxHash = errorTxHash
+    }
+
+    const failedAfterSettlement =
+      Boolean(txHash) && !paymentOutcomeUncertain && !settlementReverted
 
     if (
       !failedAfterSettlement &&
@@ -608,7 +624,8 @@ export async function executePurchaseWorkflow(
         )
       }
     }
-    const failureState: OrchestrationState = failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
+    const failureState: OrchestrationState =
+      failedAfterSettlement ? "RESOURCE_FAILED" : "PAYMENT_FAILED"
 
     const remainingAfterFailure =
       failedAfterSettlement || paymentOutcomeUncertain
@@ -656,12 +673,16 @@ export async function executePurchaseWorkflow(
             ? "RESOURCE_NOT_DELIVERED"
             : paymentOutcomeUncertain
               ? "PAYMENT_OUTCOME_UNCERTAIN"
-              : "SYSTEM_ERROR",
+              : settlementReverted
+                ? "X402_SETTLEMENT_REVERTED"
+                : "SYSTEM_ERROR",
         ],
         humanReadableReasons: [
           paymentOutcomeUncertain
             ? "Payment outcome is uncertain; spending authority remains reserved until reconciliation"
-            : err.message,
+            : settlementReverted
+              ? "Settlement reverted onchain; no payment was completed"
+              : err.message,
         ],
         network: "Celo Mainnet (42220)",
         chainId: 42220,
@@ -670,7 +691,9 @@ export async function executePurchaseWorkflow(
           ? "FAILED_AFTER_PAYMENT"
           : paymentOutcomeUncertain
             ? "PAYMENT_OUTCOME_UNCERTAIN"
-            : "FAILED",
+            : settlementReverted
+              ? "SETTLEMENT_REVERTED"
+              : "FAILED",
         remainingMandateMinor: remainingAfterFailure.toString(),
         remainingMandateFormatted: formatMoneyMinor(remainingAfterFailure, 2),
         createdAt: new Date().toISOString(),
