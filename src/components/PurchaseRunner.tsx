@@ -23,6 +23,11 @@ interface PurchaseRunnerProps {
 const APPROVED_RESOURCE_URL = process.env.NEXT_PUBLIC_X402_RESOURCE_URL || ""
 const BLOCKED_RESOURCE_URL =
   process.env.NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL || APPROVED_RESOURCE_URL
+const IS_TESTNET = process.env.NEXT_PUBLIC_MURK_NETWORK !== "mainnet"
+const TESTNET_HARNESS_PATH = "/api/testnet/x402-resource"
+const EXPLORER_TX_BASE = IS_TESTNET
+  ? "https://celo-sepolia.blockscout.com/tx/"
+  : "https://celoscan.io/tx/"
 
 const FLOW = ["Challenge", "Policy", "Settlement", "Resource"]
 
@@ -43,16 +48,18 @@ export function PurchaseRunner({
   const isBlocked = selectedScenario === "blocked"
   const canRunPurchase = agentStatus === "ACTIVE"
   const configuredResourceUrl = isBlocked ? BLOCKED_RESOURCE_URL : APPROVED_RESOURCE_URL
-  const isConfigured = Boolean(configuredResourceUrl)
+  const useTestnetHarness = IS_TESTNET && !configuredResourceUrl
+  const isConfigured = Boolean(configuredResourceUrl) || useTestnetHarness
 
   const merchantName = useMemo(() => {
+    if (useTestnetHarness) return "Murk Sepolia x402 harness"
     if (!configuredResourceUrl) return "Not configured"
     try {
       return new URL(configuredResourceUrl).hostname
     } catch {
       return configuredResourceUrl
     }
-  }, [configuredResourceUrl])
+  }, [configuredResourceUrl, useTestnetHarness])
 
   const progressIndex =
     currentStepIndex < 0 ? -1 : Math.min(3, Math.floor((currentStepIndex / 5) * 4))
@@ -75,7 +82,7 @@ export function PurchaseRunner({
     setRunError(null)
     setCurrentStepIndex(0)
 
-    if (!configuredResourceUrl) {
+    if (!configuredResourceUrl && !useTestnetHarness) {
       setRunError(
         isBlocked
           ? "No over-limit x402 resource is configured."
@@ -87,10 +94,13 @@ export function PurchaseRunner({
     }
 
     try {
-      const resource = new URL(configuredResourceUrl)
+      const resourceUrl = useTestnetHarness
+        ? new URL(TESTNET_HARNESS_PATH, window.location.origin).toString()
+        : configuredResourceUrl
+      const resource = new URL(resourceUrl)
       const payload = {
         merchantUrl: resource.origin,
-        resourceUrl: configuredResourceUrl,
+        resourceUrl,
         idempotencyKey: `run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       }
 
@@ -319,7 +329,9 @@ export function PurchaseRunner({
               </div>
               <div className="mt-1 text-[11px] text-text-secondary">
                 {activeReceipt.policyDecision === "APPROVED"
-                  ? "Celo mainnet"
+                  ? IS_TESTNET
+                    ? "Celo Sepolia"
+                    : "Celo mainnet"
                   : activeReceipt.humanReadableReasons?.[0] || "Policy rejected"}
               </div>
             </div>
@@ -363,7 +375,7 @@ export function PurchaseRunner({
                 <dd>
                   {activeReceipt.txHash ? (
                     <a
-                      href={`https://celoscan.io/tx/${activeReceipt.txHash}`}
+                      href={`${EXPLORER_TX_BASE}${activeReceipt.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 font-mono text-accent"
