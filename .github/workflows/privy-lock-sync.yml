@@ -28,8 +28,10 @@ jobs:
       - name: Fast-forward to latest feature branch
         run: git pull --ff-only origin feat/privy-auth
 
-      - name: Sync npm lockfile
-        run: npm install --package-lock-only --ignore-scripts
+      - name: Regenerate npm lockfile
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts
 
       - name: Commit lockfile if changed
         shell: bash
