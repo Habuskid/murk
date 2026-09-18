@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises"
 import { and, desc, eq } from "drizzle-orm"
 import { getDb, schema } from "../src/db/index"
 import { repository } from "../src/db/repository"
-import { getCeloClient } from "../src/services/celo"
+import { CELO_CAIP2_NETWORK, CELO_CHAIN_ID, getCeloClient } from "../src/services/celo"
 import { hasExactErc20Transfer } from "../src/services/funding"
 import { getErc8004Status } from "../src/services/erc8004"
 import {
@@ -112,7 +112,7 @@ async function main() {
 
   expect(paymentRequirement, "X402_PAYMENT_REQUIREMENT_NOT_PERSISTED")
   expect(
-    paymentRequirement.network === "eip155:42220",
+    paymentRequirement.network === CELO_CAIP2_NETWORK,
     "X402_REQUIREMENT_WRONG_NETWORK"
   )
 
@@ -339,7 +339,7 @@ async function main() {
 
   const evidence = {
     verifiedAt: new Date().toISOString(),
-    chainId: 42220,
+    chainId: CELO_CHAIN_ID,
     agent: {
       internalId: agent.id,
       executionWallet: agent.walletAddress,
