@@ -19,6 +19,7 @@ import {
   CELO_CHAIN,
   CELO_CHAIN_ID,
   CELO_DEFAULT_RPC_URL,
+  CELO_NETWORK_LABEL,
   CELO_TOKENS,
   IS_CELO_TESTNET,
 } from "../config/celo-network"
@@ -29,6 +30,8 @@ export {
   CELO_TOKENS,
 }
 export const CELO_CAIP2_NETWORK = CELO_CAIP2
+export const CELO_NETWORK_NAME = CELO_NETWORK_LABEL
+export const CELO_SEPOLIA_CHAIN_ID = 11142220
 export const IS_CELO_SEPOLIA = IS_CELO_TESTNET
 
 export const CELO_RPC_URL =
