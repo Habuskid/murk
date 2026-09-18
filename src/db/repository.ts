@@ -113,74 +113,8 @@ class Store {
   idempotency: Map<string, { result: any; createdAt: Date }> = new Map()
 
   constructor() {
-    // Seed default demo user and initial state
-    const demoUser: UserRecord = {
-      id: "usr_demo_01",
-      providerUserId: "cdp_usr_demo_01",
-      email: "demo@murk.finance",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    this.users.set(demoUser.id, demoUser)
-
-    const userWallet: WalletRecord = {
-      id: "wal_user_01",
-      userId: demoUser.id,
-      type: "USER",
-      address: "0x9e7e2eB7a59B4f91C12Cb3bbBcD929825A4B2b8D",
-      provider: "CDP_EMBEDDED_WALLET",
-      chainId: 42220,
-      createdAt: new Date(),
-    }
-    this.wallets.set(userWallet.id, userWallet)
-
-    const agentWallet: WalletRecord = {
-      id: "wal_agent_01",
-      agentId: "agent_demo_01",
-      type: "AGENT",
-      address: "0xfb538BBe2e2b4BC4A53f5916f3998c7bEF6eBCE5",
-      provider: "VIEM_SERVER_EOA",
-      chainId: 42220,
-      createdAt: new Date(),
-    }
-    this.wallets.set(agentWallet.id, agentWallet)
-
-    const demoAgent: AgentRecord = {
-      id: "agent_demo_01",
-      ownerUserId: demoUser.id,
-      name: "Research Agent",
-      status: "ACTIVE",
-      accountingCurrency: "NGN",
-      timezone: "Africa/Lagos",
-      walletId: agentWallet.id,
-      walletAddress: agentWallet.address,
-      erc8004AgentId: "8004_murk_research_01",
-      allowedAssets: ["USDC", "USDT"],
-      minimumReserves: { USDC: 100000n },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    this.agents.set(demoAgent.id, demoAgent)
-
-    const demoMandate: MandateRecord = {
-      id: "man_demo_01",
-      agentId: demoAgent.id,
-      version: 1,
-      dailyLimitMinor: 500000n, // NGN 5,000.00
-      perPurchaseLimitMinor: 200000n, // NGN 2,000.00
-      accountingCurrency: "NGN",
-      status: "ACTIVE",
-      spentTodayMinor: 0n,
-      reservedTodayMinor: 0n,
-      effectiveFrom: new Date(),
-      supersededAt: null,
-      createdAt: new Date(),
-    }
-    this.mandates.set(demoAgent.id, [demoMandate])
-  }
-
-  getDemoUserId(): string {
-    return "usr_demo_01"
+    // Runtime state starts empty. Users, wallets, agents, mandates, and purchases
+    // are created only from authenticated real flows or isolated tests.
   }
 
   findUserByProviderId(providerUserId: string): UserRecord | null {
