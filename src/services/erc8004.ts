@@ -5,14 +5,10 @@ import {
   type Address,
   type Hex,
 } from "viem"
-import { CELO_CHAIN_ID, CELO_SEPOLIA_CHAIN_ID, getCeloClient } from "./celo"
+import { CELO_CHAIN_ID, getCeloClient } from "./celo"
+import { CELO_ERC8004_IDENTITY_REGISTRY } from "../config/celo-network"
 import { appendMurkAttribution, verifyMurkAttribution } from "./attribution"
 import { resolveAgentViemAccount } from "./agent-wallet"
-
-export const CELO_ERC8004_IDENTITY_REGISTRY: Address =
-  CELO_CHAIN_ID === CELO_SEPOLIA_CHAIN_ID
-    ? "0x8004A818BFB912233c491871b3d84c89A494BD9e"
-    : "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
 
 export const ERC8004_IDENTITY_ABI = parseAbi([
   "function register() returns (uint256 agentId)",
