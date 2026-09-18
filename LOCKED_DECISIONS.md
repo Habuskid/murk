@@ -55,24 +55,21 @@ Unsupported assets remain disabled rather than simulated.
 
 ## Authentication and Human Wallet
 
-- Email-first onboarding
-- Portal-managed authentication is the only human identity provider for the MVP
-- Use Portal `EMAIL_MAGIC_LINK` authentication
-- Do not add Clerk, Coinbase CDP, Auth.js, Supabase Auth, or another identity provider unless the owner explicitly changes this decision
-- Portal creates/reuses the user's Portal client during authentication
-- Murk exchanges the single-use Portal callback token server-side and creates a signed HttpOnly Murk session
-- Portal Web SDK authenticates through Murk's server `authUrl` using one-time Portal Web OTPs
-- Portal Custodian API key remains server-only and never reaches the DOM
-- Portal Web MPC wallet is the human embedded wallet provider
-- Celo mainnet is configured as `eip155:42220`
-- No external wallet requirement for ordinary users
-- Human wallet must support Portal backup/recovery
-- Human wallet portability must be verified through Portal Eject before Murk claims verified portability
-- Ejected private-key material must never be sent to Murk's backend, logs, analytics, or database
+- Privy is the human authentication and embedded-wallet provider for the MVP
+- Support email login and wallet login through Privy
+- Every authenticated user receives/reuses a Privy embedded EVM wallet
+- Protected browser requests carry the Privy access token
+- Murk verifies Privy access tokens server-side before resolving ownership
+- `NEXT_PUBLIC_PRIVY_APP_ID` is public configuration
+- `PRIVY_APP_SECRET` is server-only and must never reach the DOM
+- Celo Sepolia and Celo mainnet are configured as explicit EVM chains
+- Human-signed Privy transactions use native CELO for gas; Murk does not assume Privy forwards Celo's CIP-64 `feeCurrency` extension
+- The human wallet and autonomous execution wallet remain separate
+- Do not introduce another auth/wallet provider during the hackathon without owner approval
 
 ## Agent Wallet
 
-- Human Portal wallet and autonomous execution wallet remain separate
+- Human Privy wallet and autonomous execution wallet remain separate
 - Every Murk agent receives a deterministic isolated EOA derived server-side from:
   - one protected 32-byte `AGENT_WALLET_MASTER_SECRET`;
   - the immutable Murk agent ID;
@@ -88,11 +85,11 @@ Unsupported assets remain disabled rather than simulated.
 
 ## Funding and Recovery
 
-- Funding starts from the authenticated human Portal wallet
-- The browser may initiate a Portal transfer to the agent wallet
+- Funding starts from the authenticated human Privy wallet
+- The browser may initiate a Privy wallet transfer to the agent wallet
 - Murk must independently verify the exact confirmed Celo ERC-20 `Transfer` before treating funds as delegated
 - A browser claim alone is never sufficient funding evidence
-- Agent recovery/withdrawal may only return funds to the authenticated user's bound Portal wallet
+- Agent recovery/withdrawal may only return funds to the authenticated user's bound Privy wallet
 - The browser must not choose an arbitrary withdrawal destination
 - Emergency withdrawal must not become impossible merely because ERC-8021 attribution is unconfigured
 - No automatic retry of uncertain money-moving transactions
