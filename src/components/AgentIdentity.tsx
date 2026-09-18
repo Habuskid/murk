@@ -27,6 +27,7 @@ type PreparedTransaction = {
     to: `0x${string}`
     data: `0x${string}`
     value: string
+    feeCurrency?: `0x${string}`
   }
 }
 
