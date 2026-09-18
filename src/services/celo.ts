@@ -9,6 +9,7 @@ import {
   http,
   parseAbi,
   type Address,
+  type Hex,
 } from "viem"
 import { celo } from "viem/chains"
 import { CandidateAsset } from "../core/types"
@@ -126,4 +127,59 @@ export function tokenRawToFeeUnits(
   }
 
   return amountRaw * 10n ** BigInt(18 - tokenDecimals)
+}
+
+
+/**
+ * Pick a verified stablecoin fee currency for a human-owned Celo transaction.
+ * Returns null when neither configured stablecoin can safely cover gas, allowing
+ * the caller to fall back to native CELO.
+ */
+export async function selectStableFeeCurrency(input: {
+  account: Address
+  to: Address
+  data: Hex
+  preferredSymbols?: readonly (keyof typeof CELO_TOKENS)[]
+}): Promise<Address | null> {
+  const client = getCeloClient()
+  const symbols = input.preferredSymbols ?? (["USDC", "USDT"] as const)
+
+  for (const symbol of symbols) {
+    const token = CELO_TOKENS[symbol]
+
+    try {
+      const balance = await client.readContract({
+        address: token.address,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [input.account],
+      })
+
+      if (balance <= 0n) continue
+
+      const [estimatedGas, gasPrice] = await Promise.all([
+        client.estimateGas({
+          account: input.account,
+          to: input.to,
+          data: input.data,
+          feeCurrency: token.feeCurrencyAddress,
+        }),
+        getFeeCurrencyGasPrice(token.feeCurrencyAddress),
+      ])
+
+      const availableFeeUnits = tokenRawToFeeUnits(
+        balance,
+        token.decimals
+      )
+      const estimatedFee = estimatedGas * gasPrice
+
+      if (availableFeeUnits > estimatedFee) {
+        return token.feeCurrencyAddress
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return null
 }
