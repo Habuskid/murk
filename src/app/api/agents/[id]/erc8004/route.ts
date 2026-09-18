@@ -149,9 +149,15 @@ export async function POST(
     }
 
     if (action.action === "CONFIRM_REGISTER") {
+      const origin = getPublicAppOrigin()
+      const expectedAgentURI = `${origin}/api/agents/${encodeURIComponent(
+        agent.id
+      )}/erc8004/metadata`
+
       const registration = await parseRegisteredAgent({
         txHash: action.txHash as Hex,
         expectedOwner: owner.walletAddress,
+        expectedAgentURI,
       })
 
       const discoveredId = registration.agentId.toString()
