@@ -22,6 +22,7 @@ import {
   appendMurkAttribution,
   verifyMurkAttribution,
 } from "@/services/attribution"
+import { hasExactErc20Transfer } from "@/services/funding"
 
 export const dynamic = "force-dynamic"
 
@@ -236,6 +237,52 @@ export async function POST(
         },
         { status: 409 }
       )
+    }
+
+    const exactTransfer = hasExactErc20Transfer({
+      logs: receipt.logs,
+      tokenAddress: token.address,
+      expectedFrom: agent.walletAddress,
+      expectedTo: owner.walletAddress,
+      expectedAmount: amountRaw,
+    })
+
+    if (!exactTransfer) {
+      await repository.saveTransaction({
+        id: transactionId,
+        walletId: agent.walletId,
+        purpose: "WITHDRAW_AGENT",
+        chainId: 42220,
+        txHash,
+        assetAddress: token.address,
+        amountRaw,
+        fromAddress: agent.walletAddress,
+        toAddress: owner.walletAddress,
+        status: "FAILED",
+        submittedAt: new Date(),
+        confirmedAt: new Date(),
+        blockNumber: receipt.blockNumber,
+        errorCode: "WITHDRAWAL_TRANSFER_MISMATCH",
+      })
+
+      const mismatchResult = {
+        error: "WITHDRAWAL_TRANSFER_MISMATCH",
+        txHash,
+        fundsMoved: null,
+        outcome: "UNVERIFIED",
+      }
+
+      await repository.saveIdempotencyResult({
+        key: validated.idempotencyKey,
+        operation: "WITHDRAW_AGENT",
+        resourceId: agent.id,
+        requestHash: hash,
+        resultReference: txHash,
+        result: mismatchResult,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+
+      return NextResponse.json(mismatchResult, { status: 409 })
     }
 
     await repository.saveTransaction({
