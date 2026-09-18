@@ -5,9 +5,11 @@
 
 import {
   createPublicClient,
+  hexToBigInt,
   http,
   parseAbi,
   formatUnits,
+  type Address,
 } from "viem"
 import { celo } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
@@ -22,12 +24,16 @@ export const CELO_TOKENS = {
     symbol: "USDC",
     name: "USD Coin",
     address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as `0x${string}`,
+    feeCurrencyAddress:
+      "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B" as `0x${string}`,
     decimals: 6,
   },
   USDT: {
     symbol: "USDT",
     name: "Tether USD",
     address: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e" as `0x${string}`,
+    feeCurrencyAddress:
+      "0x0E2A3e05bc9A16F5292A6170456A710cb89C6f72" as `0x${string}`,
     decimals: 6,
   },
 } as const
@@ -103,4 +109,36 @@ export function getAgentSigner(privateKeyOverride?: `0x${string}`) {
     throw new Error("AGENT_WALLET_PRIVATE_KEY is missing or invalid in server environment")
   }
   return privateKeyToAccount(secretKey)
+}
+
+
+/**
+ * Celo's eth_gasPrice accepts an optional fee-currency address.
+ * For 6-decimal USDC/USDT this must be the allowlisted adapter address.
+ */
+export async function getFeeCurrencyGasPrice(
+  feeCurrency: Address
+): Promise<bigint> {
+  const client = getCeloClient()
+  const priceHex = await client.request({
+    method: "eth_gasPrice",
+    params: [feeCurrency],
+  } as any)
+
+  return hexToBigInt(priceHex as `0x${string}`)
+}
+
+/**
+ * Convert token raw units into Celo fee-currency accounting units.
+ * Fee-currency gas pricing is expressed with 18 decimals.
+ */
+export function tokenRawToFeeUnits(
+  amountRaw: bigint,
+  tokenDecimals: number
+): bigint {
+  if (tokenDecimals > 18) {
+    throw new Error("UNSUPPORTED_FEE_CURRENCY_DECIMALS")
+  }
+
+  return amountRaw * 10n ** BigInt(18 - tokenDecimals)
 }
