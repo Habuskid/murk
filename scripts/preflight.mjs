@@ -65,8 +65,12 @@ if (mode === "staging" && networkMode && networkMode !== "testnet") {
   errors.push("Murk staging must use NEXT_PUBLIC_MURK_NETWORK=testnet")
 }
 
-if (mode === "demo" && networkMode && networkMode !== "mainnet") {
-  errors.push("Murk demo lock must use NEXT_PUBLIC_MURK_NETWORK=mainnet")
+if (
+  (mode === "deploy" || mode === "demo") &&
+  networkMode &&
+  networkMode !== "mainnet"
+) {
+  errors.push(`Murk ${mode} must use NEXT_PUBLIC_MURK_NETWORK=mainnet`)
 }
 
 const expectedChainId = networkMode === "mainnet" ? "42220" : "11142220"
@@ -158,12 +162,30 @@ const appOrigin = requireHttpsUrl("PUBLIC_APP_ORIGIN", {
 })
 rejectPlaceholder("PUBLIC_APP_ORIGIN", value("PUBLIC_APP_ORIGIN"))
 
-const liveResource = requireHttpsUrl("NEXT_PUBLIC_X402_RESOURCE_URL", {
-  disallowLocalhost: true,
-})
-const probeResource = requireHttpsUrl("X402_PROBE_RESOURCE_URL", {
-  disallowLocalhost: true,
-})
+const liveResource =
+  mode === "staging" && !value("NEXT_PUBLIC_X402_RESOURCE_URL")
+    ? null
+    : requireHttpsUrl("NEXT_PUBLIC_X402_RESOURCE_URL", {
+        disallowLocalhost: true,
+      })
+const probeResource =
+  mode === "staging" && !value("X402_PROBE_RESOURCE_URL")
+    ? null
+    : requireHttpsUrl("X402_PROBE_RESOURCE_URL", {
+        disallowLocalhost: true,
+      })
+
+if (mode === "staging" && !liveResource) {
+  warnings.push(
+    "NEXT_PUBLIC_X402_RESOURCE_URL is unset. This does not block Sepolia deployment; use the guarded testnet x402 engineering resource for settlement verification, but do not treat it as independent merchant evidence."
+  )
+}
+
+if (mode === "staging" && !probeResource) {
+  warnings.push(
+    "X402_PROBE_RESOURCE_URL is unset. CI still runs the read-only Sepolia infrastructure smoke; configure an independent merchant before claiming external x402 evidence."
+  )
+}
 
 if (appOrigin && liveResource && appOrigin.hostname === liveResource.hostname) {
   errors.push("NEXT_PUBLIC_X402_RESOURCE_URL must be an independent merchant, not Murk itself")
@@ -174,6 +196,28 @@ if (appOrigin && probeResource && appOrigin.hostname === probeResource.hostname)
 
 if (value("ENABLE_LOCAL_X402_FIXTURE").toLowerCase() === "true") {
   errors.push("ENABLE_LOCAL_X402_FIXTURE must be false/unset for deployment")
+}
+
+if (mode === "staging") {
+  const testnetMerchantEnabled =
+    value("ENABLE_TESTNET_X402_MERCHANT").toLowerCase() === "true"
+
+  if (testnetMerchantEnabled) {
+    const x402ApiKey = requireValue("X402_API_KEY")
+    rejectPlaceholder("X402_API_KEY", x402ApiKey)
+
+    const sellerAddress = requireValue("TESTNET_X402_SELLER_ADDRESS")
+    if (
+      sellerAddress &&
+      !/^0x[a-fA-F0-9]{40}$/.test(sellerAddress)
+    ) {
+      errors.push("TESTNET_X402_SELLER_ADDRESS must be a valid EVM address")
+    }
+  } else {
+    warnings.push(
+      "ENABLE_TESTNET_X402_MERCHANT is false/unset. Sepolia can deploy, but the real paid x402 engineering harness will remain disabled."
+    )
+  }
 }
 
 if (value("UI_SANDBOX_MODE").toLowerCase() === "true") {
