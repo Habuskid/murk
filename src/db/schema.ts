@@ -237,6 +237,7 @@ export const idempotencyKeys = pgTable("idempotency_keys", {
   resourceId: text("resource_id").notNull(),
   requestHash: text("request_hash").notNull(),
   resultReference: text("result_reference").notNull(),
+  resultJson: jsonb("result_json"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 })
