@@ -78,6 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       agentId: agent.id,
       agentName: agent.name,
       agentAddress: agent.walletAddress,
+      agentStatus: agent.status,
       mandate: spendingMandate,
       allowedAssetSymbols: agent.allowedAssets,
       merchantUrl: validated.merchantUrl,
