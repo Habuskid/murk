@@ -15,6 +15,10 @@ import type { OrchestratorReceipt } from "@/services/orchestrator"
 import { formatMoneyMinor } from "@/core/money"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
+  CELO_NETWORK_LABEL,
+  IS_CELO_TESTNET,
+} from "@/config/celo-network"
+import {
   BotIcon,
   MurkLogoIcon,
   ShieldCheckIcon,
@@ -193,8 +197,15 @@ function MurkWalletApp() {
           <div className="hidden items-center gap-2 text-[11px] font-medium text-text-secondary sm:flex">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              Celo
+              {CELO_NETWORK_LABEL}
             </span>
+            <span className="text-text-tertiary">/</span>
+            {IS_CELO_TESTNET && (
+              <>
+                <span className="text-text-tertiary">/</span>
+                <span className="font-semibold text-warning">Testnet</span>
+              </>
+            )}
             <span className="text-text-tertiary">/</span>
             <span className="font-semibold text-accent">{agent.accountingCurrency}</span>
           </div>
