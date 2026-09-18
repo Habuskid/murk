@@ -52,6 +52,10 @@ The full live golden path is **not complete yet**.
 ### Verified in CI
 
 - reproducible `npm ci` install;
+- Celo Sepolia chain/RPC profile (`11142220`);
+- deployed Sepolia USDC/USDT and fee-currency adapter bytecode;
+- Sepolia ERC-8004 Identity Registry bytecode;
+- Celo Sepolia x402 facilitator health/support;
 - Next.js 16.3.3 production build;
 - Vitest suite, including ERC-8004 calldata/signature tests;
 - Drizzle migration-history consistency;
@@ -74,7 +78,8 @@ The full live golden path is **not complete yet**.
 - real Portal email magic-link round trip;
 - real Portal MPC wallet creation/reuse on Celo;
 - real Portal-wallet funding transaction;
-- real paid external x402 settlement;
+- real paid Sepolia x402 settlement through Murk's guarded engineering harness;
+- independent paid x402 settlement for final demo evidence;
 - delivered paid resource;
 - real agent withdrawal to the bound Portal wallet;
 - production Neon provisioning/migration/restart verification;
@@ -273,7 +278,7 @@ The locked ownership model is:
 
 Implemented in code:
 
-- Celo mainnet Identity Registry integration;
+- network-aware Celo Sepolia/mainnet Identity Registry integration;
 - public agent metadata endpoint;
 - human-wallet registration transaction preparation;
 - Registered-event verification and real agent-ID persistence;
@@ -282,7 +287,7 @@ Implemented in code:
 - post-transaction owner/wallet verification;
 - transaction evidence persistence.
 
-Live Portal-signed mainnet registration and binding are still required before this is claimed as complete.
+Live Sepolia registration/binding is the first deployment gate. A final mainnet proof is still required before the submission claims mainnet completion.
 
 ## ERC-8021
 
@@ -378,7 +383,7 @@ Sandbox fixture state is only for UI/browser QA. It is never transaction or hack
 - Zod
 - Vitest
 - Playwright
-- Celo mainnet
+- Celo Sepolia + Celo mainnet
 
 ## Environment
 
@@ -391,9 +396,10 @@ cp .env.example .env.local
 Important variables include:
 
 ```text
-CELO_RPC_URL=
-NEXT_PUBLIC_CELO_RPC_URL=
-CELO_CHAIN_ID=42220
+NEXT_PUBLIC_MURK_NETWORK=testnet
+CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
+NEXT_PUBLIC_CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
+CELO_CHAIN_ID=11142220
 CELO_ATTRIBUTION_CODE=
 
 DATABASE_URL=
@@ -406,10 +412,14 @@ MURK_SESSION_SECRET=
 
 AGENT_WALLET_MASTER_SECRET=
 
-X402_FACILITATOR_URL=
+X402_FACILITATOR_URL=https://api.x402.sepolia.celo.org
 X402_PROBE_RESOURCE_URL=
 NEXT_PUBLIC_X402_RESOURCE_URL=
 NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL=
+
+ENABLE_TESTNET_X402_MERCHANT=false
+X402_API_KEY=
+TESTNET_X402_SELLER_ADDRESS=
 
 EXCHANGE_RATE_API_URL=
 
@@ -454,11 +464,18 @@ npm run spike:b
 npm run spike:c
 npm run spike:d
 npm run spike:e
+npm run spike:testnet
 ```
 
-The external x402 spike must use a real independent Celo x402 resource.
+`spike:testnet` is a read-only Celo Sepolia infrastructure gate. The external x402 spike must use a real independent Celo x402 resource.
 
 A simulated 402 body is not accepted as live proof.
+
+## Sepolia Settlement Harness
+
+The deployed testnet profile can expose `/api/testnet/x402-resource` when `ENABLE_TESTNET_X402_MERCHANT=true` and the Celo facilitator API key + seller address are configured. It uses the official x402 server packages and performs real Sepolia settlement.
+
+It is engineering evidence, not independent-merchant evidence, because Murk hosts both sides.
 
 ## Local Merchant Fixture
 
