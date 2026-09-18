@@ -8,7 +8,7 @@ This is a truth-status document, not a marketing document.
 
 Murk has completed the deterministic CORE, most runtime persistence work, the responsive product UI, and a substantial portion of INTEGRATE/HARDEN.
 
-The full real hackathon golden path is still **not complete** because Portal credentials, a live funded human wallet, a live funded agent wallet, a successful paid external x402 execution, ERC-8004 registration, and final ERC-8021 proof still require live verification.
+The full real hackathon golden path is still **not complete** because Privy live credentials, a live funded human wallet, a live funded agent wallet, a successful paid external x402 execution, ERC-8004 registration, and final ERC-8021 proof still require live verification.
 
 Current phase:
 
@@ -114,29 +114,34 @@ This proves provider coverage and freshness validation. The final paid E2E must 
 
 ### Human authentication and embedded wallet
 
-Status: PORTAL-ONLY CODED, LIVE VERIFICATION PENDING
+Status: PRIVY CODED, LIVE VERIFICATION PENDING
 
 Implemented:
 
-- Portal `EMAIL_MAGIC_LINK` architecture;
-- server-side Portal callback-token exchange;
-- Client Session Token validation;
-- signed HttpOnly Murk application session;
-- Portal Web SDK provider through server `authUrl`;
-- server-issued Portal Web OTP route;
-- Portal MPC wallet create/reuse flow;
-- Celo address registration;
+- Privy email and wallet login configuration;
+- automatic embedded EVM wallet creation/reuse;
+- Privy access-token propagation on protected browser requests;
+- server-side Privy access-token verification;
+- persisted human-wallet address binding in Neon;
+- active Celo network switching;
+- human-signed funding and ERC-8004 transactions;
+- native CELO gas for Privy-signed Celo transactions;
 - sign-in and first-run UI.
+
+Verified on the feature branch:
+
+- exact dependency installation with `npm ci`;
+- Vitest suite;
+- Drizzle migration-history check;
+- Next.js production compilation and TypeScript checking.
 
 Still required:
 
-- real Portal dashboard configuration;
-- verified sending domain/template;
-- Custodian credential configuration;
-- live email-link round trip;
-- real Portal wallet creation/reuse on Celo;
-- backup/recovery verification;
-- Eject verification.
+- real Privy app credentials in the deployed environment;
+- live login round trip;
+- real embedded-wallet creation/reuse on Celo Sepolia;
+- real funding transaction;
+- browser reload/persistence proof.
 
 ## CORE
 
@@ -169,7 +174,7 @@ Implemented in code:
 - x402 v2 Exact EVM executor;
 - exact Murk-approved payment selection guard;
 - external reference FX provider;
-- Portal auth/session/wallet integration;
+- Privy auth/token/wallet integration;
 - user-wallet funding UI;
 - onchain funding verification;
 - server agent withdrawal;
@@ -179,7 +184,7 @@ Implemented in code:
 
 Still not live-verified:
 
-- real Portal funding transaction;
+- real Privy funding transaction;
 - real server-agent withdrawal transaction;
 - successful paid external x402 execution;
 - final x402 settlement transaction;
@@ -192,7 +197,7 @@ Status: NOT PASSED
 
 Required real path:
 
-`Portal email magic link -> Portal user wallet -> create agent -> fund isolated execution wallet -> independent external 402 -> Murk selector/rate/policy -> atomic spend reservation -> live x402 settlement -> paid resource -> persisted receipt/audit trail -> oversized second request blocked with no second transaction`
+`Privy login -> Privy human wallet -> create agent -> fund isolated execution wallet -> independent external 402 -> Murk selector/rate/policy -> atomic spend reservation -> live x402 settlement -> paid resource -> persisted receipt/audit trail -> oversized second request blocked with no second transaction`
 
 This complete path has not yet been demonstrated with real credentials and funded mainnet wallets.
 
@@ -256,11 +261,11 @@ The hackathon product currently limits each user to one user-created execution a
 
 ## Funding
 
-Status: IMPLEMENTED, LIVE PORTAL/Celo VERIFICATION PENDING
+Status: IMPLEMENTED, LIVE PRIVY/Celo VERIFICATION PENDING
 
 Current flow:
 
-`Portal human wallet -> ERC-20 transfer -> Celo confirmation -> Murk verifies exact Transfer(from,to,amount,token) -> transaction evidence persisted -> DRAFT agent may become ACTIVE`
+`Privy human wallet -> ERC-20 transfer -> Celo confirmation -> Murk verifies exact Transfer(from,to,amount,token) -> transaction evidence persisted -> DRAFT agent may become ACTIVE`
 
 Murk does not trust a browser-supplied transaction claim without chain verification.
 
@@ -270,7 +275,7 @@ Status: IMPLEMENTED, LIVE Celo VERIFICATION PENDING
 
 Current flow:
 
-- destination is fixed to the authenticated user's persisted Portal wallet;
+- destination is fixed to the authenticated user's persisted Privy wallet;
 - arbitrary browser-supplied destinations are not accepted;
 - server agent EOA signs the ERC-20 return transaction;
 - Celo fee currency may use the selected stablecoin;
@@ -285,7 +290,7 @@ Implemented:
 
 - current Celo Identity Registry address;
 - public agent metadata endpoint;
-- human Portal wallet registration transaction preparation;
+- human Privy wallet registration transaction preparation;
 - onchain Registered-event verification;
 - real agent ID persistence;
 - EIP-712 consent signed by the derived execution EOA;
@@ -296,13 +301,13 @@ Implemented:
 
 Ownership model remains:
 
-- human Portal wallet owns the ERC-8004 identity NFT;
+- human Privy wallet owns the ERC-8004 identity NFT;
 - separate Murk execution EOA is bound as the verified agent wallet.
 
 Still required:
 
 - deployed public metadata origin;
-- live Portal-signed Sepolia registration;
+- live Privy-signed Sepolia registration;
 - live Sepolia binding transaction;
 - explorer evidence;
 - final mainnet repetition before claiming mainnet completion.
@@ -355,7 +360,7 @@ Implemented/tested:
 
 Still required after live E2E:
 
-- failure injection around real Portal signing;
+- failure injection around real Privy signing;
 - RPC interruption/retry behavior;
 - facilitator timeout behavior;
 - resource-delivery failure after real settlement;
@@ -388,7 +393,7 @@ Current product system:
 
 Browser QA passes at 320, 390, 768, and 1280 widths without horizontal overflow in the covered states.
 
-This does not prove live Portal or live financial integrations.
+This does not prove live Privy or live financial integrations.
 
 ## POLISH
 
@@ -410,8 +415,8 @@ Status: CODE GATE PASSING; HOSTED SEPOLIA E2E NOT YET RUN
 
 Do not lock or record the final demo until all of these are real:
 
-- Portal email sign-in;
-- Portal user wallet;
+- Privy sign-in;
+- Privy human wallet;
 - funded agent execution wallet;
 - paid independent x402 settlement;
 - delivered resource;
