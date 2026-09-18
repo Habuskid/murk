@@ -9,6 +9,7 @@ import { AgentFunds } from "@/components/AgentFunds"
 import { PurchaseRunner } from "@/components/PurchaseRunner"
 import { ActivityList } from "@/components/ActivityList"
 import { AgentSettings } from "@/components/AgentSettings"
+import { AgentIdentity } from "@/components/AgentIdentity"
 import type { ActivityItem } from "@/db/repository"
 import type { OrchestratorReceipt } from "@/services/orchestrator"
 import { formatMoneyMinor } from "@/core/money"
@@ -321,6 +322,12 @@ function MurkWalletApp() {
                 </p>
               </div>
             </div>
+
+            <AgentIdentity
+              agentId={agent.id}
+              erc8004AgentId={agent.erc8004AgentId}
+              onUpdated={refreshAgentState}
+            />
           </section>
         </main>
       )}
