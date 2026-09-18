@@ -15,13 +15,21 @@ import {
 } from "viem"
 import { CandidateAsset } from "../core/types"
 import {
+  CELO_CAIP2,
   CELO_CHAIN,
   CELO_CHAIN_ID,
   CELO_DEFAULT_RPC_URL,
   CELO_TOKENS,
+  IS_CELO_TESTNET,
 } from "../config/celo-network"
 
-export { CELO_CHAIN_ID, CELO_TOKENS }
+export {
+  CELO_CHAIN,
+  CELO_CHAIN_ID,
+  CELO_TOKENS,
+}
+export const CELO_CAIP2_NETWORK = CELO_CAIP2
+export const IS_CELO_SEPOLIA = IS_CELO_TESTNET
 
 export const CELO_RPC_URL =
   process.env.CELO_RPC_URL || CELO_DEFAULT_RPC_URL
