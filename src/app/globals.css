@@ -3,57 +3,95 @@
 @tailwind utilities;
 
 :root {
-  --background: #F5F5F3;
-  --surface: #FFFFFF;
-  --text-primary: #111111;
-  --text-secondary: #767676;
-  --border: #EAEAE7;
-  --accent: #2F9CF4;
-  --accent-soft: #EAF5FE;
-  --success: #228B5A;
-  --success-soft: #EDF8F2;
-  --danger: #D64545;
-  --danger-soft: #FCEEEE;
-  --nav: #171717;
+  --background: #F3F4F1;
+  --surface: #FCFCFA;
+  --surface-inset: #F0F1EE;
+  --surface-hover: #E8EAE6;
+
+  --text-primary: #151817;
+  --text-secondary: #626865;
+  --text-tertiary: #929894;
+
+  --border: #DDE1DC;
+
+  --accent: #1769E0;
+  --accent-soft: #EAF2FD;
+
+  --success: #087A4B;
+  --success-soft: #EAF6EF;
+
+  --danger: #B42318;
+  --danger-soft: #FCEDEA;
+
+  --nav: #151817;
+  --nav-border: #292E2B;
+  --nav-capsule: #F7F8F5;
+  --nav-capsule-text: #151817;
+  --nav-inactive: #9CA39F;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
 }
 
 body {
-  background-color: var(--background);
-  background-image: radial-gradient(rgba(17, 17, 17, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
+  margin: 0;
+  background: var(--background);
   color: var(--text-primary);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bespoke micro-elevation classes */
-.card-elevation {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 6px 20px -2px rgba(0, 0, 0, 0.03);
-}
-
+.card-elevation,
 .hero-elevation {
-  box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.03), 0 10px 24px -4px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
 }
 
 .dock-elevation {
-  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.32), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 28px rgba(21, 24, 23, 0.16);
 }
 
-/* Reference image hatched progress bar */
 .hatched-bar {
   background-image: repeating-linear-gradient(
     -45deg,
-    #CFE7FA,
-    #CFE7FA 2.5px,
-    transparent 2.5px,
-    transparent 7px
+    #C7DCF8,
+    #C7DCF8 2px,
+    transparent 2px,
+    transparent 6px
   );
 }
 
-
-
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
