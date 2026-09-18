@@ -1,159 +1,88 @@
 /**
- * Spike C: Real x402 Protocol & Payment Requirements Verification
+ * Spike C: Live external x402 challenge verification.
  *
- * Verifies:
- * - Direct interaction with Celo's live facilitator: https://api.x402.celo.org
- * - Health and supported endpoints
- * - Standard x402 HTTP 402 Payment Required parsing
- * - Verification of payment requirements: asset address, network (eip155:42220), amount, payTo
- * - Validation of EIP-3009 / EIP-2612 / direct transfer schemes on Celo mainnet
+ * Passes only when:
+ * - the Celo facilitator is reachable and declares Celo mainnet support, and
+ * - an independent external resource returns a real x402 402 challenge that
+ *   Murk can parse into at least one Celo payment requirement.
+ *
+ * No simulated merchant body is accepted as spike evidence.
  */
 
-export const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || "https://api.x402.celo.org"
+import { requestResource } from "../src/services/x402"
 
-export type X402PaymentRequirement = {
-  version: number
-  scheme: string
-  network: string
-  chainId: number
-  assetAddress: `0x${string}`
-  amountRaw: bigint
-  payTo: `0x${string}`
-  extra?: Record<string, unknown>
-}
-
-export type X402ChallengeResponse = {
-  status: 402
-  requirements: X402PaymentRequirement[]
-  rawHeaders: Record<string, string>
-  rawBody: unknown
-}
-
-/**
- * Parses an HTTP 402 response into standardized payment requirements.
- */
-export function parseX402Response(status: number, headers: Headers, body: any): X402ChallengeResponse {
-  if (status !== 402) {
-    throw new Error(`Expected HTTP status 402, got ${status}`)
-  }
-
-  const rawHeaders: Record<string, string> = {}
-  headers.forEach((val, key) => {
-    rawHeaders[key.toLowerCase()] = val
-  })
-
-  const requirements: X402PaymentRequirement[] = []
-
-  // Check v2 multi-asset format or v1 single format
-  const candidates = Array.isArray(body?.accepts) ? body.accepts : [body]
-
-  for (const item of candidates) {
-    if (!item) continue
-
-    const network = item.network || body?.network || ""
-    let chainId = 0
-    if (network === "celo" || network === "eip155:42220") {
-      chainId = 42220
-    } else if (network.startsWith("eip155:")) {
-      chainId = parseInt(network.split(":")[1], 10)
-    }
-
-    const assetAddress = (item.asset || item.token || body?.asset || body?.token) as `0x${string}`
-    const amountStr = item.amount || body?.amount || "0"
-    const amountRaw = BigInt(amountStr)
-    const payTo = (item.payTo || item.recipient || body?.payTo || body?.recipient) as `0x${string}`
-    const scheme = item.scheme || body?.scheme || "exact"
-    const version = Number(body?.x402Version || item?.x402Version || 1)
-
-    if (assetAddress && payTo) {
-      requirements.push({
-        version,
-        scheme,
-        network,
-        chainId,
-        assetAddress,
-        amountRaw,
-        payTo,
-        extra: item.extra || body?.extra,
-      })
-    }
-  }
-
-  return {
-    status: 402,
-    requirements,
-    rawHeaders,
-    rawBody: body,
-  }
-}
+export const X402_FACILITATOR_URL =
+  process.env.X402_FACILITATOR_URL || "https://api.x402.celo.org"
 
 export async function runSpikeC(): Promise<{
   success: boolean
-  facilitatorHealth?: any
-  supportedKinds?: any
+  facilitatorHealth?: unknown
+  supportedKinds?: unknown
+  merchantRequirements?: unknown
   error?: string
 }> {
-  console.log("=== SPIKE C: Real x402 Protocol & Facilitator Verification ===")
+  console.log("=== SPIKE C: Live external x402 verification ===")
+
   try {
-    // 1. Verify Facilitator Health
-    console.log(`Connecting to Celo x402 Facilitator: ${X402_FACILITATOR_URL}`)
+    const probeUrl = process.env.X402_PROBE_RESOURCE_URL
+    if (!probeUrl) {
+      throw new Error(
+        "X402_PROBE_RESOURCE_URL is required and must point to an independent x402-protected resource"
+      )
+    }
+
     const healthRes = await fetch(`${X402_FACILITATOR_URL}/health`)
     if (!healthRes.ok) {
-      throw new Error(`Facilitator health check failed with status: ${healthRes.status}`)
+      throw new Error(`Facilitator health check failed: HTTP ${healthRes.status}`)
     }
     const healthData = await healthRes.json()
-    console.log(" - Facilitator Health:", JSON.stringify(healthData))
 
-    // 2. Query Supported Payment Networks & Schemes
     const supportedRes = await fetch(`${X402_FACILITATOR_URL}/supported`)
     if (!supportedRes.ok) {
-      throw new Error(`Facilitator /supported failed with status: ${supportedRes.status}`)
+      throw new Error(`Facilitator /supported failed: HTTP ${supportedRes.status}`)
     }
     const supportedData = await supportedRes.json()
-    console.log(" - Facilitator Supported Schemes:", JSON.stringify(supportedData))
+    const kinds = Array.isArray(supportedData?.kinds) ? supportedData.kinds : []
 
-    // Validate that Celo mainnet (eip155:42220 or celo) is explicitly supported
-    const hasCeloSupport = supportedData.kinds?.some(
-      (k: any) => k.network === "eip155:42220" || k.network === "celo"
+    const hasCelo = kinds.some(
+      (kind: { network?: string }) => kind.network === "eip155:42220"
     )
-    if (!hasCeloSupport) {
-      throw new Error("Facilitator does not declare support for Celo mainnet!")
-    }
-    console.log(" - Verified: Celo mainnet (Chain ID 42220) is natively supported by facilitator.")
-
-    // 3. Test 402 Parser with real Celo parameters
-    const simulatedMerchantBody = {
-      x402Version: 2,
-      accepts: [
-        {
-          scheme: "exact",
-          network: "eip155:42220",
-          asset: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // Celo USDC
-          amount: "10000", // 0.01 USDC
-          payTo: "0x0d74D5Cefd2e7F24E623330ebE3d8D4cB45fFB48",
-        },
-      ],
-    }
-    const dummyHeaders = new Headers({ "content-type": "application/json" })
-    const parsed = parseX402Response(402, dummyHeaders, simulatedMerchantBody)
-    console.log(` - 402 Parser successfully extracted ${parsed.requirements.length} payment requirement(s):`)
-    for (const req of parsed.requirements) {
-      console.log(`   * Asset: ${req.assetAddress}, Amount: ${req.amountRaw}, ChainId: ${req.chainId}, PayTo: ${req.payTo}`)
+    if (!hasCelo) {
+      throw new Error("Configured facilitator does not declare eip155:42220 support")
     }
 
+    const merchant = await requestResource(probeUrl)
+    if (merchant.type !== "PAYMENT_REQUIRED") {
+      throw new Error("Configured probe resource did not return HTTP 402")
+    }
+    if (merchant.requirements.length === 0) {
+      throw new Error("External merchant returned no supported Celo payment requirements")
+    }
+
+    console.log(
+      `Verified external 402 with ${merchant.requirements.length} Celo requirement(s) from ${probeUrl}`
+    )
     console.log("SPIKE C RESULT: PASSED\n")
+
     return {
       success: true,
       facilitatorHealth: healthData,
-      supportedKinds: supportedData.kinds,
+      supportedKinds: kinds,
+      merchantRequirements: merchant.requirements.map((item) => ({
+        scheme: item.scheme,
+        network: item.network,
+        assetAddress: item.assetAddress,
+        amountRaw: item.amountRaw.toString(),
+        payTo: item.payTo,
+      })),
     }
-  } catch (err: any) {
-    console.error("SPIKE C RESULT: FAILED -", err.message)
-    return { success: false, error: err.message }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error("SPIKE C RESULT: FAILED -", message)
+    return { success: false, error: message }
   }
 }
 
-// Allow direct execution
 if (process.argv[1]?.includes("spike-c-x402-purchase")) {
   runSpikeC().catch(console.error)
 }
