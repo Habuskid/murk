@@ -74,31 +74,6 @@ export async function POST(
       destination: owner.walletAddress,
     })
 
-    const claim = await repository.claimIdempotencyKey({
-      key: validated.idempotencyKey,
-      operation: "WITHDRAW_AGENT",
-      resourceId: agent.id,
-      requestHash: hash,
-      resultReference: `withdrawal:${validated.idempotencyKey}`,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    })
-
-    if (claim.status === "REPLAY") {
-      return NextResponse.json(claim.result)
-    }
-    if (claim.status === "CONFLICT") {
-      return NextResponse.json(
-        { error: "IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST" },
-        { status: 409 }
-      )
-    }
-    if (claim.status === "IN_PROGRESS") {
-      return NextResponse.json(
-        { error: "IDEMPOTENCY_REQUEST_IN_PROGRESS" },
-        { status: 409 }
-      )
-    }
-
     const publicClient = getCeloClient()
     const balance = await publicClient.readContract({
       address: token.address,
@@ -124,6 +99,31 @@ export async function POST(
       return NextResponse.json(
         { error: "AGENT_WALLET_DERIVATION_MISMATCH" },
         { status: 503 }
+      )
+    }
+
+    const claim = await repository.claimIdempotencyKey({
+      key: validated.idempotencyKey,
+      operation: "WITHDRAW_AGENT",
+      resourceId: agent.id,
+      requestHash: hash,
+      resultReference: `withdrawal:${validated.idempotencyKey}`,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    })
+
+    if (claim.status === "REPLAY") {
+      return NextResponse.json(claim.result)
+    }
+    if (claim.status === "CONFLICT") {
+      return NextResponse.json(
+        { error: "IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_REQUEST" },
+        { status: 409 }
+      )
+    }
+    if (claim.status === "IN_PROGRESS") {
+      return NextResponse.json(
+        { error: "IDEMPOTENCY_REQUEST_IN_PROGRESS" },
+        { status: 409 }
       )
     }
 
