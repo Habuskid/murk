@@ -4,13 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "src/app/**"
-      - "src/components/**"
-      - "src/app/globals.css"
-      - "tailwind.config.ts"
-      - "package.json"
-      - "scripts/capture-ui.mjs"
-      - ".github/workflows/ui-sandbox.yml"
+      - ".github/ui-sandbox-trigger"
 
 concurrency:
   group: murk-ui-sandbox
