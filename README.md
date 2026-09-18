@@ -1,159 +1,318 @@
 # Murk
 
-> **Spending authority layer for autonomous AI agents.**  
-> Give an AI agent a budget in the currency you understand, and let it safely spend stablecoins inside that authority.
+Murk is a spending authority layer for autonomous agents on Celo.
 
----
+A user defines financial authority in an accounting currency they understand, such as NGN, AED, BRL, KES, MXN, COP, SAR, or INR. The agent can then purchase compatible machine services with permitted stablecoins, but only when deterministic policy says the purchase fits inside that authority.
 
-## The Problem & Insight
+> Give an AI agent a budget in the currency you understand, and let it spend stablecoins only inside that boundary.
 
-People increasingly delegate tasks to autonomous agents that need to buy APIs, compute, data, inference, and machine-accessible services.
+## Product Thesis
 
-Existing agent payment systems express financial controls in machine settlement assets (e.g. USDC or USDT). Humans, however, budget in their everyday accounting currencies—such as **NGN, AED, BRL, KES, MXN, COP, SAR, or INR**. A user should not have to maintain separate stablecoin budgets just to control one agent's economic authority.
+People increasingly delegate tasks to autonomous agents that may need to purchase APIs, data, compute, inference, and other machine-accessible services.
 
-**Murk decouples accounting authority from execution settlement:**
-- **The Human Boundary**: Defined in local fiat accounting currency (e.g., Daily Mandate: `NGN 5,000`, Per-Purchase Limit: `NGN 2,000`).
-- **The Agent Boundary**: Settled autonomously on **Celo mainnet** using permitted stablecoins (`USDC`, `USDT`) via the open **x402 payment protocol**.
+Payment rails can already let agents spend stablecoins. The control problem is different: a human may budget in NGN or AED while the machine settles in USDC or USDT.
 
-Every payment request is converted into the user's accounting currency in real time and evaluated deterministically before any funds can move.
-
----
-
-## Core Pillars
-
-### 1. Deterministic Financial Policy Engine
-- **Zero LLM Discretion**: The LLM has zero authority to approve payments, increase spending caps, or bypass rules.
-- **Zero Floating-Point Arithmetic**: All financial math uses integer minor units and exact rational fractions (`bigint` numerator and denominator) with ceiling division to ensure spending authority is never understated.
-- **Atomic Spend Reservations**: Funds are reserved against daily authority before transaction broadcast; on failure, reservations are released immediately.
-
-### 2. Dual-Wallet Architecture & Key Isolation
-- **Human Wallet**: Email OTP onboarding with Coinbase CDP Embedded Wallet EOA. Private key export is handled strictly within provider-isolated frames—application JavaScript and the server never receive or store the private key.
-- **Agent Wallet**: A dedicated server-controlled execution EOA holding only physically delegated funds. Browser clients only ever receive the agent's public address.
-
-### 3. Celo Mainnet & Native x402 Protocol
-- Operates on **Celo Mainnet (Chain ID `42220`)** utilizing low-latency, gasless settlement.
-- Natively connects with the Celo x402 Facilitator (`api.x402.celo.org`) to parse HTTP 402 challenges and settle payments.
-- **ERC-8004** agent identity support and **ERC-8021** builder attribution at transaction boundaries.
-
----
-
-## Canonical State Machine
+Murk separates those two layers:
 
 ```text
-CREATED
-   │
-   ▼
-PAYMENT_REQUIRED  ──► Detects HTTP 402 challenge from merchant
-   │
-   ▼
-ASSET_SELECTED    ──► Selects valid permitted asset held by agent
-   │
-   ▼
-RATE_RESOLVED     ──► Resolves live rational FX quote (source + timestamp)
-   │
-   ▼
-POLICY_EVALUATION
-   ├──► [BLOCKED]   ──► Exceeds limits ──► 0 funds moved, 0 signing calls, no TX
-   └──► [APPROVED]  ──► Atomically reserves spend against mandate
-            │
-            ▼
-      PAYMENT_SUBMITTED ──► Signs & broadcasts payment on Celo
-            │
-            ▼
-      PAYMENT_SETTLED   ──► Confirmed onchain with TX hash
-            │
-            ▼
-      RESOURCE_DELIVERED ──► Retries original request with payment proof
-            │
-            ▼
-      COMPLETED         ──► Commits reservation, generates audit receipt
+Human accounting authority
+NGN 5,000 / day
+        |
+        v
+Deterministic Murk policy
+        |
+        v
+Approved machine settlement
+USDC / USDT when actually supported
+        |
+        v
+x402 on Celo
 ```
 
----
+The LLM does not control the financial boundary.
 
-## Supported Currencies & Assets
+## Current Status
 
-| Category | Supported Assets |
-| :--- | :--- |
-| **MVP Accounting Currencies** | `NGN` (Nigerian Naira), `KES` (Kenyan Shilling), `BRL` (Brazilian Real), `MXN` (Mexican Peso), `COP` (Colombian Peso), `AED` (UAE Dirham), `SAR` (Saudi Riyal), `INR` (Indian Rupee) |
-| **Settlement Tokens (Celo)** | `USDC` (`0xcebA9300f2b948710d2653dD7B07f33A8B32118C`)<br>`USDT` (`0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e`) |
-| **Network** | Celo Mainnet (`eip155:42220`) |
+The repository is actively being brought back into alignment with the locked build specification after an early demo-oriented MVP.
 
----
+Read:
 
-## Tech Stack
+- [AGENTS.md](./AGENTS.md)
+- [LOCKED_DECISIONS.md](./LOCKED_DECISIONS.md)
+- [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)
+- [BLOCKERS.md](./BLOCKERS.md)
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router), React, TypeScript
-- **Styling**: Tailwind CSS (custom consumer-finance design system, warm light-gray `#F4F4F2` canvas, dark floating navigation pill, tabular numerals)
-- **EVM Client**: [viem](https://viem.sh/)
-- **Protocol**: [x402 Payment Protocol](https://github.com/x402-foundation/x402)
-- **Database & ORM**: Neon Serverless Postgres with [Drizzle ORM](https://orm.drizzle.team/)
-- **Validation**: Zod
-- **Testing**: Vitest
+The full live golden path is **not yet complete**.
 
----
+### Implemented
 
-## Getting Started
+- deterministic bigint money model;
+- settlement eligibility/selection logic;
+- local-currency daily mandate;
+- per-purchase limit;
+- reserve-aware policy rules;
+- reason-coded approve/block decisions;
+- Celo mainnet RPC and ERC-20 balance reads;
+- reference FX-rate adapter;
+- x402 v2 challenge parsing;
+- x402 v2 Exact EVM client executor constrained to the exact Murk-approved terms;
+- wallet-style responsive UI shell;
+- blocked-purchase path with no payment execution;
+- unit/integration-style tests for core policy behavior.
 
-### 1. Prerequisites
-- Node.js `v20.18.0` or higher
-- npm
+### Integration still required or still needs live verification
 
-### 2. Installation
-```bash
-git clone https://github.com/Habuskid/murk.git
-cd murk
-npm install
+- independent external Celo x402 merchant;
+- a real successful x402 payment and delivered resource;
+- email OTP embedded user wallet;
+- real human-wallet funding;
+- real human-wallet withdrawal;
+- Neon-backed runtime persistence;
+- real ERC-8004 agent registration;
+- correct current-hackathon ERC-8021 attribution;
+- secure embedded-wallet export/recovery;
+- final golden-demo evidence.
+
+Murk deliberately fails closed where these integrations are not yet wired. It does not fabricate success.
+
+## Golden Path
+
+The target live demo is:
+
+```text
+Email OTP
+-> embedded user wallet
+-> create Research Agent
+-> choose accounting currency
+-> define daily mandate
+-> fund agent execution wallet
+-> request independent x402 resource
+-> parse merchant payment options
+-> inspect real agent balances
+-> select a valid permitted settlement asset
+-> resolve accounting reference value
+-> deterministic policy APPROVES
+-> x402 v2 settlement on Celo mainnet
+-> paid resource delivered
+-> receipt persisted
+-> remaining mandate updated
+-> oversized second request
+-> deterministic policy BLOCKS
+-> no second transaction
 ```
 
-### 3. Environment Variables
-Copy `.env.example` to `.env.local` and configure your keys:
+No local self-merchant may be presented as external golden-demo evidence.
+
+## Supported Accounting Currencies
+
+The locked MVP list is:
+
+| Code | Currency |
+| --- | --- |
+| NGN | Nigerian Naira |
+| KES | Kenyan Shilling |
+| BRL | Brazilian Real |
+| MXN | Mexican Peso |
+| COP | Colombian Peso |
+| AED | UAE Dirham |
+| SAR | Saudi Riyal |
+| INR | Indian Rupee |
+
+These are accounting units. They do not all need an onchain local stablecoin.
+
+## Settlement Assets
+
+Candidate MVP settlement assets are USDC, USDT, and USAT.
+
+Only assets that are actually verified for the selected Celo x402 merchant/facilitator path may be exposed as supported in the live product.
+
+The current token registry includes Celo USDC and USDT. Multi-asset x402 support is treated as an observed merchant property, not an assumption.
+
+## Architecture
+
+```text
+Responsive web app
+        |
+        v
+Authenticated human
+        |
+        v
+Embedded user wallet
+        |
+   delegated funds
+        v
+Agent execution wallet
+        |
+        v
+Murk policy engine
+  |              |
+  |              +-> Rate provider
+  |
+  +-> x402 v2 client
+        |
+        v
+Celo mainnet
+        |
+        v
+Independent paid resource
+```
+
+The human wallet and agent wallet are intentionally separate.
+
+The agent can only spend the assets delegated to its execution wallet.
+
+## Financial Safety Rules
+
+Murk follows these invariants:
+
+1. No valid rate means no autonomous payment.
+2. No valid settlement asset means no autonomous payment.
+3. A blocked purchase never calls the payment executor.
+4. The LLM cannot increase or bypass a mandate.
+5. Monetary arithmetic uses integer/rational representations, not floating-point money math.
+6. The x402 executor may only settle the exact token, amount, payTo, scheme, and network approved by Murk.
+7. If merchant terms change after policy approval, payment is refused.
+8. A settled transaction is never replaced by a fabricated success state.
+9. Resource failure after settlement must never trigger a second payment automatically.
+10. Unimplemented money-moving routes fail closed.
+
+## x402
+
+The runtime has been migrated to the current x402 v2 TypeScript package family:
+
+- `@x402/core`
+- `@x402/evm`
+- `@x402/fetch`
+
+The client registers the Exact EVM scheme for `eip155:42220`.
+
+Murk first evaluates the merchant requirement itself. The x402 client's payment-requirement selector is then constrained to the exact requirement already approved by Murk.
+
+This prevents the protocol client from silently selecting a different settlement option after policy approval.
+
+## Local Merchant Fixture
+
+`/api/merchant/*` is a development-only x402-shaped fixture.
+
+It is disabled unless:
+
+```text
+ENABLE_LOCAL_X402_FIXTURE=true
+```
+
+It is not an independent merchant, does not prove real facilitator settlement, and must never be used as submission evidence.
+
+## Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Tailwind CSS
+- viem
+- x402 v2
+- Neon Postgres + Drizzle schema
+- Zod
+- Vitest
+- Celo mainnet
+
+The Neon schema exists, but the runtime repository is still being migrated from the current in-memory implementation. See [BLOCKERS.md](./BLOCKERS.md).
+
+## Environment
+
+Copy:
+
 ```bash
 cp .env.example .env.local
 ```
 
-| Variable | Description |
-| :--- | :--- |
-| `CELO_RPC_URL` | Celo RPC endpoint (default: `https://forno.celo.org`) |
-| `CELO_CHAIN_ID` | `42220` |
-| `DATABASE_URL` | Neon Postgres connection string |
-| `CDP_PROJECT_ID` | Coinbase Developer Platform Project ID |
-| `AGENT_WALLET_PRIVATE_KEY` | Server-controlled agent fallback private key |
-| `X402_FACILITATOR_URL` | `https://api.x402.celo.org` |
-| `EXCHANGE_RATE_API_URL` | Reference exchange rate provider endpoint |
+Important current variables include:
 
-### 4. Running Verification Suites
-Run the automated unit, integration, and security test suites (28 tests):
-```bash
-npm run test
+```text
+CELO_RPC_URL=
+DATABASE_URL=
+
+AGENT_WALLET_PRIVATE_KEY=
+
+X402_FACILITATOR_URL=
+X402_PROBE_RESOURCE_URL=
+NEXT_PUBLIC_X402_RESOURCE_URL=
+NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL=
+
+EXCHANGE_RATE_API_URL=
 ```
 
-Run the live Phase 0 Celo mainnet verification runner (Spikes A through E):
+Additional CDP variables exist for the upcoming embedded-wallet integration.
+
+## Install
+
+The x402 dependency family was recently migrated to v2. Regenerate the lock file in the development environment:
+
+```bash
+npm install
+```
+
+Then run:
+
+```bash
+npm test
+npm run build
+```
+
+Do not claim a passing build until those commands have actually run after the current migration.
+
+## Live Spike Gate
+
+The spike runner is intentionally strict:
+
 ```bash
 npm run spikes
 ```
 
-### 5. Running the Application
-```bash
-# Start development server
-npm run dev
+The x402 spikes require:
 
-# Build for production
-npm run build
-npm run start
+```text
+X402_PROBE_RESOURCE_URL
 ```
-Navigate to `http://localhost:3000` to interact with the responsive wallet.
 
----
+to point to a real independent x402-protected Celo resource.
 
-## Security & Reliability Principles
+A simulated 402 body is not accepted as proof.
 
-1. **Fail-Closed Safety**: Any uncertain state (stale rate, RPC dropout, malformed requirement) stops execution immediately before money moves.
-2. **Post-Payment Protection**: If an external resource fails after onchain payment, a second payment is never triggered automatically.
-3. **Owner Scoping**: All API operations are strictly scoped to the authenticated human owner.
-4. **No Simulated Assets**: If a merchant only accepts USDC, Murk does not fabricate choices.
+## UI Direction
 
----
+Murk uses a consumer-finance wallet visual system:
+
+- warm light-gray canvas;
+- white rounded financial surfaces;
+- near-black typography;
+- restrained blue accent;
+- restrained green/red status colors;
+- dark floating navigation pill;
+- responsive mobile/tablet/desktop composition.
+
+The locked MVP does not include dark mode, a physical card visual, gradients, glow, glassmorphism-heavy styling, crypto-casino visuals, or a generic SaaS sidebar.
+
+## Demo Evidence Standard
+
+A successful live purchase must preserve enough evidence to show:
+
+- the original external 402;
+- accepted payment requirement(s);
+- selected asset and why it was eligible;
+- rate source and timestamp;
+- policy decision;
+- Celo settlement transaction hash;
+- delivered resource evidence;
+- remaining local-currency mandate.
+
+A blocked purchase must show:
+
+- requested accounting value;
+- remaining authority;
+- reason code;
+- no signing/payment execution;
+- no transaction hash;
+- zero funds moved.
 
 ## License
 
