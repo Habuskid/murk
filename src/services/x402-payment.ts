@@ -10,9 +10,11 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client"
 import { wrapFetchWithPayment } from "@x402/fetch"
 import { ExactEvmScheme } from "@x402/evm/exact/client"
-import { getAgentSigner, CELO_RPC_URL } from "./celo"
+import { CELO_RPC_URL } from "./celo"
+import { resolveAgentExecutionWallet } from "./agent-wallet"
 
 export type ApprovedX402Payment = {
+  agentId: string
   selectedAsset: string
   assetAddress: string
   amountRaw: bigint
@@ -43,13 +45,13 @@ async function readDeliveredBody(response: Response): Promise<unknown> {
 export async function executeApprovedX402Payment(
   approved: ApprovedX402Payment
 ): Promise<LiveX402PaymentResult> {
-  const account = getAgentSigner()
+  const executionWallet = await resolveAgentExecutionWallet(approved.agentId)
 
   const client = x402Client.fromConfig({
     schemes: [
       {
         network: "eip155:42220",
-        client: new ExactEvmScheme(account, { rpcUrl: CELO_RPC_URL }),
+        client: new ExactEvmScheme(executionWallet.x402Signer, { rpcUrl: CELO_RPC_URL }),
       },
     ],
     // Murk already performs stricter local-currency policy evaluation before
