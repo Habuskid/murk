@@ -189,13 +189,13 @@ function MurkWalletApp() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold text-text-secondary sm:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-success" />
-            Celo
-          </div>
-
-          <div className="rounded-full bg-accent-soft px-2.5 py-1 text-[11px] font-semibold text-accent">
-            {agent.accountingCurrency}
+          <div className="hidden items-center gap-2 text-[11px] font-medium text-text-secondary sm:flex">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              Celo
+            </span>
+            <span className="text-text-tertiary">/</span>
+            <span className="font-semibold text-accent">{agent.accountingCurrency}</span>
           </div>
 
           <button
@@ -208,6 +208,8 @@ function MurkWalletApp() {
           </button>
         </div>
       </header>
+
+      <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
 
       {loadError && (
         <div className="mb-4 rounded-2xl border border-danger/20 bg-danger-soft px-4 py-3 text-xs text-danger">
@@ -343,7 +345,6 @@ function MurkWalletApp() {
         </main>
       )}
 
-      <Navigation activeTab={activeTab} onSelectTab={setActiveTab} />
     </div>
   )
 }
