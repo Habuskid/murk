@@ -1,14 +1,13 @@
 "use client"
 
-import React, { useState } from "react"
+import { useState } from "react"
 import { formatMoneyMinor } from "@/core/money"
 import {
   EyeIcon,
-  ArrowRightIcon,
   PauseIcon,
   PlayIcon,
-  WalletIcon,
   SlidersIcon,
+  WalletIcon,
 } from "@/components/Icons"
 
 interface HeroMandateProps {
@@ -22,6 +21,10 @@ interface HeroMandateProps {
   onOpenVault?: () => void
 }
 
+function currencyLabel(currency: string) {
+  return currency === "USD" ? "$" : currency
+}
+
 export function HeroMandate({
   currency,
   dailyLimitMinor,
@@ -32,157 +35,148 @@ export function HeroMandate({
   onTogglePause,
   onOpenVault,
 }: HeroMandateProps) {
-  const [balanceHidden, setBalanceHidden] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   const dailyLimitFormatted = formatMoneyMinor(dailyLimitMinor, 2)
   const spentFormatted = formatMoneyMinor(spentTodayMinor, 2)
-
-  const remainingMinor = dailyLimitMinor > spentTodayMinor ? dailyLimitMinor - spentTodayMinor : 0n
+  const remainingMinor =
+    dailyLimitMinor > spentTodayMinor ? dailyLimitMinor - spentTodayMinor : 0n
   const remainingFormatted = formatMoneyMinor(remainingMinor, 2)
 
-  // Calculate percentage (clamped between 4% and 100% for visual scrubber knob)
-  const rawPercentage = dailyLimitMinor > 0n
-    ? Math.round((Number(spentTodayMinor) / Number(dailyLimitMinor)) * 100)
-    : 0
-  const percentage = Math.min(100, Math.max(rawPercentage > 0 ? 6 : 0, rawPercentage))
+  const percentage =
+    dailyLimitMinor > 0n
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round((Number(spentTodayMinor) / Number(dailyLimitMinor)) * 100)
+          )
+        )
+      : 0
 
   const isPaused = agentStatus === "PAUSED"
+  const prefix = currencyLabel(currency)
 
   return (
-    <div className="space-y-4">
-      {/* 1. Total Balance Hero Card (Reference UI Screen 2) */}
-      <div className="w-full bg-surface rounded-[28px] p-6 sm:p-7 border border-border card-elevation transition-all">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-text-secondary">
-            Total Balance
-          </span>
+    <section className="space-y-3">
+      <div className="overflow-hidden rounded-[22px] border border-border bg-surface">
+        <div className="flex items-start justify-between px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+              Daily authority
+            </div>
+            <div className="mt-1 text-xs text-text-secondary">
+              {agentName}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={[
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                isPaused
+                  ? "bg-danger-soft text-danger"
+                  : "bg-success-soft text-success",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "h-1.5 w-1.5 rounded-full",
+                  isPaused ? "bg-danger" : "bg-success",
+                ].join(" ")}
+              />
+              {isPaused ? "Paused" : "Active"}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setHidden((value) => !value)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface-inset text-text-secondary transition hover:text-text-primary active:scale-[0.98]"
+              aria-label={hidden ? "Show authority" : "Hide authority"}
+            >
+              <EyeIcon className="h-4 w-4" strokeWidth={1.9} />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <div className="flex items-end gap-2">
+            <span className="pb-1 text-sm font-semibold text-text-secondary">
+              {prefix}
+            </span>
+            <div className="text-[36px] font-semibold leading-none tracking-[-0.045em] text-text-primary sm:text-[42px]">
+              {hidden ? "••••••" : dailyLimitFormatted}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="h-2 overflow-hidden rounded-full bg-surface-inset">
+              <div
+                className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-[11px] font-medium text-text-secondary">
+                  Spent today
+                </div>
+                <div className="mt-1 text-sm font-semibold text-text-primary tabular-nums">
+                  {hidden ? "••••" : `${currency} ${spentFormatted}`}
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-[11px] font-medium text-text-secondary">
+                  Remaining
+                </div>
+                <div className="mt-1 text-sm font-semibold text-text-primary tabular-nums">
+                  {hidden ? "••••" : `${currency} ${remainingFormatted}`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 border-t border-border bg-surface-inset">
           <button
-            onClick={() => setBalanceHidden(!balanceHidden)}
-            className="w-8 h-8 rounded-full bg-surface-inset border border-border flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors active:scale-95"
-            title={balanceHidden ? "Show balance" : "Hide balance"}
+            type="button"
+            onClick={onOpenVault}
+            className="flex min-h-16 flex-col items-center justify-center gap-1.5 border-r border-border px-2 text-[11px] font-semibold text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
           >
-            <EyeIcon className="w-4 h-4" />
+            <WalletIcon className="h-4 w-4" strokeWidth={1.9} />
+            Wallet
+          </button>
+
+          <button
+            type="button"
+            onClick={onTogglePause}
+            className={[
+              "flex min-h-16 flex-col items-center justify-center gap-1.5 border-r border-border px-2 text-[11px] font-semibold transition",
+              isPaused
+                ? "text-success hover:bg-success-soft"
+                : "text-danger hover:bg-danger-soft",
+            ].join(" ")}
+          >
+            {isPaused ? (
+              <PlayIcon className="h-4 w-4" strokeWidth={1.9} />
+            ) : (
+              <PauseIcon className="h-4 w-4" strokeWidth={1.9} />
+            )}
+            {isPaused ? "Resume" : "Pause"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onEditLimits}
+            className="flex min-h-16 flex-col items-center justify-center gap-1.5 px-2 text-[11px] font-semibold text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+          >
+            <SlidersIcon className="h-4 w-4" strokeWidth={1.9} />
+            Limits
           </button>
         </div>
-
-        {/* Big Display Balance */}
-        <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary tabular-nums">
-          {balanceHidden ? (
-            "••••••••••"
-          ) : (
-            <>
-              <span className="text-2xl sm:text-3xl font-bold mr-1 text-text-primary">
-                {currency === "USD" ? "$" : currency}
-              </span>
-              {dailyLimitFormatted}
-            </>
-          )}
-        </div>
-
-        {/* Inset Two-Column Summary Block (Reference: Payment Next & Payment Completed) */}
-        <div className="grid grid-cols-2 gap-3 mt-6 pt-5 border-t border-border">
-          <div className="bg-surface-inset rounded-2xl p-4 border border-border">
-            <span className="text-xs text-text-secondary block font-medium">Spent Today</span>
-            <span className="text-base font-bold text-text-primary tabular-nums mt-1 block">
-              {balanceHidden ? "••••••" : `${currency} ${spentFormatted}`}
-            </span>
-          </div>
-          <div className="bg-surface-inset rounded-2xl p-4 border border-border">
-            <span className="text-xs text-text-secondary block font-medium">Remaining Authority</span>
-            <span className="text-base font-bold text-text-primary tabular-nums mt-1 block">
-              {balanceHidden ? "••••••" : `${currency} ${remainingFormatted}`}
-            </span>
-          </div>
-        </div>
       </div>
-
-      {/* 2. Quick Action Pills (Reference UI Screen 1, beneath hero) */}
-      <div className="grid grid-cols-3 gap-3">
-        <button
-          onClick={onOpenVault}
-          className="flex flex-col items-center justify-center py-4 px-2 bg-surface rounded-2xl border border-border card-elevation hover:border-accent/40 transition-all active:scale-95 group"
-        >
-          <div className="w-11 h-11 rounded-full bg-surface-hover flex items-center justify-center text-text-primary mb-2 group-hover:bg-surface-inset transition-colors">
-            <WalletIcon className="w-5 h-5" />
-          </div>
-          <span className="text-xs font-semibold text-text-primary">Vault Keys</span>
-        </button>
-
-        <button
-          onClick={onTogglePause}
-          className="flex flex-col items-center justify-center py-4 px-2 bg-surface rounded-2xl border border-border card-elevation hover:border-accent/40 transition-all active:scale-95 group"
-        >
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-2 transition-colors ${
-            isPaused ? "bg-success-soft text-success" : "bg-surface-hover text-text-primary group-hover:bg-surface-inset"
-          }`}>
-            {isPaused ? <PlayIcon className="w-5 h-5" /> : <PauseIcon className="w-5 h-5" />}
-          </div>
-          <span className="text-xs font-semibold text-text-primary">
-            {isPaused ? "Unfreeze" : "Freeze Agent"}
-          </span>
-        </button>
-
-        <button
-          onClick={onEditLimits}
-          className="flex flex-col items-center justify-center py-4 px-2 bg-surface rounded-2xl border border-border card-elevation hover:border-accent/40 transition-all active:scale-95 group"
-        >
-          <div className="w-11 h-11 rounded-full bg-surface-hover flex items-center justify-center text-text-primary mb-2 group-hover:bg-surface-inset transition-colors">
-            <SlidersIcon className="w-5 h-5" />
-          </div>
-          <span className="text-xs font-semibold text-text-primary">Policy Limits</span>
-        </button>
-      </div>
-
-      {/* 3. Spending Limits Card with Sleek Figma Progress Line */}
-      <div className="w-full bg-surface rounded-[28px] p-6 border border-border card-elevation transition-all">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-text-primary">Daily Spending Limit</h3>
-            <p className="text-xs text-text-secondary mt-0.5">Autonomous mandate ceiling</p>
-          </div>
-          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-            isPaused ? "bg-danger-soft text-danger border-danger/30" : "bg-success-soft text-success border-success/30"
-          }`}>
-            {isPaused ? "Frozen" : "Active"}
-          </span>
-        </div>
-
-        {/* Metrics & Sleek Progress Line */}
-        <div className="mt-4 pt-4 border-t border-border space-y-2.5">
-          <div className="flex items-baseline justify-between text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-text-secondary font-medium">Utilization</span>
-              <span className="font-bold text-text-primary tabular-nums">{rawPercentage}%</span>
-            </div>
-            <div className="tabular-nums">
-              <span className="font-bold text-text-primary">{currency} {spentFormatted}</span>
-              <span className="text-text-secondary font-normal"> / {currency} {dailyLimitFormatted}</span>
-            </div>
-          </div>
-
-          {/* Sleek 6px Figma Progress Track */}
-          <div className="w-full h-2 bg-surface-inset rounded-full overflow-hidden border border-border/70">
-            <div
-              className="h-full bg-accent rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${Math.min(100, Math.max(0, rawPercentage))}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between items-center text-[11px] text-text-secondary pt-0.5">
-            <span>Resets every 24h</span>
-            <span>Remaining: <strong className="font-semibold text-text-primary tabular-nums">{currency} {remainingFormatted}</strong></span>
-          </div>
-        </div>
-
-        {/* Set limits link button */}
-        <button
-          onClick={onEditLimits}
-          className="w-full mt-4 pt-3.5 border-t border-border flex items-center justify-between text-xs font-semibold text-text-primary hover:text-accent transition-colors group"
-        >
-          <span>Configure policy thresholds</span>
-          <ArrowRightIcon className="w-3.5 h-3.5 text-text-secondary group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
-        </button>
-      </div>
-    </div>
+    </section>
   )
 }
