@@ -1,6 +1,7 @@
 "use client"
 
 import Portal from "@portal-hq/web"
+import { PUBLIC_CELO_CAIP2_NETWORK, PUBLIC_CELO_RPC_URL } from "@/lib/celo-public"
 import React, {
   createContext,
   useCallback,
