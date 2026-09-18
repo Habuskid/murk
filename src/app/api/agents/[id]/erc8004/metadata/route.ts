@@ -32,6 +32,7 @@ export async function GET(
             chainId: 42220,
           },
         ],
+        supportedTrust: [],
       },
       {
         headers: {
