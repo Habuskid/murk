@@ -70,30 +70,41 @@ Then commit the regenerated `package-lock.json`.
 
 Do not revert to the legacy x402 package to avoid this step.
 
-## B4. Clerk + Portal embedded user wallet
+## B4. Portal-managed authentication + embedded user wallet
 
-Status: CODED, LIVE CREDENTIALS / VERIFICATION REQUIRED
+Status: CODED, LIVE PORTAL CONFIGURATION / VERIFICATION REQUIRED
 
-Murk no longer uses Coinbase CDP.
+Murk no longer uses Coinbase CDP or Clerk.
 
 Current architecture:
 
-- Clerk email OTP for human identity/session;
-- Portal Web MPC wallet for the user's Celo wallet;
-- Murk backend fetches a one-time Portal Web OTP using the server-only Custodian API key;
-- Portal creates/reuses the user's MPC wallet in the browser;
+- Portal `EMAIL_MAGIC_LINK` authenticates the human user;
+- Portal creates/reuses the user's Portal client during sign-in;
+- Murk exchanges the single-use callback token server-side;
+- Murk validates the returned Client Session Token against Portal's `/clients/me` endpoint;
+- Murk stores only a signed HttpOnly application session containing the Portal end-user/client identity;
+- Portal Web SDK authenticates through Murk's server `authUrl` using one-time Web OTPs;
+- Portal Web MPC wallet is created/reused in the browser;
 - Celo address is registered back to Murk;
 - Portal backup/recovery and Eject must be verified before claiming portability.
 
 Required configuration:
 
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
+- `PORTAL_AUTH_ENVIRONMENT_ID`
+- `PORTAL_AUTH_FROM_EMAIL`
+- `PORTAL_AUTH_TEMPLATE_ID`
 - `PORTAL_CUSTODIAN_API_KEY`
-- `PORTAL_DEMO_CLIENT_ID`
-- `PORTAL_DEMO_CLERK_USER_ID`
+- `MURK_SESSION_SECRET`
 
-Current demo integration deliberately binds one Portal test client to one Clerk user. Programmatic multi-user Portal client provisioning remains future work and must not be implied.
+Portal dashboard configuration additionally requires:
+
+- Authentication enabled for the environment;
+- `EMAIL_MAGIC_LINK` enabled;
+- a verified sending domain;
+- a Portal email template containing `{{{MAGIC_LINK}}}`;
+- the deployed/local callback URL allowlisted as `/auth/callback`.
+
+Live browser verification is still required.
 
 ## B5. User-wallet funding and withdrawal
 
