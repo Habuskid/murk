@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "INVALID_WALLET_ADDRESS" }, { status: 400 })
     }
 
-    repository.upsertUserWallet({
+    await repository.upsertUserWallet({
       id: `wal_user_${owner.providerUserId}`,
       userId: owner.userId,
       type: "USER",
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const owner = await requireAuthenticatedOwner(req)
-    const wallet = repository.findUserWallet(owner.userId)
+    const wallet = await repository.findUserWallet(owner.userId)
 
     if (!wallet) {
       return NextResponse.json({ wallet: null })
