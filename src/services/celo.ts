@@ -39,6 +39,7 @@ export const CELO_CAIP2_NETWORK =
     : ("eip155:42220" as const)
 
 export const IS_CELO_SEPOLIA = CELO_CHAIN_ID === CELO_SEPOLIA_CHAIN_ID
+export const CELO_NETWORK_NAME = IS_CELO_SEPOLIA ? "Celo Sepolia" : "Celo Mainnet"
 
 export const CELO_SEPOLIA_RPC_URL =
   "https://forno.celo-sepolia.celo-testnet.org"
