@@ -78,7 +78,13 @@ describe("INTEGRATE & GOLDEN DEMO: Agent Orchestrator", () => {
     let paymentExecuted = false
     const paymentExecutor = async (params: any) => {
       paymentExecuted = true
-      return { txHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}` }
+      return {
+        txHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+        deliveredResource: {
+          status: "success",
+          resourceId: "fixture_resource_01",
+        },
+      }
     }
 
     const result = await executePurchaseWorkflow({
