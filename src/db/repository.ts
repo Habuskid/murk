@@ -487,32 +487,32 @@ class PersistentRepository {
 
   async createMandate(mandate: MandateRecord): Promise<void> {
     const db = getDb()
+    const supersededAt = new Date()
 
-    const current = await db
-      .update(schema.mandates)
-      .set({ supersededAt: new Date() })
-      .where(
-        and(
-          eq(schema.mandates.agentId, mandate.agentId),
-          isNull(schema.mandates.supersededAt)
-        )
-      )
-
-    void current
-
-    await db.insert(schema.mandates).values({
-      id: mandate.id,
-      agentId: mandate.agentId,
-      version: mandate.version,
-      dailyLimitMinor: mandate.dailyLimitMinor,
-      perPurchaseLimitMinor: mandate.perPurchaseLimitMinor,
-      approvalThresholdMinor: mandate.approvalThresholdMinor || null,
-      accountingCurrency: mandate.accountingCurrency,
-      status: mandate.status,
-      effectiveFrom: mandate.effectiveFrom,
-      supersededAt: mandate.supersededAt || null,
-      createdAt: mandate.createdAt,
-    })
+    await db.batch([
+      db
+        .update(schema.mandates)
+        .set({ supersededAt })
+        .where(
+          and(
+            eq(schema.mandates.agentId, mandate.agentId),
+            isNull(schema.mandates.supersededAt)
+          )
+        ),
+      db.insert(schema.mandates).values({
+        id: mandate.id,
+        agentId: mandate.agentId,
+        version: mandate.version,
+        dailyLimitMinor: mandate.dailyLimitMinor,
+        perPurchaseLimitMinor: mandate.perPurchaseLimitMinor,
+        approvalThresholdMinor: mandate.approvalThresholdMinor || null,
+        accountingCurrency: mandate.accountingCurrency,
+        status: mandate.status,
+        effectiveFrom: mandate.effectiveFrom,
+        supersededAt: mandate.supersededAt || null,
+        createdAt: mandate.createdAt,
+      }),
+    ])
   }
 
   async savePurchase(purchase: PurchaseRecord): Promise<void> {
