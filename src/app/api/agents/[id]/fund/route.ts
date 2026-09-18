@@ -4,6 +4,12 @@ import { repository } from "@/db/repository"
 
 export const dynamic = "force-dynamic"
 
+/**
+ * Funding is intentionally fail-closed until the authenticated
+ * embedded-user-wallet signing flow is wired and verified on Celo mainnet.
+ *
+ * Returning a synthetic success here would create false financial evidence.
+ */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const ownerId = repository.getDemoUserId()
@@ -14,33 +20,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const body = await req.json()
-    const validated = FundAgentSchema.parse(body)
+    FundAgentSchema.parse(body)
 
-    // Idempotency check per LOCKED_DECISIONS.md & PERSIST.md
-    const existing = repository.idempotency.get(validated.idempotencyKey)
-    if (existing) {
-      return NextResponse.json(existing.result)
-    }
-
-    // Agent transitions from DRAFT to ACTIVE upon successful initial funding per E2E.md
-    if (agent.status === "DRAFT") {
-      agent.status = "ACTIVE"
-      agent.updatedAt = new Date()
-      repository.saveAgent(agent)
-    }
-
-    const result = {
-      success: true,
-      agentId: agent.id,
-      fundedAsset: validated.assetSymbol,
-      amountRaw: validated.amountRaw,
-      agentStatus: agent.status,
-      timestamp: new Date().toISOString(),
-    }
-
-    repository.idempotency.set(validated.idempotencyKey, { result, createdAt: new Date() })
-
-    return NextResponse.json(result)
+    return NextResponse.json(
+      {
+        error: "LIVE_USER_WALLET_FUNDING_NOT_INTEGRATED",
+        message: "Funding requires the verified email-authenticated embedded wallet signing flow.",
+        fundsMoved: false,
+      },
+      { status: 501 }
+    )
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Funding failed" }, { status: 400 })
   }
