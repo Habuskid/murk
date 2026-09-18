@@ -25,7 +25,7 @@ jobs:
       NEXT_PUBLIC_CELO_CHAIN_ID: "42220"
       EXCHANGE_RATE_API_URL: https://open.er-api.com/v6/latest/USD
       ENABLE_LOCAL_X402_FIXTURE: "false"
-      X402_PROBE_RESOURCE_URL: "https://agent402.tools/api/answer?q=what%20is%20celo"
+      X402_FACILITATOR_URL: "https://api.x402.sepolia.celo.org"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,11 +59,8 @@ jobs:
           curl --fail --silent --show-error https://api.x402.sepolia.celo.org/supported > /tmp/x402-sepolia.json
           grep -q 'eip155:11142220' /tmp/x402-sepolia.json
 
-      - name: Probe external x402 challenge
-        run: npm run spike:c
-
-      - name: Inspect external merchant asset choices
-        run: npm run spike:d
+      - name: Verify Celo Sepolia infrastructure
+        run: npm run spike:testnet
 
       - name: Verify live accounting FX coverage
         run: npm run spike:e
