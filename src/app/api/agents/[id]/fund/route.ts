@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { FundAgentSchema } from "@/lib/validation"
 import { repository } from "@/db/repository"
 import {
+  CELO_CAIP2_NETWORK,
+  CELO_CHAIN_ID,
   CELO_TOKENS,
   getCeloClient,
   selectStableFeeCurrency,
@@ -94,7 +96,7 @@ export async function PUT(
     })
 
     return NextResponse.json({
-      chainId: "eip155:42220",
+      chainId: CELO_CAIP2_NETWORK,
       transaction: {
         from: owner.walletAddress,
         to: token.address,
@@ -225,7 +227,7 @@ export async function POST(
       id: `tx_fund_${validated.txHash.slice(2, 18)}`,
       walletId: userWallet.id,
       purpose: "FUND_AGENT",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       txHash: validated.txHash,
       assetAddress: token.address,
       amountRaw: expectedAmount,
