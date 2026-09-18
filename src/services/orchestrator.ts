@@ -15,7 +15,7 @@ import { selectSettlementAsset } from "../core/settlement-selector"
 import { evaluatePolicy } from "../core/policy-engine"
 import { requestResource, ResourceRequestResult } from "./x402"
 import { getRateQuote } from "./rates"
-import { getAgentPortfolio, getCeloClient } from "./celo"
+import { CELO_CHAIN_ID, CELO_NETWORK_NAME, getAgentPortfolio, getCeloClient } from "./celo"
 
 export type OrchestrationState =
   | "CREATED"
@@ -243,8 +243,8 @@ export async function executePurchaseWorkflow(
         policyDecision: "APPROVED",
         reasonCodes: [],
         humanReadableReasons: [],
-        network: "Celo Mainnet (42220)",
-        chainId: 42220,
+        network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+        chainId: CELO_CHAIN_ID,
         txHash: null,
         resourceDeliveryStatus: "DELIVERED",
         remainingMandateMinor: (
@@ -312,8 +312,8 @@ export async function executePurchaseWorkflow(
         policyDecision: "BLOCKED",
         reasonCodes: [REASON_CODES.NO_VALID_SETTLEMENT_ASSET],
         humanReadableReasons: [translateReasonCode(REASON_CODES.NO_VALID_SETTLEMENT_ASSET)],
-        network: "Celo Mainnet (42220)",
-        chainId: 42220,
+        network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+        chainId: CELO_CHAIN_ID,
         txHash: null,
         resourceDeliveryStatus: "NOT_REQUESTED",
         remainingMandateMinor: (params.mandate.dailyLimitMinor - params.mandate.spentTodayMinor).toString(),
@@ -407,8 +407,8 @@ export async function executePurchaseWorkflow(
         policyDecision: "BLOCKED",
         reasonCodes: policyDecision.reasonCodes,
         humanReadableReasons: policyDecision.reasonCodes.map(translateReasonCode),
-        network: "Celo Mainnet (42220)",
-        chainId: 42220,
+        network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+        chainId: CELO_CHAIN_ID,
         txHash: null, // ZERO tx hash per GOLDEN_DEMO.md
         resourceDeliveryStatus: "NOT_REQUESTED",
         remainingMandateMinor: policyDecision.remainingBeforeMinor.toString(),
@@ -474,8 +474,8 @@ export async function executePurchaseWorkflow(
           humanReadableReasons: [
             "Available daily authority changed before payment could be reserved",
           ],
-          network: "Celo Mainnet (42220)",
-          chainId: 42220,
+          network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+          chainId: CELO_CHAIN_ID,
           txHash: null,
           resourceDeliveryStatus: "NOT_REQUESTED",
           remainingMandateMinor: remainingBefore.toString(),
@@ -582,8 +582,8 @@ export async function executePurchaseWorkflow(
       policyDecision: "APPROVED",
       reasonCodes: [],
       humanReadableReasons: [],
-      network: "Celo Mainnet (42220)",
-      chainId: 42220,
+      network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+      chainId: CELO_CHAIN_ID,
       txHash,
       resourceDeliveryStatus: "DELIVERED",
       remainingMandateMinor: finalRemaining.toString(),
@@ -700,8 +700,8 @@ export async function executePurchaseWorkflow(
               ? "Settlement reverted onchain; no payment was completed"
               : err.message,
         ],
-        network: "Celo Mainnet (42220)",
-        chainId: 42220,
+        network: `${CELO_NETWORK_NAME} (${CELO_CHAIN_ID})`,
+        chainId: CELO_CHAIN_ID,
         txHash,
         resourceDeliveryStatus: failedAfterSettlement
           ? "FAILED_AFTER_PAYMENT"

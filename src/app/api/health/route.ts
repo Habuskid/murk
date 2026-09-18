@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getCeloClient } from "@/services/celo"
+import { CELO_CHAIN_ID, CELO_NETWORK_NAME, getCeloClient } from "@/services/celo"
 import { getRateQuote } from "@/services/rates"
 
 export const dynamic = "force-dynamic"
@@ -22,7 +22,8 @@ export async function GET() {
     const blockNumber = await client.getBlockNumber()
     health.components.celoRpc = {
       status: "healthy",
-      chainId: 42220,
+      network: CELO_NETWORK_NAME,
+      chainId: CELO_CHAIN_ID,
       blockNumber: Number(blockNumber),
     }
   } catch (err: any) {

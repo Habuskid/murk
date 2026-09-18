@@ -1,12 +1,12 @@
 name: Murk CI
 
 concurrency:
-  group: murk-ci-main
+  group: murk-ci-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging/celo-sepolia]
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,9 @@ jobs:
       PORTAL_CUSTODIAN_API_KEY: "ci-placeholder"
       MURK_SESSION_SECRET: "ci-placeholder-session-secret-32-bytes-minimum"
       CELO_RPC_URL: https://forno.celo.org
+      NEXT_PUBLIC_CELO_RPC_URL: https://forno.celo.org
       CELO_CHAIN_ID: "42220"
+      NEXT_PUBLIC_CELO_CHAIN_ID: "42220"
       EXCHANGE_RATE_API_URL: https://open.er-api.com/v6/latest/USD
       ENABLE_LOCAL_X402_FIXTURE: "false"
       X402_PROBE_RESOURCE_URL: "https://agent402.tools/api/answer?q=what%20is%20celo"
@@ -44,6 +46,18 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Validate Celo Sepolia network configuration
+        env:
+          CELO_CHAIN_ID: "11142220"
+          CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
+        run: |
+          npx tsx -e 'import { CELO_CAIP2_NETWORK, CELO_CHAIN_ID, CELO_TOKENS } from "./src/services/celo.ts"; if (CELO_CHAIN_ID !== 11142220 || CELO_CAIP2_NETWORK !== "eip155:11142220" || CELO_TOKENS.USDC?.address.toLowerCase() !== "0x01c5c0122039549ad1493b8220cabedd739bc44e" || CELO_TOKENS.USDT !== null) process.exit(1)'
+
+      - name: Check Celo Sepolia x402 facilitator support
+        run: |
+          curl --fail --silent --show-error https://api.x402.sepolia.celo.org/supported > /tmp/x402-sepolia.json
+          grep -q 'eip155:11142220' /tmp/x402-sepolia.json
 
       - name: Probe external x402 challenge
         run: npm run spike:c

@@ -1,6 +1,6 @@
 # Murk Live E2E Runbook
 
-This runbook is the only approved sequence for the first real Murk mainnet proof.
+This runbook is the approved sequence for the first real Murk mainnet proof. Complete `TESTNET_TO_MAINNET.md` first and promote the exact tested commit.
 
 Do not improvise around a failed gate. Stop, preserve evidence, fix the failing layer, then resume from the last confirmed state.
 

@@ -6,7 +6,7 @@ import { executePurchaseWorkflow } from "@/services/orchestrator"
 import type { SpendingMandate } from "@/core/types"
 import { executeApprovedX402Payment } from "@/services/x402-payment"
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
-import { CELO_TOKENS, getCeloClient } from "@/services/celo"
+import { CELO_CHAIN_ID, CELO_TOKENS, getCeloClient } from "@/services/celo"
 import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 import { assertAllowedX402Purchase } from "@/lib/resource-policy"
 
@@ -190,7 +190,7 @@ export async function POST(
         ])
 
         const selectedToken = Object.values(CELO_TOKENS).find(
-          (token) => token.symbol === result.receipt.settlementAsset
+          (token) => token?.symbol === result.receipt.settlementAsset
         )
 
         await repository.saveTransaction({
@@ -198,7 +198,7 @@ export async function POST(
           purchaseId,
           walletId: agent.walletId,
           purpose: "X402_PURCHASE",
-          chainId: 42220,
+          chainId: CELO_CHAIN_ID,
           txHash: settlementTxHash,
           assetAddress: selectedToken?.address,
           amountRaw:

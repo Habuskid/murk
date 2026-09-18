@@ -21,7 +21,7 @@ type IdentityStatus = {
 }
 
 type PreparedTransaction = {
-  chainId: "eip155:42220"
+  chainId: "eip155:42220" | "eip155:11142220"
   transaction: {
     from: `0x${string}`
     to: `0x${string}`

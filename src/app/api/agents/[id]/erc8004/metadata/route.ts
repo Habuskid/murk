@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { repository } from "@/db/repository"
+import { CELO_CHAIN_ID } from "@/services/celo"
 
 export const dynamic = "force-dynamic"
 
@@ -29,7 +30,7 @@ export async function GET(
           {
             type: "wallet",
             address: agent.walletAddress,
-            chainId: 42220,
+            chainId: CELO_CHAIN_ID,
           },
         ],
         supportedTrust: [],

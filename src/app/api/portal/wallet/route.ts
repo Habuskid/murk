@@ -2,6 +2,7 @@ import { isAddress } from "viem"
 import { NextRequest, NextResponse } from "next/server"
 import { repository, WalletRecord } from "@/db/repository"
 import { authErrorResponse, requireAuthenticatedOwner } from "@/lib/server-auth"
+import { CELO_CHAIN_ID } from "@/services/celo"
 
 export const dynamic = "force-dynamic"
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       type: "USER",
       address: address as `0x${string}`,
       provider: "PORTAL_MPC",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
       createdAt: new Date(),
     } satisfies WalletRecord)
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       success: true,
       address,
       provider: "PORTAL_MPC",
-      chainId: 42220,
+      chainId: CELO_CHAIN_ID,
     })
   } catch (error) {
     const mapped = authErrorResponse(error)

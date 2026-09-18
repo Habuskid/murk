@@ -21,6 +21,15 @@ type PortalWalletContextValue = {
 
 const PortalWalletContext = createContext<PortalWalletContextValue | null>(null)
 
+const PUBLIC_CELO_CHAIN_ID =
+  process.env.NEXT_PUBLIC_CELO_CHAIN_ID === "11142220" ? "11142220" : "42220"
+const PUBLIC_CELO_CAIP2_NETWORK = `eip155:${PUBLIC_CELO_CHAIN_ID}`
+const PUBLIC_CELO_RPC_URL =
+  process.env.NEXT_PUBLIC_CELO_RPC_URL ||
+  (PUBLIC_CELO_CHAIN_ID === "11142220"
+    ? "https://forno.celo-sepolia.celo-testnet.org"
+    : "https://forno.celo.org")
+
 async function registerWalletAddress(address: `0x${string}`) {
   const response = await fetch("/api/portal/wallet", {
     method: "POST",
@@ -69,8 +78,7 @@ export function MurkPortalProvider({ children }: { children: React.ReactNode }) 
       const instance = new Portal({
         authUrl: `${window.location.origin}/api/portal/authenticate`,
         rpcConfig: {
-          "eip155:42220":
-            process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://forno.celo.org",
+          [PUBLIC_CELO_CAIP2_NETWORK]: PUBLIC_CELO_RPC_URL,
         },
       })
 
