@@ -27,6 +27,18 @@ export type LiveX402PaymentResult = {
   deliveredResource: unknown
 }
 
+export class X402PaymentOutcomeUncertainError extends Error {
+  readonly code = "X402_PAYMENT_OUTCOME_UNCERTAIN"
+
+  constructor(cause?: unknown) {
+    super("X402_PAYMENT_OUTCOME_UNCERTAIN")
+    this.name = "X402PaymentOutcomeUncertainError"
+    if (cause !== undefined) {
+      ;(this as Error & { cause?: unknown }).cause = cause
+    }
+  }
+}
+
 function normalizeAddress(value: string): string {
   return value.toLowerCase()
 }
@@ -78,12 +90,22 @@ export async function executeApprovedX402Payment(
   })
 
   const fetchWithPayment = wrapFetchWithPayment(fetch, client)
-  const response = await fetchWithPayment(approved.resourceUrl, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
-  })
+
+  let response: Response
+  try {
+    response = await fetchWithPayment(approved.resourceUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    })
+  } catch (cause) {
+    // Once the x402 wrapper is invoked, Murk cannot prove whether failure
+    // occurred before or after payment submission. Treat transport failures as
+    // financially uncertain and preserve the spend reservation for
+    // reconciliation instead of releasing authority that may already be spent.
+    throw new X402PaymentOutcomeUncertainError(cause)
+  }
 
   if (!response.ok) {
     throw new Error(`X402_RESOURCE_REQUEST_FAILED_${response.status}`)
