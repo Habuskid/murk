@@ -32,7 +32,7 @@ Alfajores is not the Murk staging target. Use Celo Sepolia.
 
 ## Current Code Gate
 
-The staging branch must pass all of these before deployment:
+The release-candidate commit on `main` must pass all of these before deployment:
 
 ```bash
 npm ci
@@ -87,7 +87,7 @@ The staging agent-wallet master secret must not equal the production secret.
 
 ## Deploy Sepolia
 
-The staging workflow is intentionally manual.
+The staging workflow is intentionally manual and always checks out `main`. The old `staging/celo-sepolia` branch is not a release source.
 
 Run `Celo Sepolia Staging Deploy` from GitHub Actions and enter:
 
