@@ -7,6 +7,8 @@ import {
 } from "viem"
 import { CELO_CHAIN_ID, getCeloClient } from "./celo"
 import { CELO_ERC8004_IDENTITY_REGISTRY } from "../config/celo-network"
+
+export { CELO_ERC8004_IDENTITY_REGISTRY }
 import { appendMurkAttribution, verifyMurkAttribution } from "./attribution"
 import { resolveAgentViemAccount } from "./agent-wallet"
 
