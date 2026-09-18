@@ -41,7 +41,7 @@ export function getCeloPublicClient() {
 
 export type AgentWalletInfo = {
   address: `0x${string}`
-  provider: "VIEM_SERVER_EOA"
+  provider: "VIEM_DERIVED_AGENT_EOA"
   celoBalanceWei: bigint
   celoBalanceFormatted: string
   tokenBalances: {
