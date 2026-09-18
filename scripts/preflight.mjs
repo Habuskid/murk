@@ -150,12 +150,30 @@ const appOrigin = requireHttpsUrl("PUBLIC_APP_ORIGIN", {
 })
 rejectPlaceholder("PUBLIC_APP_ORIGIN", value("PUBLIC_APP_ORIGIN"))
 
-const liveResource = requireHttpsUrl("NEXT_PUBLIC_X402_RESOURCE_URL", {
-  disallowLocalhost: true,
-})
-const probeResource = requireHttpsUrl("X402_PROBE_RESOURCE_URL", {
-  disallowLocalhost: true,
-})
+const liveResource =
+  mode === "staging" && !value("NEXT_PUBLIC_X402_RESOURCE_URL")
+    ? null
+    : requireHttpsUrl("NEXT_PUBLIC_X402_RESOURCE_URL", {
+        disallowLocalhost: true,
+      })
+const probeResource =
+  mode === "staging" && !value("X402_PROBE_RESOURCE_URL")
+    ? null
+    : requireHttpsUrl("X402_PROBE_RESOURCE_URL", {
+        disallowLocalhost: true,
+      })
+
+if (mode === "staging" && !liveResource) {
+  warnings.push(
+    "NEXT_PUBLIC_X402_RESOURCE_URL is unset. Sepolia can deploy for wallet, funding, ERC-8004 and withdrawal verification, but live purchase execution will remain disabled until a real Sepolia merchant is configured."
+  )
+}
+
+if (mode === "staging" && !probeResource) {
+  warnings.push(
+    "X402_PROBE_RESOURCE_URL is unset. This is acceptable for staging deployment; CI still verifies the known external mainnet merchant separately."
+  )
+}
 
 if (appOrigin && liveResource && appOrigin.hostname === liveResource.hostname) {
   errors.push("NEXT_PUBLIC_X402_RESOURCE_URL must be an independent merchant, not Murk itself")
