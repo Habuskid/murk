@@ -167,9 +167,11 @@ Verify:
 
 ### 5. Approved x402 purchase
 
-Use a real Celo Sepolia x402-protected resource.
+Prefer a real Celo Sepolia x402-protected resource when one is available.
 
-The resource must be external to the Murk application and must advertise:
+The currently configured external merchant at `agent402.tools` is mainnet-only and advertises `eip155:42220` with Celo mainnet USDC. Do not point the Sepolia build at it and call that a testnet payment.
+
+A Sepolia resource used for this gate must advertise:
 
 ```text
 network = eip155:11142220
@@ -233,9 +235,9 @@ The Celo Sepolia facilitator currently advertises x402 v2 support for `eip155:11
 
 There has also been a public report that the facilitator's `/verify` endpoint rejected the advertised v2 form. Therefore `/supported` alone is not sufficient evidence.
 
-The actual paid Sepolia request is the gate.
+The actual paid Sepolia request is the preferred gate. If no independent public Sepolia merchant is available, do not fabricate one as external evidence. Complete the rest of the Sepolia path and reserve the independent paid-resource proof for the smallest possible mainnet canary against the already verified mainnet merchant.
 
-If the real Sepolia payment returns `unsupported_scheme` while the same requirements are advertised by `/supported`:
+If a real Sepolia payment returns `unsupported_scheme` while the same requirements are advertised by `/supported`:
 
 1. do not weaken Murk's payment validation;
 2. do not silently downgrade the production x402 implementation;
