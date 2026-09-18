@@ -10,6 +10,7 @@ import {
   ERC8004_IDENTITY_ABI,
 } from "../src/services/erc8004"
 import { resolveAgentViemAccount } from "../src/services/agent-wallet"
+import { CELO_CHAIN_ID } from "../src/services/celo"
 
 const MASTER_SECRET =
   "1111111111111111111111111111111111111111111111111111111111111111"
@@ -80,7 +81,7 @@ describe("ERC-8004 identity integration", () => {
       domain: {
         name: "ERC8004IdentityRegistry",
         version: "1",
-        chainId: 42220,
+        chainId: CELO_CHAIN_ID,
         verifyingContract: CELO_ERC8004_IDENTITY_REGISTRY,
       },
       types: {
