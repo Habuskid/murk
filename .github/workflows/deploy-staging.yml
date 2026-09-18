@@ -1,0 +1,114 @@
+name: Celo Sepolia Staging Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY_MURK_SEPOLIA to deploy the staging build'
+        required: true
+        type: string
+  push:
+    branches: [staging/celo-sepolia]
+
+concurrency:
+  group: murk-sepolia-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'push' || inputs.confirmation == 'DEPLOY_MURK_SEPOLIA' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: staging
+
+    env:
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      PORTAL_AUTH_ENVIRONMENT_ID: ${{ secrets.PORTAL_AUTH_ENVIRONMENT_ID }}
+      PORTAL_AUTH_FROM_EMAIL: ${{ secrets.PORTAL_AUTH_FROM_EMAIL }}
+      PORTAL_AUTH_TEMPLATE_ID: ${{ secrets.PORTAL_AUTH_TEMPLATE_ID }}
+      PORTAL_CUSTODIAN_API_KEY: ${{ secrets.PORTAL_CUSTODIAN_API_KEY }}
+
+      MURK_SESSION_SECRET: ${{ secrets.STAGING_MURK_SESSION_SECRET }}
+      AGENT_WALLET_MASTER_SECRET: ${{ secrets.STAGING_AGENT_WALLET_MASTER_SECRET }}
+
+      PUBLIC_APP_ORIGIN: ${{ secrets.STAGING_PUBLIC_APP_ORIGIN }}
+
+      CELO_CHAIN_ID: "11142220"
+      NEXT_PUBLIC_CELO_CHAIN_ID: "11142220"
+      CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
+      NEXT_PUBLIC_CELO_RPC_URL: https://forno.celo-sepolia.celo-testnet.org
+      CELO_ATTRIBUTION_CODE: ${{ secrets.CELO_ATTRIBUTION_CODE }}
+
+      EXCHANGE_RATE_API_URL: https://open.er-api.com/v6/latest/USD
+
+      X402_FACILITATOR_URL: https://api.x402.sepolia.celo.org
+      NEXT_PUBLIC_X402_RESOURCE_URL: ${{ secrets.STAGING_X402_RESOURCE_URL }}
+      X402_PROBE_RESOURCE_URL: ${{ secrets.STAGING_X402_PROBE_RESOURCE_URL }}
+
+      ENABLE_LOCAL_X402_FIXTURE: "false"
+      UI_SANDBOX_MODE: "false"
+
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout Sepolia staging branch
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Check migration history
+        run: npm run db:check
+
+      - name: Staging environment preflight
+        run: npm run preflight:staging
+
+      - name: Build application
+        run: npm run build
+
+      - name: Apply staging database migration
+        run: npm run db:migrate
+
+      - name: Pull Vercel preview configuration
+        run: npx --yes vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel preview
+        run: npx --yes vercel@latest build --token="$VERCEL_TOKEN"
+
+      - name: Deploy Sepolia staging build
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --prebuilt --token="$VERCEL_TOKEN")"
+          echo "url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "Sepolia staging deployment: $DEPLOYMENT_URL"
+
+      - name: Verify staging health
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..20}; do
+            if curl --fail --silent --show-error "$DEPLOYMENT_URL/api/health" > /tmp/murk-health.json; then
+              cat /tmp/murk-health.json
+              exit 0
+            fi
+            sleep 3
+          done
+
+          echo "Staging health endpoint did not become ready."
+          exit 1
