@@ -15,9 +15,12 @@ CI verifies a real independent 402 challenge from:
 Already verified:
 
 - real HTTP 402;
-- Celo network requirement;
+- Celo mainnet requirement `eip155:42220`;
 - payment-requirement parsing;
-- current merchant discovery.
+- current merchant discovery;
+- current merchant price/asset reality: one 0.08 USDC requirement on Celo mainnet.
+
+The current external merchant is not a Sepolia resource. Do not use it as testnet evidence.
 
 Still required:
 
@@ -92,7 +95,7 @@ Current code path:
 Still required:
 
 - real funded Portal wallet;
-- real USDC/USDT transfer on Celo;
+- real testnet funding first on Celo Sepolia, then the smallest required mainnet funding canary;
 - successful exact `from/to/token/amount` verification;
 - persisted transaction evidence;
 - updated live agent balance.
@@ -109,7 +112,7 @@ Still required:
 
 - fund a real agent EOA;
 - execute a small return transaction;
-- verify Celo fee-currency behavior using the selected stablecoin;
+- verify native test CELO gas behavior on Sepolia and stablecoin fee-currency behavior on mainnet where configured;
 - confirm the user Portal wallet receives the funds;
 - confirm transaction persistence and explorer evidence;
 - test insufficient fee-balance behavior.
@@ -134,9 +137,10 @@ Implemented:
 Still required:
 
 - deploy Murk so the metadata URI is publicly resolvable;
-- register on Celo mainnet through the real Portal wallet;
-- bind the real derived execution wallet;
-- preserve explorer evidence.
+- register and bind on Celo Sepolia through the real Portal wallet;
+- verify the derived execution wallet binding;
+- preserve Sepolia explorer evidence;
+- repeat the smallest qualifying registration/binding path on mainnet only after staging passes.
 
 Do not seed or display a placeholder agent ID as verified.
 
@@ -205,13 +209,22 @@ Required evidence:
 
 Do not use the UI sandbox or local self-merchant as final blocked-scenario evidence.
 
-## B11. Final deployment environment
+## B11. Staging and final deployment environments
 
 Status: NOT DEPLOYED
 
-Murk has not yet been deployed to the public production/demo URL.
+Murk has not yet been deployed to the public Sepolia staging URL or final production/demo URL.
 
-Before deployment:
+The staging database must be isolated from all existing projects. Direct Neon project creation is currently rejected because the connected Neon organization is managed by Vercel, and the Vercel connector does not currently expose a team/project in this session.
+
+Before Sepolia staging deployment:
+
+- connect/identify the Murk Vercel project;
+- provision the dedicated Vercel-managed Neon staging database;
+- configure the GitHub `staging` environment secrets documented in `TESTNET_TO_MAINNET.md`;
+- manually run `Celo Sepolia Staging Deploy`.
+
+Before production deployment:
 
 - configure production environment variables;
 - provision/verify the dedicated Murk Neon database and apply the committed migration;
