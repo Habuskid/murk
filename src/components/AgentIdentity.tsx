@@ -7,6 +7,7 @@ import {
   ShieldCheckIcon,
 } from "@/components/Icons"
 import { authedFetch } from "@/lib/authed-fetch"
+import { PUBLIC_CELO_EXPLORER_BASE_URL, PUBLIC_CELO_IDENTITY_REGISTRY } from "@/lib/celo-public"
 import { usePortalWallet } from "@/components/MurkPortalProvider"
 
 type IdentityStatus = {
@@ -268,7 +269,7 @@ export function AgentIdentity({
           </div>
 
           <a
-            href="https://celoscan.io/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+            href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/address/${PUBLIC_CELO_IDENTITY_REGISTRY}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent"
@@ -321,7 +322,7 @@ export function AgentIdentity({
 
       {lastTxHash && (
         <a
-          href={`https://celoscan.io/tx/${lastTxHash}`}
+          href={`${PUBLIC_CELO_EXPLORER_BASE_URL}/tx/${lastTxHash}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] text-accent"
