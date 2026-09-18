@@ -124,28 +124,32 @@ export function UiSandbox() {
 
     return (
       <>
-        <HeroMandate
-          currency="NGN"
-          dailyLimitMinor={500000n}
-          spentTodayMinor={162000n}
-          agentStatus={paused ? "PAUSED" : "ACTIVE"}
-          agentName="Research Agent"
-          onTogglePause={() => setPaused((value) => !value)}
-        />
+        <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+          <div className="space-y-4">
+            <HeroMandate
+              currency="NGN"
+              dailyLimitMinor={500000n}
+              spentTodayMinor={162000n}
+              agentStatus={paused ? "PAUSED" : "ACTIVE"}
+              agentName="Research Agent"
+              onTogglePause={() => setPaused((value) => !value)}
+            />
 
-        <PurchaseRunner
-          agentId="sandbox_agent"
-          accountingCurrency="NGN"
-          perPurchaseLimitFormatted="2,000.00"
-          onPurchaseComplete={() => undefined}
-        />
+            <PurchaseRunner
+              agentId="sandbox_agent"
+              accountingCurrency="NGN"
+              perPurchaseLimitFormatted="2,000.00"
+              onPurchaseComplete={() => undefined}
+            />
+          </div>
 
-        <div id="execution-vault">
-          <AgentFunds
-            agentId="sandbox_agent"
-            walletAddress="0x4Fb3d9A9f92C330E705d9a8777e7419eCA9B19A2"
-            balances={balances}
-          />
+          <div id="execution-vault">
+            <AgentFunds
+              agentId="sandbox_agent"
+              walletAddress="0x4Fb3d9A9f92C330E705d9a8777e7419eCA9B19A2"
+              balances={balances}
+            />
+          </div>
         </div>
 
         <ActivityList items={activityFixture} />
