@@ -6,17 +6,13 @@ import { SpendingMandate } from "@/core/types"
 import { executeApprovedX402Payment } from "@/services/x402-payment"
 
 import { resolveAgentExecutionAddress } from "@/services/agent-wallet"
+import { authErrorResponse, requireOwnedAgent } from "@/lib/server-auth"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const ownerId = repository.getDemoUserId()
-    const agent = repository.findAgentById(params.id, ownerId)
-
-    if (!agent) {
-      return NextResponse.json({ error: "Agent not found" }, { status: 404 })
-    }
+    const { agent } = await requireOwnedAgent(req, params.id)
 
     try {
       const liveAddress = await resolveAgentExecutionAddress(agent.id)
@@ -117,7 +113,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
 
     return NextResponse.json(responsePayload, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Purchase initiation failed" }, { status: 400 })
+  } catch (error) {
+    const mapped = authErrorResponse(error)
+    if (mapped.status !== 500) {
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Purchase initiation failed" },
+      { status: 400 }
+    )
   }
 }
