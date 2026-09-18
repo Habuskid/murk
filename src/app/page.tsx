@@ -242,7 +242,12 @@ function MurkWalletApp() {
           />
 
           <div id="execution-vault">
-            <AgentFunds walletAddress={agent.walletAddress} balances={balances} />
+            <AgentFunds
+              agentId={agent.id}
+              walletAddress={agent.walletAddress}
+              balances={balances}
+              onFundingConfirmed={refreshAgentState}
+            />
           </div>
 
           <ActivityList items={activity.slice(0, 5)} />
