@@ -273,7 +273,7 @@ The locked ownership model is:
 
 Implemented in code:
 
-- Celo mainnet Identity Registry integration;
+- Celo mainnet and Celo Sepolia Identity Registry configuration;
 - public agent metadata endpoint;
 - human-wallet registration transaction preparation;
 - Registered-event verification and real agent-ID persistence;
@@ -378,7 +378,7 @@ Sandbox fixture state is only for UI/browser QA. It is never transaction or hack
 - Zod
 - Vitest
 - Playwright
-- Celo mainnet
+- Celo mainnet + Celo Sepolia staging
 
 ## Environment
 
@@ -394,6 +394,7 @@ Important variables include:
 CELO_RPC_URL=
 NEXT_PUBLIC_CELO_RPC_URL=
 CELO_CHAIN_ID=42220
+NEXT_PUBLIC_CELO_CHAIN_ID=42220
 CELO_ATTRIBUTION_CODE=
 
 DATABASE_URL=
@@ -440,9 +441,12 @@ npm run db:migrate
 Deployment and demo safety gates:
 
 ```bash
+npm run preflight:staging
 npm run preflight:deploy
 npm run preflight:demo
 ```
+
+Murk uses Celo Sepolia (`11142220`) for the pre-mainnet live proof. The exact tested commit is then promoted to Celo mainnet (`42220`) without changing transaction logic. See [TESTNET_TO_MAINNET.md](./TESTNET_TO_MAINNET.md).
 
 ## Spikes
 
