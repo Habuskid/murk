@@ -1,23 +1,55 @@
 "use client"
 
 import React, { FormEvent, useState } from "react"
-import {
-  useIsSignedIn,
-  useSignInWithEmail,
-  useVerifyEmailOTP,
-} from "@coinbase/cdp-hooks"
+import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs"
+
+type AuthMode = "sign-in" | "sign-up"
+
+function clerkErrorMessage(error: unknown, fallback: string): string {
+  const maybe = error as {
+    errors?: Array<{ message?: string; longMessage?: string; code?: string }>
+    message?: string
+  }
+
+  return (
+    maybe?.errors?.[0]?.longMessage ||
+    maybe?.errors?.[0]?.message ||
+    maybe?.message ||
+    fallback
+  )
+}
+
+function clerkErrorCode(error: unknown): string | undefined {
+  const maybe = error as {
+    errors?: Array<{ code?: string }>
+  }
+  return maybe?.errors?.[0]?.code
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isSignedIn } = useIsSignedIn()
-  const { signInWithEmail } = useSignInWithEmail()
-  const { verifyEmailOTP } = useVerifyEmailOTP()
+  const { isLoaded, isSignedIn } = useAuth()
+  const { signIn, fetchStatus: signInStatus } = useSignIn()
+  const { signUp, fetchStatus: signUpStatus } = useSignUp()
 
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
-  const [flowId, setFlowId] = useState<string | null>(null)
   const [submittedEmail, setSubmittedEmail] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [codeSent, setCodeSent] = useState(false)
+  const [mode, setMode] = useState<AuthMode>("sign-in")
   const [error, setError] = useState<string | null>(null)
+
+  const isSubmitting =
+    signInStatus === "fetching" || signUpStatus === "fetching"
+
+  if (!isLoaded) {
+    return (
+      <main className="flex min-h-[calc(100dvh-3rem)] items-center justify-center py-8">
+        <div className="rounded-2xl border border-[#E8E8E5] bg-white px-5 py-4 text-sm text-[#767676]">
+          Loading secure session...
+        </div>
+      </main>
+    )
+  }
 
   if (isSignedIn) {
     return <>{children}</>
@@ -28,33 +60,112 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const normalized = email.trim().toLowerCase()
     if (!normalized) return
 
-    setIsSubmitting(true)
     setError(null)
+
     try {
-      const result = await signInWithEmail({ email: normalized })
+      const result = await signIn.emailCode.sendCode({
+        emailAddress: normalized,
+      })
+
+      if (result.error) {
+        throw result.error
+      }
+
+      setMode("sign-in")
       setSubmittedEmail(normalized)
-      setFlowId(result.flowId)
       setOtp("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send the code.")
-    } finally {
-      setIsSubmitting(false)
+      setCodeSent(true)
+      return
+    } catch (signInError) {
+      const code = clerkErrorCode(signInError)
+
+      if (
+        code !== "form_identifier_not_found" &&
+        code !== "identifier_not_found"
+      ) {
+        setError(
+          clerkErrorMessage(signInError, "Could not send the verification code.")
+        )
+        return
+      }
+    }
+
+    try {
+      const created = await signUp.create({
+        emailAddress: normalized,
+      })
+
+      if (created.error) {
+        throw created.error
+      }
+
+      const sent = await signUp.verifications.sendEmailCode()
+      if (sent.error) {
+        throw sent.error
+      }
+
+      setMode("sign-up")
+      setSubmittedEmail(normalized)
+      setOtp("")
+      setCodeSent(true)
+    } catch (signUpError) {
+      setError(
+        clerkErrorMessage(signUpError, "Could not create the account.")
+      )
     }
   }
 
   const verifyCode = async (event: FormEvent) => {
     event.preventDefault()
-    if (!flowId || otp.length !== 6) return
+    if (otp.length !== 6) return
 
-    setIsSubmitting(true)
     setError(null)
+
     try {
-      await verifyEmailOTP({ flowId, otp })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "The code could not be verified.")
-    } finally {
-      setIsSubmitting(false)
+      if (mode === "sign-in") {
+        const verified = await signIn.emailCode.verifyCode({ code: otp })
+        if (verified.error) {
+          throw verified.error
+        }
+
+        if (signIn.status !== "complete") {
+          throw new Error("SIGN_IN_NOT_COMPLETE")
+        }
+
+        const finalized = await signIn.finalize()
+        if (finalized.error) {
+          throw finalized.error
+        }
+        return
+      }
+
+      const verified = await signUp.verifications.verifyEmailCode({ code: otp })
+      if (verified.error) {
+        throw verified.error
+      }
+
+      if (signUp.status !== "complete") {
+        throw new Error("SIGN_UP_NOT_COMPLETE")
+      }
+
+      const finalized = await signUp.finalize()
+      if (finalized.error) {
+        throw finalized.error
+      }
+    } catch (verifyError) {
+      setError(
+        clerkErrorMessage(verifyError, "The verification code could not be verified.")
+      )
     }
+  }
+
+  const reset = async () => {
+    setError(null)
+    setCodeSent(false)
+    setOtp("")
+    setSubmittedEmail("")
+    await signIn.reset().catch(() => undefined)
+    await signUp.reset().catch(() => undefined)
   }
 
   return (
@@ -66,21 +177,26 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </div>
 
           <h1 className="text-[28px] font-extrabold tracking-[-0.03em] text-[#111111]">
-            {flowId ? "Check your email" : "Welcome to Murk"}
+            {codeSent ? "Check your email" : "Welcome to Murk"}
           </h1>
+
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-[#767676]">
-            {flowId
+            {codeSent
               ? `Enter the 6-digit code sent to ${submittedEmail}.`
               : "Give your agents spending authority without giving up control."}
           </p>
         </div>
 
-        {flowId ? (
+        {codeSent ? (
           <form onSubmit={verifyCode} className="space-y-4">
             <div>
-              <label htmlFor="otp" className="mb-2 block text-xs font-semibold text-[#767676]">
+              <label
+                htmlFor="otp"
+                className="mb-2 block text-xs font-semibold text-[#767676]"
+              >
                 Verification code
               </label>
+
               <input
                 id="otp"
                 value={otp}
@@ -106,7 +222,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={isSubmitting || otp.length !== 6}
-              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Verifying..." : "Verify"}
             </button>
@@ -114,11 +230,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => {
-                setFlowId(null)
-                setOtp("")
-                setError(null)
-              }}
+              onClick={() => void reset()}
               className="w-full py-2 text-xs font-semibold text-[#767676] transition hover:text-[#111111]"
             >
               Use a different email
@@ -127,9 +239,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         ) : (
           <form onSubmit={sendCode} className="space-y-4">
             <div>
-              <label htmlFor="email" className="mb-2 block text-xs font-semibold text-[#767676]">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-xs font-semibold text-[#767676]"
+              >
                 Email address
               </label>
+
               <input
                 id="email"
                 type="email"
@@ -152,7 +268,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={isSubmitting || !email.trim()}
-              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#2F9CF4] px-4 text-sm font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Sending code..." : "Continue"}
             </button>
@@ -160,7 +276,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         )}
 
         <p className="mt-6 text-center text-[11px] leading-relaxed text-[#9A9A9A]">
-          No browser wallet or seed phrase is required to get started.
+          Email secures your Murk account. Portal secures your embedded Celo wallet.
         </p>
       </section>
     </main>
