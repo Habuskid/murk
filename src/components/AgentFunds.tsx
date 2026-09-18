@@ -1,16 +1,18 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { parseUnits } from "viem"
 import { usePortalWallet } from "@/components/MurkPortalProvider"
 import { authedFetch } from "@/lib/authed-fetch"
 import {
-  WalletIcon,
-  CopyIcon,
+  ArrowDownLeftIcon,
+  ArrowUpRightIcon,
   CheckIcon,
+  CopyIcon,
   ExternalLinkIcon,
   UsdcIcon,
   UsdtIcon,
+  WalletIcon,
 } from "@/components/Icons"
 
 interface TokenBalance {
@@ -60,6 +62,8 @@ export function AgentFunds({
     usePortalWallet()
 
   const [copied, setCopied] = useState(false)
+  const [activeAction, setActiveAction] = useState<"fund" | "withdraw" | null>(null)
+
   const [assetSymbol, setAssetSymbol] = useState("USDC")
   const [amount, setAmount] = useState("1")
   const [fundingState, setFundingState] = useState<
@@ -67,6 +71,7 @@ export function AgentFunds({
   >("IDLE")
   const [fundingError, setFundingError] = useState<string | null>(null)
   const [lastTxHash, setLastTxHash] = useState<string | null>(null)
+
   const [withdrawAssetSymbol, setWithdrawAssetSymbol] = useState("USDC")
   const [withdrawAmount, setWithdrawAmount] = useState("0.5")
   const [withdrawalState, setWithdrawalState] = useState<
@@ -85,13 +90,13 @@ export function AgentFunds({
     [balances, withdrawAssetSymbol]
   )
 
+  const shortAddress = `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
+
   const handleCopy = () => {
     navigator.clipboard.writeText(walletAddress)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    window.setTimeout(() => setCopied(false), 2000)
   }
-
-  const shortAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
 
   const confirmFunding = async (
     txHash: `0x${string}`,
@@ -112,9 +117,7 @@ export function AgentFunds({
 
       const body = await response.json().catch(() => ({}))
 
-      if (response.ok) {
-        return body
-      }
+      if (response.ok) return body
 
       if (
         response.status === 409 &&
@@ -179,10 +182,6 @@ export function AgentFunds({
     }
   }
 
-  const fundingBusy =
-    fundingState === "SIGNING" || fundingState === "CONFIRMING"
-
-
   const handleWithdraw = async () => {
     if (!userWalletAddress) {
       setWithdrawalError("Portal wallet is not ready.")
@@ -234,87 +233,78 @@ export function AgentFunds({
     }
   }
 
+  const fundingBusy =
+    fundingState === "SIGNING" || fundingState === "CONFIRMING"
+
   return (
-    <div className="mt-4 w-full rounded-[28px] border border-border bg-surface p-6 card-elevation transition-all">
-      <div className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-inset text-text-primary">
-            <WalletIcon className="h-4 w-4 text-accent" />
+    <section className="rounded-[22px] border border-border bg-surface p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+            <WalletIcon className="h-4 w-4" strokeWidth={1.9} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-text-primary">
-              Execution Vault
-            </h3>
-            <span className="text-xs text-text-secondary">
-              Isolated agent wallet on Celo
-            </span>
+            <div className="text-sm font-semibold text-text-primary">
+              Agent wallet
+            </div>
+            <div className="mt-0.5 text-xs text-text-secondary">
+              Funds available to the execution agent
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 self-start sm:self-auto">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-full border border-border bg-surface-inset px-3 py-1.5 font-mono text-xs text-text-secondary transition-all hover:border-accent/40 hover:text-text-primary active:scale-95"
-            title="Copy execution wallet address"
-          >
-            <span>{shortAddress}</span>
-            {copied ? (
-              <CheckIcon className="h-3.5 w-3.5 text-success" />
-            ) : (
-              <CopyIcon className="h-3.5 w-3.5 text-text-secondary" />
-            )}
-          </button>
-
-          <a
-            href={`https://celoscan.io/address/${walletAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface-inset text-text-secondary transition-all hover:border-accent/40 hover:text-text-primary"
-            title="View on CeloScan"
-          >
-            <ExternalLinkIcon className="h-3.5 w-3.5" />
-          </a>
-        </div>
+        <a
+          href={`https://celoscan.io/address/${walletAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-secondary transition hover:text-text-primary"
+          aria-label="View agent wallet on CeloScan"
+        >
+          <ExternalLinkIcon className="h-4 w-4" strokeWidth={1.8} />
+        </a>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {balances.map((token) => {
-          const isUsdc = token.symbol === "USDC"
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] text-text-secondary transition hover:text-text-primary"
+      >
+        {shortAddress}
+        {copied ? (
+          <CheckIcon className="h-3.5 w-3.5 text-success" />
+        ) : (
+          <CopyIcon className="h-3.5 w-3.5" />
+        )}
+      </button>
+
+      <div className="mt-4 overflow-hidden rounded-[14px] border border-border">
+        {balances.map((token, index) => {
+          const TokenIcon = token.symbol === "USDC" ? UsdcIcon : UsdtIcon
+
           return (
             <div
               key={token.symbol}
-              className="flex flex-col justify-between rounded-2xl border border-border bg-surface-inset p-4 transition-all hover:border-accent/40"
+              className={[
+                "flex items-center justify-between bg-surface-inset px-4 py-3.5",
+                index > 0 ? "border-t border-border" : "",
+              ].join(" ")}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {isUsdc ? (
-                    <UsdcIcon className="h-6 w-6" />
-                  ) : (
-                    <UsdtIcon className="h-6 w-6" />
-                  )}
-                  <div>
-                    <span className="block text-sm font-bold leading-none text-text-primary">
-                      {token.symbol}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-text-secondary">
-                      Celo Mainnet
-                    </span>
+              <div className="flex items-center gap-2.5">
+                <TokenIcon className="h-5 w-5" />
+                <div>
+                  <div className="text-sm font-semibold text-text-primary">
+                    {token.symbol}
                   </div>
+                  <div className="text-[11px] text-text-secondary">Celo</div>
                 </div>
-                <span className="rounded-md border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-text-secondary">
-                  ERC-20
-                </span>
               </div>
 
-              <div className="mt-4">
-                <div className="text-2xl font-extrabold tracking-tight text-text-primary tabular-nums">
-                  {token.formattedBalance}{" "}
-                  <span className="text-xs font-normal text-text-secondary">
-                    {token.symbol}
-                  </span>
+              <div className="text-right">
+                <div className="text-lg font-semibold tracking-[-0.025em] text-text-primary tabular-nums">
+                  {token.formattedBalance}
                 </div>
-                <div className="mt-1 text-xs text-text-secondary">
-                  Live Celo balance
+                <div className="text-[10px] font-medium text-text-secondary">
+                  {token.symbol}
                 </div>
               </div>
             </div>
@@ -322,141 +312,175 @@ export function AgentFunds({
         })}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-border bg-[#F7F7F5] p-4">
-        <div className="mb-3">
-          <div className="text-xs font-bold text-text-primary">Fund agent</div>
-          <div className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-            Transfer from your Portal wallet. Murk activates the agent only after
-            the exact Celo transfer is confirmed onchain.
-          </div>
-        </div>
-
-        <div className="grid grid-cols-[110px_1fr] gap-2">
-          <select
-            value={assetSymbol}
-            onChange={(event) => setAssetSymbol(event.target.value)}
-            disabled={fundingBusy}
-            className="h-11 rounded-xl border border-border bg-white px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
-          >
-            {balances.map((token) => (
-              <option key={token.symbol} value={token.symbol}>
-                {token.symbol}
-              </option>
-            ))}
-          </select>
-
-          <input
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            inputMode="decimal"
-            disabled={fundingBusy}
-            placeholder="Amount"
-            className="h-11 rounded-xl border border-border bg-white px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
-          />
-        </div>
-
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => void handleFund()}
-          disabled={!isReady || fundingBusy || !selectedToken}
-          className="mt-3 flex h-11 w-full items-center justify-center rounded-xl bg-accent px-4 text-xs font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {fundingState === "SIGNING"
-            ? "Approve in wallet..."
-            : fundingState === "CONFIRMING"
-              ? "Confirming on Celo..."
-              : fundingState === "CONFIRMED"
-                ? "Funding confirmed"
-                : "Fund execution wallet"}
-        </button>
-
-        {portalError && (
-          <div className="mt-2 text-[11px] text-danger">{portalError}</div>
-        )}
-
-        {fundingError && (
-          <div className="mt-2 text-[11px] text-danger">{fundingError}</div>
-        )}
-
-        {lastTxHash && (
-          <a
-            href={`https://celoscan.io/tx/${lastTxHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 block truncate font-mono text-[10px] text-accent"
-          >
-            {lastTxHash}
-          </a>
-        )}
-      </div>
-
-      <div className="mt-3 rounded-2xl border border-border bg-white p-4">
-        <div className="mb-3">
-          <div className="text-xs font-bold text-text-primary">
-            Return funds
-          </div>
-          <div className="mt-1 text-[11px] leading-relaxed text-text-secondary">
-            Sends only to your registered Portal wallet. Leave a small balance
-            behind so Celo can charge gas in the selected stablecoin.
-          </div>
-        </div>
-
-        <div className="grid grid-cols-[110px_1fr] gap-2">
-          <select
-            value={withdrawAssetSymbol}
-            onChange={(event) => setWithdrawAssetSymbol(event.target.value)}
-            disabled={withdrawalState === "SUBMITTING"}
-            className="h-11 rounded-xl border border-border bg-[#F7F7F5] px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
-          >
-            {balances.map((token) => (
-              <option key={token.symbol} value={token.symbol}>
-                {token.symbol}
-              </option>
-            ))}
-          </select>
-
-          <input
-            value={withdrawAmount}
-            onChange={(event) => setWithdrawAmount(event.target.value)}
-            inputMode="decimal"
-            disabled={withdrawalState === "SUBMITTING"}
-            placeholder="Amount"
-            className="h-11 rounded-xl border border-border bg-[#F7F7F5] px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => void handleWithdraw()}
-          disabled={
-            !userWalletAddress ||
-            withdrawalState === "SUBMITTING" ||
-            !withdrawalToken
+          onClick={() =>
+            setActiveAction((current) => (current === "fund" ? null : "fund"))
           }
-          className="mt-3 flex h-11 w-full items-center justify-center rounded-xl border border-border bg-[#171717] px-4 text-xs font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          className={[
+            "flex h-11 items-center justify-center gap-2 rounded-[13px] border text-xs font-semibold transition",
+            activeAction === "fund"
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-border bg-surface text-text-primary hover:bg-surface-inset",
+          ].join(" ")}
         >
-          {withdrawalState === "SUBMITTING"
-            ? "Returning funds on Celo..."
-            : withdrawalState === "CONFIRMED"
-              ? "Funds returned"
-              : "Withdraw to my Portal wallet"}
+          <ArrowDownLeftIcon className="h-4 w-4" strokeWidth={1.9} />
+          Add funds
         </button>
 
-        {withdrawalError && (
-          <div className="mt-2 text-[11px] text-danger">{withdrawalError}</div>
-        )}
-
-        {withdrawalTxHash && (
-          <a
-            href={`https://celoscan.io/tx/${withdrawalTxHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 block truncate font-mono text-[10px] text-accent"
-          >
-            {withdrawalTxHash}
-          </a>
-        )}
+        <button
+          type="button"
+          onClick={() =>
+            setActiveAction((current) =>
+              current === "withdraw" ? null : "withdraw"
+            )
+          }
+          className={[
+            "flex h-11 items-center justify-center gap-2 rounded-[13px] border text-xs font-semibold transition",
+            activeAction === "withdraw"
+              ? "border-text-primary bg-text-primary text-white"
+              : "border-border bg-surface text-text-primary hover:bg-surface-inset",
+          ].join(" ")}
+        >
+          <ArrowUpRightIcon className="h-4 w-4" strokeWidth={1.9} />
+          Return funds
+        </button>
       </div>
-    </div>
+
+      {activeAction === "fund" && (
+        <div className="mt-4 border-t border-border pt-4">
+          <div className="text-xs font-semibold text-text-primary">
+            Add from Portal wallet
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+            Murk activates funds only after the Celo transfer is confirmed.
+          </p>
+
+          <div className="mt-3 grid grid-cols-[96px_1fr] gap-2">
+            <select
+              value={assetSymbol}
+              onChange={(event) => setAssetSymbol(event.target.value)}
+              disabled={fundingBusy}
+              className="h-11 rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+            >
+              {balances.map((token) => (
+                <option key={token.symbol} value={token.symbol}>
+                  {token.symbol}
+                </option>
+              ))}
+            </select>
+
+            <input
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              inputMode="decimal"
+              disabled={fundingBusy}
+              placeholder="Amount"
+              className="h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleFund()}
+            disabled={!isReady || fundingBusy || !selectedToken}
+            className="mt-2.5 flex h-11 w-full items-center justify-center rounded-xl bg-accent px-4 text-xs font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {fundingState === "SIGNING"
+              ? "Approve in Portal…"
+              : fundingState === "CONFIRMING"
+                ? "Confirming on Celo…"
+                : fundingState === "CONFIRMED"
+                  ? "Funds added"
+                  : "Add funds"}
+          </button>
+
+          {(portalError || fundingError) && (
+            <div className="mt-2 text-[11px] text-danger">
+              {fundingError || portalError}
+            </div>
+          )}
+
+          {lastTxHash && (
+            <a
+              href={`https://celoscan.io/tx/${lastTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block truncate font-mono text-[10px] text-accent"
+            >
+              {lastTxHash}
+            </a>
+          )}
+        </div>
+      )}
+
+      {activeAction === "withdraw" && (
+        <div className="mt-4 border-t border-border pt-4">
+          <div className="text-xs font-semibold text-text-primary">
+            Return to your Portal wallet
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">
+            The destination is fixed to your authenticated wallet.
+          </p>
+
+          <div className="mt-3 grid grid-cols-[96px_1fr] gap-2">
+            <select
+              value={withdrawAssetSymbol}
+              onChange={(event) => setWithdrawAssetSymbol(event.target.value)}
+              disabled={withdrawalState === "SUBMITTING"}
+              className="h-11 rounded-xl border border-border bg-surface-inset px-3 text-sm font-semibold text-text-primary outline-none focus:border-accent"
+            >
+              {balances.map((token) => (
+                <option key={token.symbol} value={token.symbol}>
+                  {token.symbol}
+                </option>
+              ))}
+            </select>
+
+            <input
+              value={withdrawAmount}
+              onChange={(event) => setWithdrawAmount(event.target.value)}
+              inputMode="decimal"
+              disabled={withdrawalState === "SUBMITTING"}
+              placeholder="Amount"
+              className="h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold tabular-nums text-text-primary outline-none placeholder:text-text-secondary focus:border-accent"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleWithdraw()}
+            disabled={
+              !userWalletAddress ||
+              withdrawalState === "SUBMITTING" ||
+              !withdrawalToken
+            }
+            className="mt-2.5 flex h-11 w-full items-center justify-center rounded-xl bg-text-primary px-4 text-xs font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {withdrawalState === "SUBMITTING"
+              ? "Returning on Celo…"
+              : withdrawalState === "CONFIRMED"
+                ? "Funds returned"
+                : "Return funds"}
+          </button>
+
+          {withdrawalError && (
+            <div className="mt-2 text-[11px] text-danger">{withdrawalError}</div>
+          )}
+
+          {withdrawalTxHash && (
+            <a
+              href={`https://celoscan.io/tx/${withdrawalTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block truncate font-mono text-[10px] text-accent"
+            >
+              {withdrawalTxHash}
+            </a>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
