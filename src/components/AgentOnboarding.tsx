@@ -91,7 +91,7 @@ export function AgentOnboarding({
               onChange={(event) => setName(event.target.value)}
               required
               maxLength={64}
-              className="h-13 w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-medium text-[#111111] outline-none transition focus:border-[#2F9CF4] focus:bg-white"
+              className="h-[52px] w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-medium text-[#111111] outline-none transition focus:border-[#2F9CF4] focus:bg-white"
             />
           </div>
 
@@ -104,7 +104,7 @@ export function AgentOnboarding({
               onChange={(event) =>
                 setCurrency(event.target.value as (typeof CURRENCIES)[number])
               }
-              className="h-13 w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-semibold text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
+              className="h-[52px] w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-semibold text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
             >
               {CURRENCIES.map((code) => (
                 <option key={code} value={code}>
@@ -124,7 +124,7 @@ export function AgentOnboarding({
                 inputMode="decimal"
                 value={dailyLimit}
                 onChange={(event) => setDailyLimit(event.target.value)}
-                className="h-13 w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-bold tabular-nums text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
+                className="h-[52px] w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-bold tabular-nums text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
               />
             </div>
 
@@ -137,7 +137,7 @@ export function AgentOnboarding({
                 inputMode="decimal"
                 value={perPurchaseLimit}
                 onChange={(event) => setPerPurchaseLimit(event.target.value)}
-                className="h-13 w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-bold tabular-nums text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
+                className="h-[52px] w-full rounded-2xl border border-[#E8E8E5] bg-[#F7F7F5] px-4 text-sm font-bold tabular-nums text-[#111111] outline-none focus:border-[#2F9CF4] focus:bg-white"
               />
             </div>
           </div>
