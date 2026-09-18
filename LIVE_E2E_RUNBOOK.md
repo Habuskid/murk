@@ -108,7 +108,6 @@ For demo lock also require:
 
 ```text
 CELO_ATTRIBUTION_CODE
-NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL
 PORTAL_USER_WALLET_VERIFIED_ADDRESS
 PORTAL_USER_WALLET_EVIDENCE_REFERENCE
 PORTAL_USER_WALLET_BACKUP_VERIFIED=true
@@ -298,8 +297,12 @@ The final demo must show a real external request blocked before signing.
 
 Preferred proof:
 
-- after the successful purchase, submit a real request whose value exceeds remaining daily authority; or
-- use a separately verified external resource whose accounting value exceeds the per-purchase limit.
+- use the same already-verified external x402 resource;
+- after the successful purchase, lower the per-purchase authority below that resource's current accounting value;
+- request the same external resource again;
+- Murk must receive the genuine 402 and block before any signing.
+
+A separately verified higher-value external resource is optional, not required.
 
 Required result:
 
