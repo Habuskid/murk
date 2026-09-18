@@ -58,29 +58,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       status: mandate.status,
     }
 
-    // For demo agent testing, supply the funded portfolio matching UI balances (5 USDC, 10 USDT)
-    const overridePortfolio =
-      agent.id === "agent_demo_01"
-        ? [
-            {
-              symbol: "USDC",
-              address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
-              decimals: 6,
-              enabled: true,
-              minimumReserveRaw: 100000n, // 0.1 USDC reserve
-              walletBalanceRaw: 5000000n, // 5.00 USDC
-            },
-            {
-              symbol: "USDT",
-              address: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
-              decimals: 6,
-              enabled: true,
-              minimumReserveRaw: 0n,
-              walletBalanceRaw: 10000000n, // 10.00 USDT
-            },
-          ]
-        : undefined
-
     const result = await executePurchaseWorkflow({
       purchaseId,
       agentId: agent.id,
@@ -90,7 +67,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       allowedAssetSymbols: agent.allowedAssets,
       merchantUrl: validated.merchantUrl,
       resourceUrl: validated.resourceUrl,
-      overridePortfolio,
     })
 
     // Update purchase record with final outcome
