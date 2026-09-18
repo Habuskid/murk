@@ -27,7 +27,7 @@ export function ActivityList({ items }: ActivityListProps) {
     <section>
       <div className="mb-3 flex items-end justify-between px-1">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary">
+          <div className="text-xs font-medium text-text-secondary">
             Activity
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.025em] text-text-primary">
@@ -93,7 +93,7 @@ export function ActivityList({ items }: ActivityListProps) {
                       {activity.accountingCurrency} {activity.accountingAmountFormatted}
                     </div>
                     <div className="mt-0.5 text-[10px] font-medium text-text-secondary tabular-nums">
-                      {activity.settlementAmountFormatted} {activity.settlementAsset}
+                      {completed ? `${activity.settlementAmountFormatted} ${activity.settlementAsset}` : "No funds moved"}
                     </div>
                   </div>
                 </div>
