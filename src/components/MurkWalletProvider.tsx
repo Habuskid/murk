@@ -80,6 +80,8 @@ function MurkWalletBridge({ children }: { children: React.ReactNode }) {
       return
     }
 
+    const activeWallet = wallet
+    const activeAddress = walletAddress
     let cancelled = false
 
     async function registerWallet() {
@@ -87,12 +89,12 @@ function MurkWalletBridge({ children }: { children: React.ReactNode }) {
       setError(null)
 
       try {
-        await wallet.switchChain(CELO_CHAIN_ID)
+        await activeWallet.switchChain(CELO_CHAIN_ID)
 
         const response = await authedFetch("/api/wallet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: walletAddress }),
+          body: JSON.stringify({ address: activeAddress }),
         })
         const body = await response.json().catch(() => ({}))
 
@@ -101,7 +103,7 @@ function MurkWalletBridge({ children }: { children: React.ReactNode }) {
         }
 
         if (!cancelled) {
-          registeredAddressRef.current = walletAddress
+          registeredAddressRef.current = activeAddress
         }
       } catch (cause) {
         if (!cancelled) {
