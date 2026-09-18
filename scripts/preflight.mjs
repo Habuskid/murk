@@ -163,9 +163,16 @@ if (mode === "demo") {
     errors.push("CELO_ATTRIBUTION_CODE must be the assigned lowercase program code")
   }
 
-  requireHttpsUrl("NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL", {
-    disallowLocalhost: true,
-  })
+  const blockedResource = value("NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL")
+  if (blockedResource) {
+    requireHttpsUrl("NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL", {
+      disallowLocalhost: true,
+    })
+  } else {
+    warnings.push(
+      "NEXT_PUBLIC_X402_BLOCKED_RESOURCE_URL is unset; the blocked demo must reuse the verified live resource after tightening the per-purchase policy below its accounting value"
+    )
+  }
 
   requireValue("PORTAL_USER_WALLET_VERIFIED_ADDRESS")
   requireValue("PORTAL_USER_WALLET_EVIDENCE_REFERENCE")
