@@ -10,8 +10,7 @@ import { createPublicClient, http, formatEther, formatUnits, parseAbi } from "vi
 import { celo } from "viem/chains"
 import { resolveAgentExecutionWallet } from "../src/services/agent-wallet"
 
-export const CELO_CHAIN_ID = 42220
-export const CELO_RPC_URL = process.env.CELO_RPC_URL || "https://forno.celo.org"
+import { CELO_CHAIN_ID, CELO_RPC_URL } from "../src/services/celo"
 
 export const CELO_TOKENS = {
   USDC: {
