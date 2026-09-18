@@ -1,0 +1,154 @@
+# IMPLEMENTATION STATUS
+
+Last reviewed: 18 September 2026
+
+This is a truth-status document, not a marketing document.
+
+## Summary
+
+Murk currently has a substantial deterministic policy/core implementation and a wallet-style UI shell, but the full live hackathon golden path is NOT complete yet.
+
+The project is currently between INTEGRATE and END-TO-END.
+
+## SPIKE
+
+### Celo RPC and token reads
+
+Status: CODE EXISTS
+
+- Celo chain ID 42220 configured.
+- USDC and USDT token reads implemented.
+- Live environment verification still required after current dependency migration.
+
+### External x402 challenge
+
+Status: BLOCKED UNTIL X402_PROBE_RESOURCE_URL IS CONFIGURED
+
+The spike no longer accepts a simulated merchant body as success.
+
+### Multi-asset merchant support
+
+Status: UNKNOWN
+
+The spike now inspects the real external merchant.
+
+### Rate provider
+
+Status: CODE EXISTS
+
+Reference FX adapter exists for the accounting layer.
+
+Live support for all eight currencies still needs one verification run.
+
+### Embedded user wallet
+
+Status: NOT IMPLEMENTED
+
+## CORE
+
+Status: SUBSTANTIALLY IMPLEMENTED
+
+Implemented:
+
+- bigint money model;
+- deterministic settlement selector;
+- deterministic policy engine;
+- daily mandate;
+- per-purchase limit;
+- reserve handling;
+- reason codes;
+- unit tests.
+
+No LLM authorization path is present.
+
+## INTEGRATE
+
+Status: IN PROGRESS
+
+Implemented in code:
+
+- Celo RPC client;
+- real token balance reads;
+- x402 v2 challenge parsing;
+- x402 v2 Exact EVM live executor;
+- exact approved-payment selection guard;
+- reference FX provider.
+
+Not yet live verified:
+
+- external x402 paid request;
+- settlement transaction;
+- resource delivery;
+- embedded user wallet;
+- funding;
+- withdrawal;
+- ERC-8004;
+- ERC-8021.
+
+## END-TO-END
+
+Status: NOT PASSED
+
+A full real path from:
+
+`email OTP -> user wallet -> fund agent -> real external 402 -> Murk policy -> live x402 settlement -> resource -> persisted receipt`
+
+has not yet been demonstrated.
+
+## PERSIST
+
+Status: NOT PASSED
+
+Drizzle schema exists, but runtime repository is still in memory.
+
+## HARDEN
+
+Status: PARTIAL
+
+Implemented/tested at logic level:
+
+- malformed requirements;
+- unsupported chain rejection;
+- invalid rate rejection;
+- concurrent policy reasoning;
+- post-payment no-double-payment intent;
+- no random success transaction fallback.
+
+Still requires live E2E hardening after integrations are real.
+
+## UI
+
+Status: PARTIAL
+
+Current direction is aligned with locked light wallet styling.
+
+Recent corrections:
+
+- dark mode removed;
+- hard-coded wallet balances removed from page state;
+- fake fiat asset valuation removed;
+- invented merchant names removed;
+- blocked activity no longer looks like funds moved;
+- local self-merchant removed from runtime golden path;
+- fake withdrawal control disabled.
+
+Remaining:
+
+- email OTP onboarding;
+- create-agent onboarding;
+- real user-wallet surface;
+- real funding flow;
+- receipt/detail screens;
+- final responsive refinement.
+
+## POLISH
+
+Status: NOT STARTED AS A COMPLETE PHASE
+
+Some microinteraction styling exists, but polish must wait until E2E is real.
+
+## DEMO LOCK
+
+Status: NOT READY
+
+Do not demo the current local merchant fixture or synthetic wallet/user state as final hackathon evidence.
