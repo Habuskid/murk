@@ -14,6 +14,7 @@ import {
 
 interface PurchaseRunnerProps {
   agentId: string
+  agentStatus: "ACTIVE" | "PAUSED" | "DRAFT" | "DISABLED"
   accountingCurrency: string
   perPurchaseLimitFormatted: string
   onPurchaseComplete: (receipt: OrchestratorReceipt) => void
@@ -27,6 +28,7 @@ const FLOW = ["Challenge", "Policy", "Settlement", "Resource"]
 
 export function PurchaseRunner({
   agentId,
+  agentStatus,
   accountingCurrency,
   perPurchaseLimitFormatted,
   onPurchaseComplete,
@@ -39,6 +41,7 @@ export function PurchaseRunner({
   const [runError, setRunError] = useState<string | null>(null)
 
   const isBlocked = selectedScenario === "blocked"
+  const canRunPurchase = agentStatus === "ACTIVE"
   const configuredResourceUrl = isBlocked ? BLOCKED_RESOURCE_URL : APPROVED_RESOURCE_URL
   const isConfigured = Boolean(configuredResourceUrl)
 
@@ -55,6 +58,17 @@ export function PurchaseRunner({
     currentStepIndex < 0 ? -1 : Math.min(3, Math.floor((currentStepIndex / 5) * 4))
 
   const triggerPurchase = async () => {
+    if (!canRunPurchase) {
+      setRunError(
+        agentStatus === "DRAFT"
+          ? "Fund the agent wallet before running a purchase."
+          : agentStatus === "PAUSED"
+            ? "Resume the agent before running a purchase."
+            : "This agent is disabled."
+      )
+      return
+    }
+
     setIsRunning(true)
     setActiveReceipt(null)
     setShowTechnicalDetails(false)
@@ -228,10 +242,20 @@ export function PurchaseRunner({
         </div>
       )}
 
+      {!canRunPurchase && (
+        <div className="mt-4 rounded-[12px] bg-surface-inset px-3.5 py-3 text-xs leading-relaxed text-text-secondary">
+          {agentStatus === "DRAFT"
+            ? "Add funds to the isolated agent wallet to activate live purchases."
+            : agentStatus === "PAUSED"
+              ? "The kill switch is active. Resume the agent before purchasing."
+              : "This agent is disabled and cannot make purchases."}
+        </div>
+      )}
+
       <button
         type="button"
         onClick={triggerPurchase}
-        disabled={isRunning || !isConfigured}
+        disabled={isRunning || !isConfigured || !canRunPurchase}
         className={[
           "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-[14px] px-4 text-sm font-semibold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45",
           isBlocked ? "bg-danger" : "bg-accent",
